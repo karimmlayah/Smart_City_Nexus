@@ -1,0 +1,1736 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block body_class %}cockpit fusion-hub-sc{% endblock %}
+
+{% block title %}{% if request.resolver_match.url_name == 'surveillance_dashboard' %}Smart City · Surveillance Command{% else %}Smart City · Fusion Command Center{% endif %}{% endblock %}
+
+{% block extra_head %}
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'monitoring/fusion_hub_dashboard.css' %}">
+  <link rel="stylesheet" href="{% static 'monitoring/fusion_hub_smartcity.css' %}">
+{% endblock %}
+
+{% block content %}
+<form
+  id="fusionBatchForm"
+  class="fusion-hub-form fh-command-form"
+  method="post"
+  action=""
+  enctype="multipart/form-data"
+  data-fusion-progressive="{% if fusion_progressive_mode %}1{% else %}0{% endif %}"
+>
+  {% csrf_token %}
+  {% if fusion_progressive_mode %}
+  <input type="hidden" name="fusion_replay_pv" id="fusionReplayPvField" value="{{ fusion_progressive_pv }}" />
+  <input type="hidden" name="full_video_analysis" id="fusionFullAnalysisField" value="0" />
+  {% endif %}
+  <div class="fh-root">
+    <header class="fh-nav fh-glass" aria-label="Primary">
+      <div class="fh-nav-brand fh-brand-cluster">
+        <span class="fh-brand-orb" aria-hidden="true"></span>
+        <div class="fh-brand-text">
+          <h1 class="fh-nav-logo">Smart City Platform</h1>
+          <p class="fh-nav-tag">{% if request.resolver_match.url_name == 'surveillance_dashboard' %}Surveillance Command{% else %}Fusion Command Center{% endif %}</p>
+        </div>
+      </div>
+      <div class="fh-nav-meta">
+        <span class="fh-nav-loc" title="Display only">Network · —</span>
+        <span class="fh-clock" id="fhClock" aria-live="polite">--:--:--</span>
+        <span class="fh-icon-chip" title="Notifications">🔔</span>
+        <span class="fh-nav-user" title="Operator" aria-hidden="true"></span>
+      </div>
+    </header>
+
+    <div id="fhLoadingOverlay" class="fh-loading" aria-hidden="true" role="alert">
+      <div class="fh-glass fh-loading-inner">
+        <div class="fh-spinner"></div>
+        <p>Analyzing source…</p>
+        <p class="fh-muted small" style="color:var(--fh-muted,#8ba4c9)">Running fusion models on your media.</p>
+        <div class="fh-scan-bars"></div>
+      </div>
+    </div>
+
+    <section class="fh-glass fh-input-card fh-input-card--premium">
+      {# Single-line model rail: toggles + weights (same IDs / names for JS & POST) #}
+      <div class="fh-source-rail" role="group" aria-label="Analyze source — models and weights">
+        <div class="fh-source-rail__lead">
+          <span class="fh-input-kicker">Operations</span>
+          <h2 class="fh-input-title fh-input-title--rail">Analyze New Source</h2>
+        </div>
+
+        <label class="fusion-model-card fh-glass fusion-model-card--fight fh-mchip">
+          <span class="fusion-model-card-icon" aria-hidden="true">⚔</span>
+          <span class="fusion-model-card-text">
+            <span class="fusion-model-card-title">Fight classifier</span>
+            <span class="fusion-model-card-file">{{ fight_model_name }}</span>
+            <span
+              class="fusion-model-card-hint fh-mchip-hint"
+              title="Alert threshold site ≥ {{ fight_alert_pct }} % — live estimate from camera when active"
+            >≥{{ fight_alert_pct }}% · <span id="fusionLiveFight">—</span></span>
+          </span>
+          <span class="fusion-model-toggle">{{ form.use_fight }}</span>
+        </label>
+
+        <label class="fusion-model-card fh-glass fusion-model-card--weapon fh-mchip">
+          <span class="fusion-model-card-icon" aria-hidden="true">⚠</span>
+          <span class="fusion-model-card-text">
+            <span class="fusion-model-card-title">Weapons</span>
+            <span class="fusion-model-card-file">{{ weapon_model_name }}</span>
+            <span
+              class="fusion-model-card-hint fh-mchip-hint"
+              title="Detection ≥ {{ weapon_alert_pct }} % — live estimate from camera when active"
+            >≥{{ weapon_alert_pct }}% det · <span id="fusionLiveWeapon">—</span></span>
+          </span>
+          <span class="fusion-model-toggle">{{ form.use_weapon }}</span>
+        </label>
+
+        <label class="fusion-model-card fh-glass fusion-model-card--chatapi fh-mchip">
+          <span class="fusion-model-card-icon" aria-hidden="true">AI</span>
+          <span class="fusion-model-card-text">
+            <span class="fusion-model-card-title">Chat API threat</span>
+            <span class="fusion-model-card-file">OpenAI Vision</span>
+            <span
+              class="fusion-model-card-hint fh-mchip-hint"
+              title="Active la détection menace via API (violence, gun, knife, etc.)"
+            >Violence / gun / knife</span>
+          </span>
+          <span class="fusion-model-toggle">{{ form.use_openai_threat }}</span>
+        </label>
+
+        <div class="fh-source-rail__selects">
+          <div class="fight-field fusion-dropdown-field fusion-dropdown-field--combat fh-toolbar-field">
+            <label for="id_fight_weights" class="fight-label sr-only">{{ form.fight_weights.label }}</label>
+            <span class="fh-toolbar-sel-label" aria-hidden="true">Combat</span>
+            {{ form.fight_weights }}
+            {% if form.fight_weights.errors %}
+              <ul class="fight-field-errors">{% for e in form.fight_weights.errors %}<li>{{ e }}</li>{% endfor %}</ul>
+            {% endif %}
+          </div>
+          <div class="fight-field fusion-dropdown-field fusion-dropdown-field--weapon fh-toolbar-field">
+            <label for="id_weapon_weights" class="fight-label sr-only">{{ form.weapon_weights.label }}</label>
+            <span class="fh-toolbar-sel-label" aria-hidden="true">Armes</span>
+            {{ form.weapon_weights }}
+            {% if form.weapon_weights.errors %}
+              <ul class="fight-field-errors">{% for e in form.weapon_weights.errors %}<li>{{ e }}</li>{% endfor %}</ul>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <div class="fh-input-grid">
+        <div class="fight-field fh-field">
+          <label for="id_youtube_url" class="fight-label">{{ form.youtube_url.label }}</label>
+          {{ form.youtube_url }}
+          {% if form.youtube_url.errors %}
+            <ul class="fight-field-errors">{% for e in form.youtube_url.errors %}<li>{{ e }}</li>{% endfor %}</ul>
+          {% endif %}
+        </div>
+        <div class="fight-field fh-field">
+          <label for="id_video_file" class="fight-label">{{ form.video_file.label }}</label>
+          {{ form.video_file }}
+          {% if form.video_file.errors %}
+            <ul class="fight-field-errors">{% for e in form.video_file.errors %}<li>{{ e }}</li>{% endfor %}</ul>
+          {% endif %}
+          <p class="muted small" style="color:var(--fh-muted,#8ba4c9);margin:0.2rem 0 0;font-size:.72rem">Video · MP4, WebM, MKV… max {{ fight_upload_max_mb }}&nbsp;MB</p>
+        </div>
+        <div class="fight-field fh-field">
+          <label for="id_fusion_image_file" class="fight-label">{{ form.fusion_image_file.label }}</label>
+          {{ form.fusion_image_file }}
+          {% if form.fusion_image_file.errors %}
+            <ul class="fight-field-errors">{% for e in form.fusion_image_file.errors %}<li>{{ e }}</li>{% endfor %}</ul>
+          {% endif %}
+          <p class="muted small" style="color:var(--fh-muted,#8ba4c9);margin:0.2rem 0 0;font-size:.72rem">Single-frame fusion (JPEG / PNG / WebP)</p>
+        </div>
+        <div style="display:flex;align-items:flex-end;flex-wrap:wrap;gap:0.5rem">
+          <button type="submit" class="fh-btn-primary" id="fhAnalyzeBtn">Analyze Source</button>
+          {% if fusion_progressive_mode %}
+          <button type="button" class="fh-btn-outline" id="fhBtnFullVideoAnalysis" title="Blocking full scan (legacy path)">Run full analysis</button>
+          {% endif %}
+        </div>
+      </div>
+
+      {% if form.non_field_errors %}
+        <ul class="fight-field-errors fusion-form-errors" style="margin:0.5rem 0 0">
+          {% for e in form.non_field_errors %}<li>{{ e }}</li>{% endfor %}
+        </ul>
+      {% endif %}
+    </section>
+
+    <div id="fh-pane-live" class="fh-pane is-active" style="gap:0.65rem">
+      {% if run_error %}
+        <div class="fight-alert fight-alert-error fusion-run-error fh-glass" role="alert" style="margin:0 0.85rem">
+          <strong>Error</strong>
+          <p>{{ run_error }}</p>
+        </div>
+      {% endif %}
+      {% if result and result.error %}
+        <div class="fight-alert fight-alert-error fh-glass" role="alert" style="margin:0 0.85rem">
+          <strong>Analysis failed</strong>
+          <p>{{ result.error }}</p>
+        </div>
+      {% endif %}
+
+      {{ fusion_threat_cards|json_script:"fusion-threat-cards" }}
+      {{ fusion_report_payload|json_script:"fusion-report-payload" }}
+
+      <div class="fh-main-grid">
+        <aside class="fh-col fh-glass fusion-side-panel">
+          <h3 class="fh-panel-title"><span class="fh-kicker">Threats</span>Detected threats</h3>
+          <div class="fh-threat-list" id="fhThreatScroll">
+            {% if fusion_threat_cards %}
+              {% for card in fusion_threat_cards %}
+                {% with cat=card.category|default:"suspicious" %}
+                <article
+                  class="fh-threat-card fh-threat-card--{{ cat }} fh-threat-new"
+                  tabindex="0"
+                  role="button"
+                  data-event-id="{{ card.id }}"
+                >
+                  {% if card.thumb_url %}
+                    <img src="{{ card.thumb_url }}" alt="{{ card.title }}" loading="lazy" />
+                  {% else %}
+                    <div class="fh-threat-thumb-ph" aria-hidden="true">{{ card.title }}</div>
+                  {% endif %}
+                  <div class="fh-threat-body">
+                    <div class="fh-threat-label">{{ card.title }}</div>
+                    <div class="fh-threat-meta">{{ card.time_label }} · confidence <strong>{{ card.confidence_display }}%</strong></div>
+                  </div>
+                </article>
+                {% endwith %}
+              {% endfor %}
+            {% else %}
+              <div class="fh-empty" id="fhThreatEmpty">
+                No threats flagged from the last run.<br />
+                Upload an image, video, or YouTube URL to populate this column.
+              </div>
+            {% endif %}
+          </div>
+          <button type="button" class="fh-btn-outline" style="margin:0 0.55rem 0.35rem" id="fhViewAllThreats">View all events</button>
+
+          <div class="fh-sys-card fh-glass">
+            <h4 class="fh-panel-title" style="padding-top:0"><span class="fh-kicker">Health</span>System health</h4>
+            <div class="fh-sys-row"><span>AI models</span><span class="fh-sys-ok">Active</span></div>
+            <div class="fh-sys-row"><span>Cameras</span><span class="fh-sys-ok">Local feed ready</span></div>
+            <div class="fh-sys-row"><span>Storage</span><span class="fh-sys-warn">Monitor MEDIA_ROOT</span></div>
+            <div class="fh-sys-row"><span>Network</span><span class="fh-sys-ok">Stable</span></div>
+          </div>
+
+          <h3 class="fh-panel-title">Live Source</h3>
+          <div class="fh-batch-panel fh-glass">
+            <div class="fusion-source-seg" role="tablist">
+              <span class="fusion-source-tab fusion-source-tab-active" data-panel="batch" role="tab">YouTube / file</span>
+              <span class="fusion-source-tab" data-panel="camera" role="tab">Camera</span>
+            </div>
+            <div id="fusionPanelBatch" class="fusion-panel fusion-panel-visible">
+              <p class="muted small" style="color:var(--fh-muted,#8ba4c9);font-size:.75rem">Use <strong>Analyze New Source</strong> above for batch. Camera streams server-side frames when started.</p>
+            </div>
+            <div id="fusionPanelCamera" class="fusion-panel" hidden>
+              {% if youtube_video_id or annotated_video_url or local_video_url or fusion_source_is_image %}
+                <p class="muted small fusion-cam-blockhint" style="color:var(--fh-muted,#8ba4c9)">The live camera opens <strong>on top of</strong> the center video while it runs. Stop to return to the file / YouTube view.</p>
+              {% endif %}
+              <p class="muted small fusion-cam-intro" style="color:var(--fh-muted,#8ba4c9)">Allow the browser to use the camera, then <strong>Start camera</strong> — the feed appears in the main live window. Same model toggles apply.</p>
+              <div class="fusion-cam-actions">
+                <button type="button" class="fh-btn-primary" id="fusionCamStart">Start camera</button>
+                <button type="button" class="fh-btn-outline" id="fusionCamStop" disabled>Stop</button>
+              </div>
+              <p class="muted small fusion-cam-status" id="fusionCamStatus" style="color:var(--fh-cyan,#5ec8ff)">Camera idle — feed shows in the center stage when started.</p>
+              <canvas id="fusionCamCapture" hidden></canvas>
+            </div>
+          </div>
+        </aside>
+
+        <section class="fh-col fh-col-center">
+          <div class="video-stage fh-glass fh-city-canvas" id="mainStage" style="position:relative">
+            <div class="video-corners" aria-hidden="true"></div>
+            <div class="fh-stage-dock" aria-hidden="true">
+              <span class="fh-dock-btn">+</span>
+              <span class="fh-dock-btn">−</span>
+              <span class="fh-dock-btn fh-dock-btn--wide">2D</span>
+              <span class="fh-dock-btn fh-dock-btn--wide">Layers</span>
+            </div>
+            <div class="fh-live-badge-row">
+              <span class="fh-chip-live"><span class="fh-chip-live-dot"></span> LIVE</span>
+              <div class="fh-status-pills fight-hud" id="fhTopStatusPills" role="status">
+                {% if fusion_progressive_mode %}
+                <span class="live-stat glass" id="fusionProgressTopPill" style="padding:6px 10px;font-size:11px">Analyzing frame…</span>
+                {% elif not result %}<span class="live-stat glass" id="fhFusionVerdictPill" style="padding:6px 10px;font-size:11px">Idle</span>
+                {% elif result.error %}<span class="live-stat glass fight-hud-alert" id="fhFusionVerdictPill" style="padding:6px 10px;font-size:11px">Processing failed</span>
+                {% elif result.verdict == "fight" %}<span class="live-stat glass fight-hud-alert" id="fhFusionVerdictPill" style="padding:6px 10px;font-size:11px">Fight detected</span>
+                {% elif result.weapon_frames_detected %}<span class="live-stat glass fight-hud-weapon-hot" id="fhFusionVerdictPill" style="padding:6px 10px;font-size:11px;color:#ffb27a;border-color:rgba(255,159,67,.5)">Weapon signals</span>
+                {% else %}<span class="live-stat glass" id="fhFusionVerdictPill" style="padding:6px 10px;font-size:11px">Safe</span>{% endif %}
+              </div>
+            </div>
+            <div class="video-stage-inner fight-video-inner" style="position:relative">
+              <div id="fusionStageMedia" class="fusion-stage-media">
+              {% if youtube_video_id %}
+                {% if timeline %}{{ timeline|json_script:"fight-timeline-data" }}{% endif %}
+                {% if timeline %}
+                  <div id="fight-live-hud" class="live-stats fh-glass fight-hud" role="status" hidden style="margin:10px;display:inline-flex">
+                    <span id="fight-hud-time" class="fight-hud-time muted small">0:00</span>
+                    <span id="fight-hud-verdict" class="live-stat fight-hud-main"><strong id="fight-hud-label">—</strong></span>
+                    <span class="live-stat">P(fight) <strong id="fight-hud-p">—</strong></span>
+                    <span id="fight-hud-weapon-row" class="live-stat fight-hud-weapon-row" hidden>Weapons <strong id="fight-hud-weapon">—</strong></span>
+                  </div>
+                {% endif %}
+                <div id="fightYoutubePlayer" class="fight-embed-wrap fight-yt-api" data-video-id="{{ youtube_video_id }}" style="min-height:42vh"></div>
+                {% if annotated_video_url %}
+                  <p class="fight-annot-download-row muted small" style="padding:8px;text-align:center">
+                    <a href="{{ annotated_video_url }}" download class="fight-annot-download">Download annotated video</a>
+                  </p>
+                {% endif %}
+
+              {% elif annotated_video_url %}
+                {% if timeline %}{{ timeline|json_script:"fight-timeline-data" }}{% endif %}
+                {% if timeline %}
+                  <div id="fight-live-hud" class="live-stats fh-glass fight-hud" role="status" hidden style="margin:10px;display:inline-flex">
+                    <span id="fight-hud-time" class="fight-hud-time muted small">0:00</span>
+                    <span id="fight-hud-verdict" class="live-stat fight-hud-main"><strong id="fight-hud-label">—</strong></span>
+                    <span class="live-stat">P(fight) <strong id="fight-hud-p">—</strong></span>
+                    <span id="fight-hud-weapon-row" class="live-stat fight-hud-weapon-row" hidden>Weapons <strong id="fight-hud-weapon">—</strong></span>
+                  </div>
+                {% endif %}
+                <div class="fight-embed-wrap">
+                  <video id="fightLocalVideo" class="fight-local-video" src="{{ annotated_video_url }}" controls playsinline preload="metadata"></video>
+                </div>
+
+              {% elif fusion_source_is_image %}
+                {% if timeline %}{{ timeline|json_script:"fight-timeline-data" }}{% endif %}
+                {% if timeline %}
+                  <div id="fight-live-hud" class="live-stats fh-glass fight-hud" role="status" hidden style="margin:10px;display:inline-flex">
+                    <span id="fight-hud-time" class="fight-hud-time muted small">0:00</span>
+                    <span id="fight-hud-verdict" class="live-stat fight-hud-main"><strong id="fight-hud-label">—</strong></span>
+                    <span class="live-stat">P(fight) <strong id="fight-hud-p">—</strong></span>
+                    <span id="fight-hud-weapon-row" class="live-stat fight-hud-weapon-row" hidden>Weapons <strong id="fight-hud-weapon">—</strong></span>
+                  </div>
+                {% endif %}
+                <div class="fight-embed-wrap">
+                  <img id="fightStaticImage" class="fh-main-image" src="{% if annotated_image_url %}{{ annotated_image_url }}{% else %}{{ local_video_url }}{% endif %}" alt="Fusion still frame" />
+                </div>
+                {% if annotated_image_url %}
+                  <p class="muted small" style="text-align:center;padding:8px"><a href="{{ annotated_image_url }}" download>Download annotated image</a></p>
+                {% endif %}
+
+              {% elif fusion_progressive_mode and local_video_url %}
+                {{ timeline|json_script:"fight-timeline-data" }}
+                <div id="fight-live-hud" class="live-stats fh-glass fight-hud" role="status" style="margin:10px;display:inline-flex;flex-wrap:wrap;gap:6px">
+                  <span id="fight-hud-time" class="fight-hud-time muted small">0:00</span>
+                  <span id="fight-hud-verdict" class="live-stat fight-hud-main"><strong id="fight-hud-label">—</strong></span>
+                  <span class="live-stat">P(fight) <strong id="fight-hud-p">—</strong></span>
+                  <span id="fight-hud-weapon-row" class="live-stat fight-hud-weapon-row" hidden>Weapons <strong id="fight-hud-weapon">—</strong></span>
+                </div>
+                <div class="fight-embed-wrap fusion-progressive-stage" style="position:relative;max-width:100%">
+                  <video id="fightLocalVideo" class="fight-local-video" src="{{ local_video_url }}" controls playsinline preload="auto" autoplay muted></video>
+                  <div class="fusion-progress-annot-wrap" id="fusionProgressAnnotWrap" style="position:absolute;right:8px;bottom:48px;width:min(38%,220px);border-radius:10px;overflow:hidden;box-shadow:0 6px 24px rgba(0,0,0,.45);border:1px solid rgba(120,190,255,.35);background:rgba(8,14,28,.75);pointer-events:none">
+                    <img id="fusionProgressAnnotated" src="" alt="Latest annotated frame" style="display:block;width:100%;height:auto;opacity:0;transition:opacity .25s" width="220" height="124" />
+                  </div>
+                  <p id="fusionProgressFrameStatus" class="muted small" style="position:absolute;left:10px;bottom:10px;margin:0;padding:4px 10px;border-radius:8px;background:rgba(8,14,28,.72);color:var(--fh-cyan,#5ec8ff);font-size:11px;pointer-events:none">Analyzing frame…</p>
+                </div>
+
+              {% elif local_video_url %}
+                {% if timeline %}{{ timeline|json_script:"fight-timeline-data" }}{% endif %}
+                {% if timeline %}
+                  <div id="fight-live-hud" class="live-stats fh-glass fight-hud" role="status" hidden style="margin:10px;display:inline-flex">
+                    <span id="fight-hud-time" class="fight-hud-time muted small">0:00</span>
+                    <span id="fight-hud-verdict" class="live-stat fight-hud-main"><strong id="fight-hud-label">—</strong></span>
+                    <span class="live-stat">P(fight) <strong id="fight-hud-p">—</strong></span>
+                    <span id="fight-hud-weapon-row" class="live-stat fight-hud-weapon-row" hidden>Weapons <strong id="fight-hud-weapon">—</strong></span>
+                  </div>
+                  <div class="fight-embed-wrap">
+                    <video id="fightLocalVideo" class="fight-local-video" src="{{ local_video_url }}" controls playsinline preload="metadata"></video>
+                  </div>
+                {% else %}
+                  <div class="fight-embed-wrap">
+                    <video class="fight-local-video" src="{{ local_video_url }}" controls playsinline preload="metadata"></video>
+                  </div>
+                {% endif %}
+
+              {% else %}
+                <div class="fight-embed-wrap fusion-stage-empty-wrap">
+                  <div class="stage-empty fh-empty fusion-stage-empty" id="fusionStageEmpty">
+                    <p class="stage-empty-kicker">No media loaded</p>
+                    <p class="muted small">Upload an image, video, or YouTube URL — or open the <strong>Camera</strong> tab and press <strong>Start camera</strong> to show the live feed here.</p>
+                  </div>
+                </div>
+              {% endif %}
+              </div>
+
+              {# Live webcam layer: always in DOM so Start camera works over file/YouTube results #}
+              <div id="fusionLiveCamLayer" class="fusion-live-cam-layer" hidden>
+                <div class="fusion-cam-preview-wrap" id="fusionCamPreviewWrap">
+                  <video id="fusionCamVideo" class="fusion-cam-video" playsinline muted autoplay></video>
+                  <img id="fusionLiveAnnotatedOverlay" class="fusion-live-annot-overlay" alt="" width="1280" height="720" hidden decoding="async" />
+                  <div id="fusionDualLiveDock" class="fusion-dual-live-dock fh-glass" hidden aria-live="polite">
+                    <div class="fusion-dual-live-head">
+                      <span class="fusion-dual-live-title">Fight + weapon correlation</span>
+                      <span class="muted small fusion-dual-live-sub">Person crops (live)</span>
+                    </div>
+                    <div class="fusion-dual-live-crops" id="fusionDualLiveCrops"></div>
+                  </div>
+                  <div class="stage-empty fusion-cam-placeholder fh-empty" id="fusionCamPlaceholder">
+                    <p class="stage-empty-kicker">Camera preview</p>
+                    <p class="muted small">Press <strong>Start camera</strong> in the sidebar — the stream appears in this window.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="stage-toolbar fh-mini-toolbar">
+              <button type="button" class="stage-icon-btn" id="btnFullscreen" title="Fullscreen">⛶</button>
+              <button type="button" class="stage-icon-btn" id="fhBtnZoom" title="Zoom">🔍</button>
+              {% if annotated_video_url %}
+                <a class="stage-icon-btn" href="{{ annotated_video_url }}" download title="Export">⬇</a>
+              {% elif annotated_image_url %}
+                <a class="stage-icon-btn" href="{{ annotated_image_url }}" download title="Export">⬇</a>
+              {% else %}
+                <button type="button" class="stage-icon-btn" disabled title="No export yet">⬇</button>
+              {% endif %}
+              <button type="button" class="stage-icon-btn" id="fhBtnInspect" title="Inspect">◎</button>
+              <span class="stage-hint-toolbar" style="color:var(--fh-muted,#8ba4c9);font-size:11px">
+                {% if fusion_progressive_mode %}Progressive video · ~{{ fusion_analysis_interval_seconds }}s sampling{% elif timeline %}Timeline sync · fight + weapons{% elif youtube_video_id %}YouTube{% elif fusion_source_is_image %}Static image{% elif local_video_url %}Local file{% else %}Upload / camera{% endif %}
+              </span>
+            </div>
+          </div>
+
+          {% if timeline or fusion_progressive_mode %}
+            <div class="fh-glass" style="margin-top:0.35rem">
+              <h4 class="fh-panel-title">Event timeline</h4>
+              <div class="fh-timeline-strip" id="fhTimelineStrip"><div id="fhTimelineInner" style="display:flex;gap:6px;flex-wrap:wrap"></div></div>
+            </div>
+          {% endif %}
+
+          {% if result and not result.error and not fusion_progressive_mode %}
+            <footer class="stat-strip fh-glass live-rt-strip fight-rt-strip fusion-foot-strip">
+              <div class="stat-card"><span class="stat-label">Fight</span><strong class="stat-value small neon-text">{{ fight_model_name }}</strong></div>
+              <div class="stat-card"><span class="stat-label">Weapons</span><strong class="stat-value small fight-weapon-foot">{{ weapon_model_name }}</strong></div>
+              <div class="stat-card"><span class="stat-label">Verdict</span><strong class="stat-value small">{{ result.verdict_label }}</strong></div>
+              <div class="stat-card"><span class="stat-label">Mean P(fight)</span><strong class="stat-value small">{% if result.avg_p_fight is not None %}{{ result.avg_p_fight|floatformat:3 }}{% else %}—{% endif %}</strong></div>
+            </footer>
+          {% endif %}
+        </section>
+
+        <aside class="fh-col fh-glass fusion-intel-panel">
+          <h3 class="fh-panel-title fh-intel-heading"><span class="fh-kicker">Biometric</span>Face recognition</h3>
+          <div class="fh-face-panel-sub muted small" style="padding:0 0.55rem;font-size:11px;color:#8ba4c9;line-height:1.4">
+            Multi-face detector (DeepFace + Haar fallback) · face crops · Cosine match vs Django gallery (max distance 0.4).
+          </div>
+          <div class="fh-faces-slot" style="overflow-y:auto;max-height:min(54vh,520px);padding:0.35rem 0.55rem">
+            {% if not face_recognition_enabled %}
+              <div class="fh-bio-fallback fh-bio-warn">Face matching unavailable</div>
+            {% endif %}
+            {% if fusion_progressive_mode %}
+              {% if face_recognition_enabled %}
+              <p class="fh-bio-title">Biometric facial scan · playback</p>
+              <p id="fhProgressiveFaceLine" class="muted small" style="font-size:11px;color:#5ec8ff;margin:0.2rem 0 0.5rem">&nbsp;</p>
+              <div class="fh-bio-grid" id="fhProgressiveBioGrid"></div>
+              {% endif %}
+            {% elif result and result.error %}
+              <div class="fh-bio-fallback">Resolve the analysis error — face pipeline did not run.</div>
+            {% elif fusion_match_disabled %}
+              <div class="fh-bio-fallback fh-bio-warn">Face matching unavailable (embeddings / DeepFace disabled).</div>
+            {% elif result and not result.error and fusion_face_cards %}
+              <p class="fh-bio-title">Biometric facial scan</p>
+              <div class="fh-bio-grid" id="fhBiometricGrid">
+                {% for face in fusion_face_cards %}
+                  <article
+                    class="fh-face-scan-card fh-bio-card fh-bio-scanner-card fh-bio-face-article {% if face.matched or face.match %}fh-face-has-match{% else %}fh-face-unknown-card{% endif %} fh-bio-phase"
+                    data-bio-ix="{{ forloop.counter0 }}"
+                  >
+                    <header class="fh-bio-card-head">
+                      <span class="fh-bio-card-slot">Face {{ forloop.counter }}</span>
+                      <span class="fh-bio-badge fh-bio-badge--scan fh-bio-badge--scanning">SCANNING</span>
+                      {% if face.matched or face.match %}
+                        <span class="fh-bio-badge fh-bio-badge--ok fh-bio-badge--final">MATCH FOUND</span>
+                      {% else %}
+                        <span class="fh-bio-badge fh-bio-badge--warn fh-bio-badge--final">UNKNOWN</span>
+                      {% endif %}
+                    </header>
+                    <div class="fh-bio-visual">
+                      <div class="bio-scanner-stack">
+                        <div class="bio-face-frame">
+                          {% if face.crop_url %}
+                            <img class="bio-face-img fh-face-crop" src="{{ face.crop_url }}" alt="Face crop {{ forloop.counter }}" width="140" height="140" loading="lazy" />
+                          {% endif %}
+                          {% include "monitoring/partials/fusion_bio_face_scanner_overlay.html" %}
+                        </div>
+                        {% include "monitoring/partials/fusion_bio_scanner_dock.html" %}
+                      </div>
+                    </div>
+                    <div class="fh-bio-stage fh-bio-reveal-hidden">
+                      <p class="fh-bio-stage-line">Embedding generated…</p>
+                      <p class="fh-bio-stage-line">Searching registry…</p>
+                    </div>
+                    <div class="fh-bio-cap fh-bio-reveal-hidden">
+                      {% if face.matched or face.match %}
+                        <p class="fh-bio-scan-done-line">Biometric match verified — digital credential issued below.</p>
+                      {% else %}
+                        <div class="fh-bio-name fh-bio-unknown-title">Unknown Individual</div>
+                        <p class="fh-bio-soft">No gallery match under threshold</p>
+                        {% if face.match_hint %}
+                          <p class="fh-bio-soft">{{ face.match_hint }}</p>
+                        {% elif face.nearest_distance is not None %}
+                          <p class="fh-bio-soft">Nearest · {{ face.nearest_display_name }} · distance {{ face.nearest_distance }} (threshold {{ face.match_threshold }})</p>
+                        {% endif %}
+                        <p class="fh-bio-soft">Action · Enroll reference images in Django admin or run <code>seed_face_registry_from_folders</code></p>
+                      {% endif %}
+                    </div>
+                    {% if face.matched or face.match %}
+                      {% if face.match %}
+                        {% include "monitoring/partials/fusion_digital_identity_card.html" %}
+                      {% endif %}
+                    {% endif %}
+                  </article>
+                {% endfor %}
+              </div>
+              {% if fusion_gallery_empty %}
+                <p class="fh-bio-footnote">Gallery empty — enroll references in Django admin for matches.</p>
+              {% endif %}
+            {% elif result and not result.error and result.dual_evidence_gallery %}
+              <p class="fh-face-section-label">Fight + weapon correlation</p>
+              {% for ev in result.dual_evidence_gallery %}
+                {% for u in ev.crop_urls %}
+                  <div class="fh-face-scan-card">
+                    <div class="fh-face-img fh-face-img--fx">
+                      <span class="fh-face-scan-overlay" aria-hidden="true"></span>
+                      <img src="{{ u }}" alt="Person crop" loading="lazy" />
+                    </div>
+                    <div class="fh-face-cap">
+                      <div style="font-size:11px;color:#8ba4c9">t≈{{ ev.t }}s · fight P={{ ev.p_fight }} · weapon max={{ ev.weapon_max }}</div>
+                      {% if ev.face_matches %}
+                        {% for fm in ev.face_matches %}
+                          <div><strong>{{ fm.display_name }}</strong>{% if fm.person_code %} · {{ fm.person_code }}{% endif %}</div>
+                          <div class="fh-match-pill">MATCH FOUND · cos dist {{ fm.distance }}</div>
+                        {% endfor %}
+                      {% else %}
+                        <div style="color:#ffd24d">Unknown individual</div>
+                      {% endif %}
+                    </div>
+                  </div>
+                {% endfor %}
+              {% endfor %}
+            {% elif result and not result.error and not fusion_face_cards %}
+              {% if fusion_gallery_empty %}
+                <div class="fh-bio-fallback">Gallery empty — enroll references in Django admin</div>
+              {% else %}
+                <div class="fh-bio-fallback">No face detected in this frame.</div>
+              {% endif %}
+            {% else %}
+              <div class="fh-empty" id="fhServerFaceEmpty">
+                Pas encore de visages traités.<br />
+                Lancez une analyse image/vidéo : les recadrages apparaîtront ici. En <strong>caméra</strong>, le flux temps réel remplit la zone verte ci‑dessous.
+              </div>
+            {% endif %}
+            <p class="fh-live-face-hint" id="fhLiveFaceHint" hidden style="font-size:11px;color:#5ec8ff;letter-spacing:0.06em;margin:0.5rem 0 0">LIVE BIOMETRIC · registry lookup · newest at bottom</p>
+            <div class="fh-live-face-grid fh-live-face-grid--history" id="fhLiveFaceGrid" aria-live="polite"></div>
+          </div>
+
+          <h3 class="fh-panel-title"><span class="fh-kicker">Actions</span>Quick actions</h3>
+          <div class="fh-quick-actions" style="padding:0 0.55rem 0.55rem">
+            <button type="button" class="fh-btn-primary" id="fhQuickReport">Generate report</button>
+            {% if annotated_video_url %}
+              <a class="fh-btn-outline" href="{{ annotated_video_url }}" download style="text-decoration:none">Export evidence</a>
+            {% elif annotated_image_url %}
+              <a class="fh-btn-outline" href="{{ annotated_image_url }}" download style="text-decoration:none">Export evidence</a>
+            {% else %}
+              <button type="button" class="fh-btn-outline" disabled>Export evidence</button>
+            {% endif %}
+            <a class="fh-btn-outline fh-btn-danger" href="{% url 'monitoring:road_damage_test' %}" style="text-decoration:none">Alert security · road intel</a>
+          </div>
+        </aside>
+      </div>
+    </div>
+
+    <div id="fh-pane-analytics" class="fh-pane" style="padding:0 0.85rem">
+      <div class="fh-glass fh-empty" style="padding:2rem">
+        <strong>Analytics module</strong><br />
+        Connect your warehouse / BI layer here. Live fusion metrics stay on the primary feed.
+      </div>
+    </div>
+    <div id="fh-pane-faces-tab" class="fh-pane" style="padding:0 0.85rem">
+      <p class="fh-empty">Face recognition detail is shown in the right column on the Live Feed tab.</p>
+    </div>
+    <div id="fh-pane-alerts" class="fh-pane" style="padding:0 0.85rem">
+      <p class="fh-empty">Site alerts are created per your Django thresholds. <a href="{% url 'monitoring:road_damage_test' %}" style="color:var(--fh-cyan,#5ec8ff)">Open road damage intel</a></p>
+    </div>
+  </div>
+</form>
+
+<div id="fusionLiveMeta" data-frame-url="{{ fusion_live_frame_url }}" data-live-fight-min-p="{{ fusion_live_fight_display_min_p }}" hidden></div>
+{% if fusion_progressive_mode %}
+<div
+  id="fusionProgressiveBoot"
+  hidden
+  data-pv="{{ fusion_progressive_pv }}"
+  data-url="{{ fusion_analyze_frame_url }}"
+  data-interval="{{ fusion_analysis_interval_seconds }}"
+></div>
+{% endif %}
+
+<template id="tplFusionBioScanner">
+  <div class="bio-scanner-stack">
+    <div class="bio-face-frame">
+      <img class="bio-face-img fh-face-crop" src="" alt="" width="140" height="140" loading="lazy" />
+      {% include "monitoring/partials/fusion_bio_face_scanner_overlay.html" %}
+    </div>
+    {% include "monitoring/partials/fusion_bio_scanner_dock.html" %}
+  </div>
+</template>
+
+<div id="fhEventBackdrop" class="fh-modal-backdrop" style="display:none" role="dialog" aria-modal="true" aria-labelledby="fhEventTitle">
+  <div class="fh-modal fh-glass">
+    <div class="fh-modal-head">
+      <h3 id="fhEventTitle">Event details</h3>
+      <button type="button" class="fh-close" id="fhEventClose" aria-label="Close">&times;</button>
+    </div>
+    <div class="fh-modal-body" id="fhEventModalBody"></div>
+    <div style="padding:0 1rem 1rem;display:flex;gap:8px;flex-wrap:wrap">
+      <button type="button" class="fh-btn-primary" id="fhQuickReportFromModal">Generate report</button>
+      <button type="button" class="fh-btn-outline" id="fhEventClose2">Close</button>
+    </div>
+  </div>
+</div>
+
+<div id="fhReportBackdrop" class="fh-modal-backdrop fh-report-backdrop" style="display:none" role="dialog" aria-modal="true" aria-labelledby="fhReportModalTitle">
+  <div class="fh-modal fh-glass fh-report-modal">
+    <div class="fh-modal-head fh-report-modal__head">
+      <div class="fh-report-modal__head-text">
+        <span class="fh-report-modal__kicker">Export</span>
+        <h3 id="fhReportModalTitle" class="fh-report-modal__h">Report preview</h3>
+      </div>
+      <button type="button" class="fh-close fh-report-modal__close" id="fhReportClose" aria-label="Close">&times;</button>
+    </div>
+    <div class="fh-modal-body fh-report-modal__body" id="fhReportModalBody"></div>
+    <div class="fh-report-modal__footer">
+      <button type="button" class="fh-btn-primary fh-report-print-btn" id="fhReportPrint">Print / Save PDF</button>
+    </div>
+  </div>
+</div>
+
+<div class="sr-only" aria-hidden="true">
+  {% if result and not result.error and result.dual_evidence_gallery %}
+    <h3>Legacy dual evidence (hidden)</h3>
+    {% for ev in result.dual_evidence_gallery %}
+      <p>t={{ ev.t }} p_fight={{ ev.p_fight }} weapon_max={{ ev.weapon_max }}</p>
+      {% for u in ev.crop_urls %}<img src="{{ u }}" alt="" width="1" height="1" />{% endfor %}
+    {% endfor %}
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'monitoring/fusion_hub_dashboard.js' %}"></script>
+<script>
+(function () {
+  var zoomed = false;
+  var zbtn = document.getElementById("fhBtnZoom");
+  if (zbtn) {
+    zbtn.addEventListener("click", function () {
+      zoomed = !zoomed;
+      var inner = document.querySelector(".fight-video-inner");
+      if (inner) inner.style.transform = zoomed ? "scale(1.04)" : "none";
+    });
+  }
+  var insp = document.getElementById("fhBtnInspect");
+  if (insp) {
+    insp.addEventListener("click", function () {
+      var st = document.getElementById("mainStage");
+      if (st) st.scrollIntoView({ behavior: "smooth", block: "center" });
+    });
+  }
+  var vall = document.getElementById("fhViewAllThreats");
+  if (vall) {
+    vall.addEventListener("click", function () {
+      var el = document.getElementById("fhThreatScroll");
+      if (el) el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+    });
+  }
+  var qrm = document.getElementById("fhQuickReportFromModal");
+  if (qrm) {
+    qrm.addEventListener("click", function () {
+      var b = document.getElementById("fhQuickReport");
+      if (b) b.click();
+    });
+  }
+  var ec2 = document.getElementById("fhEventClose2");
+  if (ec2) {
+    ec2.addEventListener("click", function () {
+      var c = document.getElementById("fhEventClose");
+      if (c) c.click();
+    });
+  }
+})();
+(function () {
+  if (window.FusionHubBioScanner && window.FusionHubBioScanner.initCards) {
+    window.FusionHubBioScanner.initCards(document);
+  }
+})();
+(function () {
+  function syncFusionCardStyles() {
+    var f = document.getElementById("id_use_fight");
+    var w = document.getElementById("id_use_weapon");
+    var o = document.getElementById("id_use_openai_threat");
+    var fc = document.querySelector(".fusion-model-card--fight");
+    var wc = document.querySelector(".fusion-model-card--weapon");
+    var oc = document.querySelector(".fusion-model-card--chatapi");
+    if (fc && f) fc.classList.toggle("is-on", f.checked);
+    if (wc && w) wc.classList.toggle("is-on", w.checked);
+    if (oc && o) oc.classList.toggle("is-on", o.checked);
+  }
+  ["id_use_fight", "id_use_weapon", "id_use_openai_threat"].forEach(function (id) {
+    var el = document.getElementById(id);
+    if (el) el.addEventListener("change", syncFusionCardStyles);
+  });
+  syncFusionCardStyles();
+
+  var panelBatch = document.getElementById("fusionPanelBatch");
+  var panelCam = document.getElementById("fusionPanelCamera");
+  var tabs = document.querySelectorAll(".fusion-source-tab");
+  tabs.forEach(function (tab) {
+    tab.addEventListener("click", function () {
+      var p = tab.getAttribute("data-panel");
+      tabs.forEach(function (t) {
+        t.classList.toggle("fusion-source-tab-active", t === tab);
+      });
+      var showCam = p === "camera";
+      if (panelBatch) {
+        panelBatch.hidden = showCam;
+        panelBatch.classList.toggle("fusion-panel-visible", !showCam);
+      }
+      if (panelCam) {
+        panelCam.hidden = !showCam;
+        panelCam.classList.toggle("fusion-panel-visible", showCam);
+      }
+      /* Center-stage camera lives in #fusionLiveCamLayer; tab switch does not hide the preview text. */
+    });
+  });
+
+  var stage = document.getElementById("mainStage");
+  var btn = document.getElementById("btnFullscreen");
+  if (stage && btn) {
+    btn.addEventListener("click", function () {
+      if (!document.fullscreenElement) stage.requestFullscreen().catch(function () {});
+      else document.exitFullscreen();
+    });
+  }
+
+  var hud = document.getElementById("fight-live-hud");
+  var timelineEl = document.getElementById("fight-timeline-data");
+  var localVideo = document.getElementById("fightLocalVideo");
+  var ytRoot = document.getElementById("fightYoutubePlayer");
+  if (hud && timelineEl) {
+    var fightTimeline = [];
+    try {
+      fightTimeline = JSON.parse(timelineEl.textContent);
+    } catch (e) {}
+
+    function pickSampleAt(t) {
+      if (!fightTimeline.length) return null;
+      var best = fightTimeline[0];
+      for (var i = 0; i < fightTimeline.length; i++) {
+        if (fightTimeline[i].t <= t) best = fightTimeline[i];
+        else break;
+      }
+      return best;
+    }
+
+    function formatTime(t) {
+      var m = Math.floor(t / 60);
+      var s = Math.floor(t % 60);
+      return m + ":" + (s < 10 ? "0" : "") + s;
+    }
+
+    function getMediaTime(media) {
+      if (!media) return 0;
+      if (typeof media.getCurrentTime === "function") return media.getCurrentTime();
+      if (typeof media.currentTime === "number") return media.currentTime;
+      return 0;
+    }
+
+    function updateHudFromMedia(media) {
+      var t = getMediaTime(media);
+      var pt = pickSampleAt(t);
+      var labelEl = document.getElementById("fight-hud-label");
+      var pEl = document.getElementById("fight-hud-p");
+      var timeEl = document.getElementById("fight-hud-time");
+      var wEl = document.getElementById("fight-hud-weapon");
+      var wRow = document.getElementById("fight-hud-weapon-row");
+      if (!labelEl || !pEl) return;
+      if (timeEl) timeEl.textContent = formatTime(t);
+      if (!pt) {
+        labelEl.textContent = "—";
+        pEl.textContent = "—";
+        if (wEl) wEl.textContent = "—";
+        if (wRow) wRow.hidden = true;
+        hud.classList.remove("fight-hud-alert", "fight-hud-weapon-hot", "fight-hud-dual");
+        return;
+      }
+      var isFight = pt.label === "fight" || pt.p_fight >= 0.5;
+      labelEl.textContent = isFight ? "Fight likely" : "No fight";
+      pEl.textContent = (pt.p_fight * 100).toFixed(1) + "%";
+      hud.classList.toggle("fight-hud-alert", isFight);
+      hud.classList.toggle("fight-hud-dual", !!pt.dual_highlight);
+      if (wEl && wRow) {
+        var wc = pt.weapon_compact || "";
+        var wm = typeof pt.weapon_max === "number" ? pt.weapon_max : 0;
+        if (wc) {
+          wEl.textContent = wc;
+          wRow.hidden = false;
+          hud.classList.toggle("fight-hud-weapon-hot", wm >= 0.82);
+        } else {
+          wEl.textContent = "none";
+          wRow.hidden = false;
+          hud.classList.remove("fight-hud-weapon-hot");
+        }
+      }
+      hud.hidden = false;
+    }
+
+    var hudTimer = null;
+
+    function startHudTimer(media) {
+      if (hudTimer) clearInterval(hudTimer);
+      hudTimer = setInterval(function () {
+        updateHudFromMedia(media);
+      }, 350);
+      updateHudFromMedia(media);
+    }
+
+    window.__fusionHubTimelineAppend = function (row) {
+      try {
+        if (row && typeof row === "object") fightTimeline.push(row);
+      } catch (e1) {}
+      try {
+        var tel = document.getElementById("fight-timeline-data");
+        if (tel) tel.textContent = JSON.stringify(fightTimeline);
+      } catch (e2) {}
+    };
+
+    if (localVideo) {
+      function onReady() {
+        startHudTimer(localVideo);
+      }
+      if (localVideo.readyState >= 1) onReady();
+      else localVideo.addEventListener("loadedmetadata", onReady);
+    } else if (ytRoot) {
+      function mountPlayer() {
+        var vid = ytRoot.getAttribute("data-video-id");
+        if (!vid || !window.YT || !YT.Player) return;
+        new YT.Player("fightYoutubePlayer", {
+          width: "100%",
+          height: "100%",
+          videoId: vid,
+          playerVars: { rel: 0 },
+          events: {
+            onReady: function (ev) {
+              startHudTimer(ev.target);
+            },
+          },
+        });
+      }
+      if (window.YT && window.YT.Player) {
+        mountPlayer();
+      } else {
+        window.onYouTubeIframeAPIReady = function () {
+          mountPlayer();
+        };
+        var tag = document.createElement("script");
+        tag.src = "https://www.youtube.com/iframe_api";
+        var first = document.getElementsByTagName("script")[0];
+        first.parentNode.insertBefore(tag, first);
+      }
+    } else {
+      startHudTimer({ getCurrentTime: function () { return 0; } });
+    }
+  }
+
+  var progBoot = document.getElementById("fusionProgressiveBoot");
+  if (progBoot && progBoot.getAttribute("data-pv")) {
+    (function () {
+      var pv = progBoot.getAttribute("data-pv") || "";
+      var analyzeUrl = progBoot.getAttribute("data-url") || "";
+      var intervalSec =
+        parseFloat(String(progBoot.getAttribute("data-interval") || "1")) || 1;
+      var video = document.getElementById("fightLocalVideo");
+      var annotatedImg = document.getElementById("fusionProgressAnnotated");
+      var frameStatus = document.getElementById("fusionProgressFrameStatus");
+      var threatScroll = document.getElementById("fhThreatScroll");
+      var threatEmpty = document.getElementById("fhThreatEmpty");
+      var cardsJsonEl = document.getElementById("fusion-threat-cards");
+      var faceLine = document.getElementById("fhProgressiveFaceLine");
+      var faceGrid = document.getElementById("fhProgressiveBioGrid");
+      var topPill = document.getElementById("fusionProgressTopPill");
+
+      function escH(s) {
+        var d = document.createElement("div");
+        d.textContent = s == null ? "" : String(s);
+        return d.innerHTML;
+      }
+
+      function fusionBuildDigitalIdCardEl(face) {
+        var m = face && face.match;
+        if (!m || typeof m !== "object") return null;
+        var refUrl = String(face.reference_image_url || m.reference_image_url || "");
+        var cardName = String(
+          face.card_display_name ||
+            m.card_display_name ||
+            face.full_name ||
+            m.display_name ||
+            "—"
+        );
+        var pcode = String(m.person_code || face.identity_code || "—");
+        var cat = String(m.category || face.category || "").trim();
+        var conf =
+          face.match_confidence != null && face.match_confidence !== ""
+            ? face.match_confidence
+            : m.confidence_pct;
+        var dist =
+          face.distance != null && face.distance !== ""
+            ? face.distance
+            : m.distance;
+        var prof = face.profile;
+        var hasExt = !!face.profile_extended;
+        var noProf = String(
+          face.no_extended_profile_message || "No extended profile found"
+        );
+        var adminUrl = String(
+          face.admin_add_facepersonprofile_url ||
+            m.admin_add_facepersonprofile_url ||
+            "/admin/monitoring/facepersonprofile/add/"
+        );
+        var bars = "";
+        for (var bi = 0; bi < 20; bi++) bars += "<span></span>";
+
+        var photoInner = refUrl
+          ? '<img class="fh-did-photo" src="' +
+            escH(refUrl) +
+            '" alt="" width="96" height="96" loading="lazy" />'
+          : '<div class="fh-did-photo fh-did-photo--placeholder" role="img" aria-hidden="true">—</div>';
+
+        var catRow = cat
+          ? '<div class="fh-did-row"><dt>Category</dt><dd>' +
+            escH(cat) +
+            "</dd></div>"
+          : "";
+
+        var profileBlock = "";
+          if (prof && hasExt) {
+          var grid = "";
+          if (
+            typeof prof.age === "number" ||
+            (prof.age != null && prof.age !== "")
+          )
+            grid +=
+              '<li><span class="fh-did-lbl">Age</span><span class="fh-did-val">' +
+              escH(String(prof.age)) +
+              "</span></li>";
+          if (prof.role)
+            grid +=
+              '<li><span class="fh-did-lbl">Role</span><span class="fh-did-val">' +
+              escH(String(prof.role)) +
+              "</span></li>";
+          if (prof.risk_level)
+            grid +=
+              '<li><span class="fh-did-lbl">Risk</span><span class="fh-did-val">' +
+              escH(String(prof.risk_level)) +
+              "</span></li>";
+          if (prof.last_seen)
+            grid +=
+              '<li><span class="fh-did-lbl">Last seen</span><span class="fh-did-val fh-did-val--sm">' +
+              escH(String(prof.last_seen)) +
+              "</span></li>";
+          var notesHtml = prof.notes
+            ? '<p class="fh-did-notes"><span class="fh-did-lbl">Notes</span>' +
+              escH(String(prof.notes)) +
+              "</p>"
+            : "";
+          var extraHtml = prof.extra_info_display
+            ? '<pre class="fh-did-extra">' +
+              escH(String(prof.extra_info_display)) +
+              "</pre>"
+            : "";
+          profileBlock =
+            '<div class="fh-did-profile">' +
+            '<span class="fh-did-profile-label">Extended registry profile</span>' +
+            '<span class="fh-did-profile-hint">Linked by <code>identity_code</code> = <code>' +
+            escH(pcode) +
+            "</code></span>" +
+            (grid
+              ? '<ul class="fh-did-profile-grid">' + grid + "</ul>"
+              : "") +
+            notesHtml +
+            extraHtml +
+            "</div>";
+        } else {
+          profileBlock =
+            '<p class="fh-did-no-profile">' +
+            escH(noProf) +
+            '</p><a class="fh-did-admin-link" href="' +
+            escH(adminUrl) +
+            '" target="_blank" rel="noopener noreferrer">Add extended profile in Django admin</a>';
+        }
+
+        var html =
+          '<section class="fh-digital-id-card" aria-label="Digital identity card">' +
+          '<div class="fh-did-pattern" aria-hidden="true"></div>' +
+          '<header class="fh-did-header"><div class="fh-did-titles">' +
+          '<span class="fh-did-kicker">DIGITAL IDENTITY CARD</span>' +
+          '<span class="fh-did-subkicker">AI VERIFIED PROFILE</span></div>' +
+          '<div class="fh-did-badges"><span class="fh-did-verified">' +
+          '<span class="fh-did-verified-dot" aria-hidden="true"></span>VERIFIED</span></div></header>' +
+          '<div class="fh-did-body">' +
+          '<div class="fh-did-photo-col"><div class="fh-did-photo-frame">' +
+          photoInner +
+          '</div><div class="fh-did-chip" aria-hidden="true" title="Secure element">' +
+          '<span class="fh-did-chip-gold"></span><span class="fh-did-chip-lines"></span></div></div>' +
+          '<div class="fh-did-main"><h3 class="fh-did-name">' +
+          escH(cardName) +
+          "</h3><dl class=\"fh-did-dl\">" +
+          '<div class="fh-did-row"><dt>Unique ID</dt><dd><code class="fh-did-code">' +
+          escH(pcode) +
+          "</code></dd></div>" +
+          catRow +
+          '<div class="fh-did-row fh-did-row--metrics"><div><dt>Match confidence</dt><dd>' +
+          escH(conf != null ? String(conf) : "—") +
+          '%</dd></div><div><dt>Cosine distance</dt><dd>' +
+          escH(dist != null ? String(dist) : "—") +
+          "</dd></div></div></dl>" +
+          profileBlock +
+          '</div><div class="fh-did-side"><div class="fh-did-qr" aria-hidden="true"></div>' +
+          '<div class="fh-did-barcode" aria-hidden="true">' +
+          bars +
+          "</div></div></div>" +
+          '<footer class="fh-did-footer"><span class="fh-did-footer-id">REF #' +
+          escH(String(m.reference_id != null ? m.reference_id : "")) +
+          " · IDENTITY #" +
+          escH(String(m.identity_id != null ? m.identity_id : "")) +
+          "</span></footer></section>";
+        var wrap = document.createElement("div");
+        wrap.innerHTML = html;
+        return wrap.firstElementChild;
+      }
+
+      var faBtn = document.getElementById("fhBtnFullVideoAnalysis");
+      var faField = document.getElementById("fusionFullAnalysisField");
+      var formElProg = document.getElementById("fusionBatchForm");
+      if (faBtn && faField && formElProg) {
+        faBtn.addEventListener("click", function () {
+          faField.value = "1";
+          formElProg.setAttribute("data-fusion-force-block", "1");
+          formElProg.submit();
+        });
+      }
+
+      var aggregatedThreatCards = [];
+      if (cardsJsonEl) {
+        try {
+          aggregatedThreatCards = JSON.parse(cardsJsonEl.textContent || "[]");
+        } catch (e0) {
+          aggregatedThreatCards = [];
+        }
+      }
+
+      var seenThreatId = {};
+      aggregatedThreatCards.forEach(function (c) {
+        if (c && c.id) seenThreatId[String(c.id)] = true;
+      });
+
+      var analyzedBuckets = {};
+      var inflight = false;
+
+      function renderFaceGallery(rows) {
+        if (!faceGrid) return;
+        faceGrid.innerHTML = "";
+        if (!rows || !rows.length) {
+          return;
+        }
+        rows.slice(0, 8).forEach(function (face, ix) {
+          var matched = !!(face && (face.matched || face.match));
+          var card = document.createElement("article");
+          card.className =
+            "fh-face-scan-card fh-bio-card fh-bio-scanner-card fh-bio-face-article " +
+            (matched ? "fh-face-has-match" : "fh-face-unknown-card") +
+            " fh-bio-phase";
+          var nm = matched
+            ? (face.full_name ||
+                (face.match && face.match.display_name) ||
+                "Match")
+            : "Unknown";
+          var crop = face.crop_url ? String(face.crop_url) : "";
+          var head = document.createElement("header");
+          head.className = "fh-bio-card-head";
+          head.innerHTML =
+            '<span class="fh-bio-card-slot">Face ' +
+            (ix + 1) +
+            '</span><span class="fh-bio-badge fh-bio-badge--scan fh-bio-badge--scanning">SCANNING</span>' +
+            (matched
+              ? '<span class="fh-bio-badge fh-bio-badge--ok fh-bio-badge--final">MATCH FOUND</span>'
+              : '<span class="fh-bio-badge fh-bio-badge--warn fh-bio-badge--final">UNKNOWN</span>');
+
+          var bioVis = document.createElement("div");
+          bioVis.className = "fh-bio-visual";
+          var tpl = document.getElementById("tplFusionBioScanner");
+          if (tpl && tpl.content) {
+            var stack = tpl.content
+              .querySelector(".bio-scanner-stack")
+              .cloneNode(true);
+            var imgEl = stack.querySelector(".bio-face-img");
+            if (imgEl) {
+              if (crop) imgEl.src = crop;
+              imgEl.alt = "Face " + (ix + 1);
+              if (!crop) imgEl.removeAttribute("src");
+            }
+            bioVis.appendChild(stack);
+          }
+
+          var stage = document.createElement("div");
+          stage.className = "fh-bio-stage fh-bio-reveal-hidden";
+          stage.innerHTML =
+            '<p class="fh-bio-stage-line">Embedding generated…</p>' +
+            '<p class="fh-bio-stage-line">Searching registry…</p>';
+          var cap = document.createElement("div");
+          cap.className = "fh-bio-cap fh-bio-reveal-hidden";
+          var capHtml = "";
+          if (matched && face.match && typeof face.match === "object") {
+            capHtml =
+              '<p class="fh-bio-scan-done-line">Biometric match verified — digital credential issued below.</p>';
+          } else if (matched) {
+            capHtml =
+              '<p class="fh-bio-scan-done-line">Biometric match verified — digital credential issued below.</p>';
+          } else {
+            capHtml =
+              '<div class="fh-bio-name fh-bio-unknown-title">Unknown Individual</div>' +
+              '<p class="fh-bio-soft">No gallery match under threshold</p>';
+            if (face.match_hint) {
+              capHtml +=
+                '<p class="fh-bio-soft">' + escH(String(face.match_hint)) + "</p>";
+            } else if (face.nearest_distance != null && face.nearest_distance !== undefined) {
+              capHtml +=
+                '<p class="fh-bio-soft">Nearest · ' +
+                escH(String(face.nearest_display_name || "")) +
+                " · distance " +
+                escH(String(face.nearest_distance)) +
+                " (threshold " +
+                escH(String(face.match_threshold != null ? face.match_threshold : "")) +
+                ")</p>";
+            }
+            capHtml +=
+              '<p class="fh-bio-soft">Enroll in Django admin or run seed_face_registry_from_folders</p>';
+          }
+          cap.innerHTML = capHtml;
+
+          card.appendChild(head);
+          card.appendChild(bioVis);
+          card.appendChild(stage);
+          card.appendChild(cap);
+          if (matched && face.match && typeof face.match === "object") {
+            var idCard = fusionBuildDigitalIdCardEl(face);
+            if (idCard) card.appendChild(idCard);
+          }
+          faceGrid.appendChild(card);
+        });
+        if (window.FusionHubBioScanner && window.FusionHubBioScanner.initCards) {
+          window.FusionHubBioScanner.initCards(faceGrid);
+        }
+      }
+
+      function pushThreatDom(card) {
+        if (
+          !threatScroll ||
+          !card ||
+          !card.id ||
+          seenThreatId[String(card.id)]
+        )
+          return;
+        seenThreatId[String(card.id)] = true;
+        aggregatedThreatCards.push(card);
+        if (cardsJsonEl)
+          cardsJsonEl.textContent = JSON.stringify(aggregatedThreatCards);
+        if (threatEmpty) threatEmpty.style.display = "none";
+
+        var cat = (
+          card.category ||
+          card.cat ||
+          "suspicious"
+        ).trim().toLowerCase();
+        if (cat !== "fight" && cat !== "weapon" && cat !== "suspicious")
+          cat = "suspicious";
+        var thumb = card.thumb_url ? String(card.thumb_url).replace(/"/g, "&quot;") : "";
+        var article = document.createElement("article");
+        article.className =
+          "fh-threat-card fh-threat-card--" + cat + " fh-threat-new";
+        article.setAttribute("tabindex", "0");
+        article.setAttribute("role", "button");
+        article.setAttribute("data-event-id", String(card.id));
+        article.innerHTML =
+          (thumb
+            ? '<img src="' + thumb + '" alt="" loading="lazy" />'
+            : '<div class="fh-threat-thumb-ph" aria-hidden="true">' +
+              escH(card.title || "") +
+              "</div>") +
+          '<div class="fh-threat-body"><div class="fh-threat-label">' +
+          escH(card.title || "") +
+          '</div><div class="fh-threat-meta">' +
+          escH(card.time_label || "") +
+          " · confidence <strong>" +
+          escH(String(card.confidence_display != null ? card.confidence_display : "")) +
+          "%</strong></div></div>";
+        threatScroll.insertBefore(article, threatScroll.firstChild);
+      }
+      window.__fusionHubPushThreatDom = pushThreatDom;
+
+      function appendTimelineThumb(pt, bucketFallback) {
+        var ti = document.getElementById("fhTimelineInner");
+        if (!ti || !pt) return;
+        var tlab =
+          pt.t != null ? Number(pt.t) : Number(bucketFallback);
+        var dupe = ti.querySelector(
+          '[data-tl-sample="' + tlab.toFixed(2) + '"]'
+        );
+        if (dupe) return;
+        var pack = document.createElement("button");
+        pack.type = "button";
+        pack.className = "fh-tl-thumb";
+        pack.setAttribute("data-tl-sample", tlab.toFixed(2));
+        pack.style.border = "none";
+        pack.style.padding = "0";
+        pack.style.cursor = "pointer";
+        var cls = "";
+        if (pt.dual_highlight) cls = "fh-tl-marker--dual";
+        var wm = typeof pt.weapon_max === "number" ? pt.weapon_max : 0;
+        if (!cls && wm >= 0.38) cls = "fh-tl-marker--weapon";
+        if (
+          !cls &&
+          (pt.label === "fight" ||
+            (typeof pt.p_fight === "number" && pt.p_fight >= 0.52))
+        )
+          cls = "fh-tl-marker--fight";
+        pack.innerHTML =
+          '<div class="fh-tl-marker ' +
+          cls +
+          '" style="margin:8px auto"></div><div style="font-size:10px;color:#8ba4c9">t≈' +
+          tlab.toFixed(1) +
+          "s</div>";
+        pack.addEventListener("click", function () {
+          if (video) video.currentTime = Math.max(0, tlab);
+        });
+        ti.appendChild(pack);
+      }
+
+      function requestFrame(bucket) {
+        if (!pv || inflight) return;
+        inflight = true;
+        frameStatus.textContent = "Analyzing frame… · t≈" + bucket.toFixed(1) + "s";
+        var fd = new FormData();
+        fd.append("video_id", pv);
+        fd.append("timestamp_seconds", String(bucket));
+        var useOpenAiEl = document.getElementById("id_use_openai_threat");
+        fd.append("use_openai_threat", useOpenAiEl && useOpenAiEl.checked ? "1" : "0");
+
+        fetch(analyzeUrl, {
+          method: "POST",
+          body: fd,
+          headers: { "X-CSRFToken": getCsrfToken() },
+          credentials: "same-origin",
+        })
+          .then(function (r) {
+            return r.json().catch(function () {
+              return { status: "error" };
+            });
+          })
+          .then(function (data) {
+            inflight = false;
+            if (!data || data.status !== "ok") {
+              analyzedBuckets[String(bucket)] = false;
+              frameStatus.textContent =
+                (data && data.detail) ?
+                  "Analyze error · fallback: Run full analysis"
+                : "Frame error · fallback: Run full analysis";
+              return;
+            }
+            frameStatus.textContent = "Analyzing frame…";
+            var pt = data.timeline_point;
+            try {
+              if (window.__fusionHubTimelineAppend && pt)
+                window.__fusionHubTimelineAppend(pt);
+            } catch (et) {}
+            appendTimelineThumb(pt, bucket);
+            if (
+              annotatedImg &&
+              data.annotated_frame_url
+            ) {
+              annotatedImg.src =
+                String(data.annotated_frame_url).split("?")[0] +
+                "?cb=" +
+                Date.now();
+              annotatedImg.style.opacity = "1";
+            }
+            if (topPill) {
+              topPill.textContent =
+                data.verdict_label ||
+                data.verdict ||
+                "Analyzing frame…";
+            }
+
+            var th = data.threats || [];
+            th.forEach(function (c) {
+              pushThreatDom(c);
+            });
+
+            renderFaceGallery(
+              (data.face_scan_gallery &&
+                data.face_scan_gallery.length &&
+                data.face_scan_gallery) ||
+                data.face_matches ||
+                []
+            );
+            if (faceLine) {
+              var facesCt = (
+                (data.face_scan_gallery &&
+                  data.face_scan_gallery.length) ||
+                (data.face_matches && data.face_matches.length) ||
+                0
+              );
+              faceLine.textContent =
+                typeof facesCt === "number" ?
+                  facesCt ?
+                    facesCt +
+                    " face(s) observed at t≈" +
+                    bucket.toFixed(1) +
+                    "s"
+                  : "No face at t≈" + bucket.toFixed(1) + "s · scanning…"
+                : "";
+            }
+          })
+          .catch(function () {
+            inflight = false;
+            analyzedBuckets[String(bucket)] = false;
+            frameStatus.textContent = "Network error · Run full analysis";
+          });
+      }
+
+      function syncTick(nowSec) {
+        if (!video) return;
+        if (video.paused) return;
+        var bucket =
+          Math.round(nowSec / intervalSec) * intervalSec;
+        bucket = Math.round(bucket * 1000) / 1000;
+        var key = String(bucket);
+        if (analyzedBuckets[key]) return;
+        analyzedBuckets[key] = true;
+        requestFrame(bucket);
+      }
+
+      if (video) {
+        window.setInterval(function () {
+          if (!video.paused && typeof video.currentTime === "number")
+            syncTick(video.currentTime);
+        }, Math.max(800, intervalSec * 1000));
+
+        video.addEventListener("play", function () {
+          syncTick(video.currentTime || 0);
+        });
+        window.setTimeout(function () {
+          try {
+            video.play().catch(function () {});
+          } catch (eP) {}
+        }, 160);
+      }
+    })();
+  }
+
+  var metaEl = document.getElementById("fusionLiveMeta");
+  var frameUrl = metaEl ? metaEl.getAttribute("data-frame-url") || "" : "";
+  var fhFusionVerdictPillSnapshot = (function () {
+    var p = document.getElementById("fhFusionVerdictPill");
+    return p ? { text: p.textContent, cls: p.className } : null;
+  })();
+
+  function updateLiveVerdictPill(data) {
+    var pill = document.getElementById("fhFusionVerdictPill");
+    if (!pill || !data || !data.fight) return;
+    var minP = parseFloat(
+      (metaEl && metaEl.getAttribute("data-live-fight-min-p")) || "0.52"
+    );
+    var pf = typeof data.fight.p_fight === "number" ? data.fight.p_fight : 0;
+    var top1 = parseInt(data.fight.top1, 10);
+    if (isNaN(top1)) top1 = 1;
+    var strongFight = (top1 === 0 && pf >= minP) || pf >= 0.62;
+    var wmx =
+      data.weapon && typeof data.weapon.max_conf === "number"
+        ? data.weapon.max_conf
+        : 0;
+    if (strongFight) {
+      pill.textContent = "Live · fight likely";
+      pill.className = "live-stat glass fight-hud-alert";
+      pill.style.color = "";
+      pill.style.borderColor = "";
+    } else if (wmx >= 0.38) {
+      pill.textContent = "Live · weapon signals";
+      pill.className = "live-stat glass fight-hud-weapon-hot";
+      pill.style.color = "#ffb27a";
+      pill.style.borderColor = "rgba(255,159,67,.5)";
+    } else {
+      pill.textContent = "Live · calm";
+      pill.className = "live-stat glass";
+      pill.style.color = "";
+      pill.style.borderColor = "";
+    }
+  }
+
+  function getCsrfToken() {
+    var m = document.cookie.match(/csrftoken=([^;]+)/);
+    if (m) return m[1];
+    var inp = document.querySelector("[name=csrfmiddlewaretoken]");
+    return inp ? inp.value : "";
+  }
+
+  var fusionStream = null;
+  var fusionInterval = null;
+  var fusionBusy = false;
+  var fusionVideo = document.getElementById("fusionCamVideo");
+  var fusionCap = document.getElementById("fusionCamCapture");
+  var fusionCtx = fusionCap ? fusionCap.getContext("2d") : null;
+  var fusionStartBtn = document.getElementById("fusionCamStart");
+  var fusionStopBtn = document.getElementById("fusionCamStop");
+  var fusionStatus = document.getElementById("fusionCamStatus");
+  var liveFight = document.getElementById("fusionLiveFight");
+  var liveWeapon = document.getElementById("fusionLiveWeapon");
+  var dualDock = document.getElementById("fusionDualLiveDock");
+  var dualCropsEl = document.getElementById("fusionDualLiveCrops");
+  var liveFaceGrid = document.getElementById("fhLiveFaceGrid");
+  var liveFaceHint = document.getElementById("fhLiveFaceHint");
+  var fusionLiveFrameIx = 0;
+  var fusionLiveCamLayer = document.getElementById("fusionLiveCamLayer");
+  var fusionCamPlaceholder = document.getElementById("fusionCamPlaceholder");
+  var fusionLiveFaceHistory = [];
+  var FUSION_LIVE_FACE_HIST_MAX = 64;
+  var fusionLiveFaceLastCodeTs = {};
+
+  function escHtmlTxt(s) {
+    var d = document.createElement("div");
+    d.textContent = s == null ? "" : String(s);
+    return d.innerHTML;
+  }
+
+  function buildLiveFaceRowHtml(row, i) {
+    var m = row.match;
+    var matched = row.matched || !!m;
+    var html =
+      '<div class="fh-face-live ' +
+      (matched ? "fh-face-matched" : "fh-face-unknown") +
+      '">' +
+      '<div class="fh-face-img-wrap fh-face-crop-wrap fh-face-crop-wrap--live">';
+    html +=
+      '<span class="fh-face-scanline fh-bio-scan-line-live" aria-hidden="true"></span>';
+    var cropSrc = row.crop_data_url || row.crop_url || "";
+    if (cropSrc)
+      html +=
+        '<img class="fh-face-crop" width="120" height="120" src="' +
+        String(cropSrc).replace(/"/g, "&quot;") +
+        '" alt="Face ' +
+        (i + 1) +
+        '" />';
+    html += "</div><div class=\"fh-face-cap\">";
+    if (matched && m) {
+      html +=
+        "<div><strong>" +
+        escHtmlTxt(m.display_name || row.full_name || "") +
+        "</strong></div>";
+      if (m.person_code || m.identity_code)
+        html +=
+          '<div style="font-size:11px;color:#8ba4c9;">ID · ' +
+          escHtmlTxt(m.person_code || m.identity_code || "") +
+          "</div>";
+      if (m.category)
+        html +=
+          '<div style="font-size:11px;color:#8ba4c9;">Cat · ' +
+          escHtmlTxt(m.category) +
+          "</div>";
+      html +=
+        '<div class="fh-match-pill">MATCH FOUND · ' +
+        escHtmlTxt(m.confidence_pct != null ? m.confidence_pct : "?") +
+        "%</div>";
+      if (m.distance != null)
+        html +=
+          '<div style="font-size:10px;color:#8ba4c9;margin-top:4px">cos dist ' +
+          escHtmlTxt(m.distance) +
+          "</div>";
+      if (m.profile && m.profile.notes)
+        html +=
+          '<div style="font-size:10px;color:#8ba4c9;margin-top:4px">' +
+          escHtmlTxt(m.profile.notes) +
+          "</div>";
+      else if (m.no_extended_profile_message)
+        html +=
+          '<div style="font-size:10px;color:#b0a050;margin-top:4px">' +
+          escHtmlTxt(m.no_extended_profile_message) +
+          "</div>";
+    } else {
+      html +=
+        '<div style="color:#ffd24d;font-weight:600;">Unknown individual</div>';
+      html +=
+        '<div style="font-size:11px;color:#8ba4c9;">No gallery match under threshold</div>';
+      if (row.match_hint)
+        html +=
+          '<div style="font-size:10px;color:#8ba4c9;margin-top:4px">' +
+          escHtmlTxt(row.match_hint) +
+          "</div>";
+    }
+    html += "</div></div>";
+    return html;
+  }
+
+  function appendLiveFaceHistory(data) {
+    if (!liveFaceGrid) return;
+    var lf = data.live_faces;
+    if (!lf || !lf.length) return;
+    var now = Date.now();
+    var tsLabel = new Date().toLocaleTimeString(undefined, {
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: false,
+    });
+    lf.forEach(function (row, i) {
+      var m = row.match;
+      var code = m && (m.person_code || m.identity_code) ? String(m.person_code || m.identity_code) : "";
+      if (code) {
+        var prev = fusionLiveFaceLastCodeTs[code];
+        if (prev && now - prev < 2200) return;
+        fusionLiveFaceLastCodeTs[code] = now;
+      }
+      var hid = row.history_id || row.face_id || "h-" + now + "-" + i;
+      var block =
+        '<div class="fh-face-history-entry" data-hid="' +
+        escHtmlTxt(hid) +
+        '">' +
+        '<div class="fh-face-history-ts">' +
+        escHtmlTxt(tsLabel) +
+        "</div>" +
+        buildLiveFaceRowHtml(row, i) +
+        "</div>";
+      fusionLiveFaceHistory.push(block);
+    });
+    while (fusionLiveFaceHistory.length > FUSION_LIVE_FACE_HIST_MAX) fusionLiveFaceHistory.shift();
+    liveFaceGrid.innerHTML = fusionLiveFaceHistory.join("");
+    if (liveFaceHint) liveFaceHint.hidden = false;
+    try {
+      liveFaceGrid.scrollTop = liveFaceGrid.scrollHeight;
+    } catch (eScroll) {}
+  }
+
+  function setLiveStatus(txt) {
+    if (fusionStatus) fusionStatus.textContent = txt;
+  }
+
+  function stopCam() {
+    if (fusionInterval) {
+      clearInterval(fusionInterval);
+      fusionInterval = null;
+    }
+    if (fusionStream) {
+      fusionStream.getTracks().forEach(function (t) {
+        t.stop();
+      });
+      fusionStream = null;
+    }
+    if (fusionVideo) fusionVideo.srcObject = null;
+    if (fusionLiveCamLayer) fusionLiveCamLayer.hidden = true;
+    if (fusionCamPlaceholder) fusionCamPlaceholder.hidden = false;
+    var annOv = document.getElementById("fusionLiveAnnotatedOverlay");
+    if (annOv) {
+      annOv.hidden = true;
+      annOv.removeAttribute("src");
+    }
+    if (fusionStartBtn) fusionStartBtn.disabled = false;
+    if (fusionStopBtn) fusionStopBtn.disabled = true;
+    setLiveStatus("Camera idle — feed shows in the center stage when started.");
+    if (liveFight) liveFight.textContent = "Realtime: —";
+    if (liveWeapon) liveWeapon.textContent = "Realtime: —";
+    if (dualDock) dualDock.hidden = true;
+    if (dualCropsEl) dualCropsEl.innerHTML = "";
+    fusionLiveFrameIx = 0;
+    fusionLiveFaceHistory = [];
+    fusionLiveFaceLastCodeTs = {};
+    if (liveFaceGrid) liveFaceGrid.innerHTML = "";
+    if (liveFaceHint) liveFaceHint.hidden = true;
+    var vp = document.getElementById("fhFusionVerdictPill");
+    if (vp && fhFusionVerdictPillSnapshot) {
+      vp.textContent = fhFusionVerdictPillSnapshot.text;
+      vp.className = fhFusionVerdictPillSnapshot.cls;
+      vp.style.color = "";
+      vp.style.borderColor = "";
+    }
+  }
+
+  function postFrame() {
+    if (!fusionVideo || !fusionCap || !fusionCtx || fusionBusy) return;
+    if (!fusionVideo.videoWidth) return;
+    fusionBusy = true;
+    fusionCap.width = fusionVideo.videoWidth;
+    fusionCap.height = fusionVideo.videoHeight;
+    fusionCtx.drawImage(fusionVideo, 0, 0);
+    fusionCap.toBlob(
+      function (blob) {
+        if (!blob) {
+          fusionBusy = false;
+          return;
+        }
+        var fd = new FormData();
+        fd.append("frame", blob, "frame.jpg");
+        var uf = document.getElementById("id_use_fight");
+        var uw = document.getElementById("id_use_weapon");
+        var uo = document.getElementById("id_use_openai_threat");
+        var selFw = document.getElementById("id_fight_weights");
+        var selWw = document.getElementById("id_weapon_weights");
+        fd.append("use_fight", uf && uf.checked ? "1" : "0");
+        fd.append("use_weapon", uw && uw.checked ? "1" : "0");
+        fd.append("use_openai_threat", uo && uo.checked ? "1" : "0");
+        if (selFw) fd.append("fight_weights", selFw.value);
+        if (selWw) fd.append("weapon_weights", selWw.value);
+        fusionLiveFrameIx += 1;
+        fd.append("viz_persons", "1");
+        fd.append("viz_faces", "1");
+        fetch(frameUrl, {
+          method: "POST",
+          body: fd,
+          headers: { "X-CSRFToken": getCsrfToken() },
+          credentials: "same-origin",
+        })
+          .then(function (r) {
+            return r.json();
+          })
+          .then(function (data) {
+            fusionBusy = false;
+            if (!data || !data.ok) {
+              if (liveFight) liveFight.textContent = "Realtime: error";
+              return;
+            }
+            if (liveFight) {
+              if (data.fight) {
+                var pf = data.fight.p_fight * 100;
+                var weak = data.fight.live_weak_fight_signal;
+                liveFight.textContent =
+                  "Realtime: " +
+                  data.fight.label +
+                  " · P(fight)=" +
+                  pf.toFixed(1) +
+                  "%" +
+                  (weak ? " · (weak signal — close-up can confuse model)" : "");
+              } else {
+                liveFight.textContent = "Realtime: fight off";
+              }
+            }
+            updateLiveVerdictPill(data);
+            if (liveWeapon) {
+              var w = data.weapon || {};
+              var mx = typeof w.max_conf === "number" ? w.max_conf : 0;
+              var ds = w.detections || [];
+              if (!ds.length) liveWeapon.textContent = "Realtime: no detections";
+              else {
+                liveWeapon.textContent =
+                  "Realtime: " +
+                  ds.length +
+                  " obj · max=" +
+                  (mx * 100).toFixed(0) +
+                  "%";
+              }
+            }
+            var dv = data.dual_view || null;
+            if (dualDock && dualCropsEl) {
+              if (dv && dv.show && dv.crop_data_urls && dv.crop_data_urls.length) {
+                dualDock.hidden = false;
+                var imgs = dv.crop_data_urls
+                  .map(function (u, i) {
+                    return '<img src="' + u.replace(/"/g, "&quot;") + '" class="fusion-dual-live-img" alt="person crop ' + (i + 1) + '" />';
+                  })
+                  .join("");
+                var fac = dv.face_matches || [];
+                var facHtml = "";
+                if (fac.length) {
+                  facHtml =
+                    '<ul class="fusion-face-hits-live">' +
+                    fac
+                      .map(function (x) {
+                        var code = x.person_code ? " (" + x.person_code + ")" : "";
+                        return (
+                          '<li><strong>' +
+                          String(x.display_name || "") +
+                          "</strong>" +
+                          code +
+                          ' · cos ' +
+                          String(x.distance) +
+                          "</li>"
+                        );
+                      })
+                      .join("") +
+                    "</ul>";
+                }
+                dualCropsEl.innerHTML = imgs + facHtml;
+              } else {
+                dualCropsEl.innerHTML = "";
+                dualDock.hidden = true;
+              }
+            }
+            appendLiveFaceHistory(data);
+            var annOv2 = document.getElementById("fusionLiveAnnotatedOverlay");
+            if (annOv2) {
+              if (data.annotated_frame_url) {
+                annOv2.src = String(data.annotated_frame_url);
+                annOv2.hidden = false;
+              } else {
+                annOv2.hidden = true;
+                annOv2.removeAttribute("src");
+              }
+            }
+            var pusher = window.__fusionHubPushThreatDom;
+            if (pusher && data.threat_cards && data.threat_cards.length) {
+              data.threat_cards.forEach(function (tc) {
+                try {
+                  pusher(tc);
+                } catch (eTh) {}
+              });
+            }
+          })
+          .catch(function () {
+            fusionBusy = false;
+            if (liveFight) liveFight.textContent = "Realtime: network";
+          });
+      },
+      "image/jpeg",
+      0.82
+    );
+  }
+
+  if (fusionStartBtn) {
+    fusionStartBtn.addEventListener("click", function () {
+      stopCam();
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        setLiveStatus("Camera not supported.");
+        return;
+      }
+      navigator.mediaDevices
+        .getUserMedia({ video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false })
+        .then(function (stream) {
+          fusionStream = stream;
+          if (fusionLiveCamLayer) fusionLiveCamLayer.hidden = false;
+          if (fusionCamPlaceholder) fusionCamPlaceholder.hidden = true;
+          if (fusionVideo) {
+            fusionVideo.srcObject = stream;
+            fusionVideo.play().catch(function () {});
+          }
+          fusionStartBtn.disabled = true;
+          if (fusionStopBtn) fusionStopBtn.disabled = false;
+          setLiveStatus("Live in center window (~520 ms cadence)");
+          fusionInterval = setInterval(postFrame, 520);
+        })
+        .catch(function (err) {
+          setLiveStatus("Camera blocked: " + (err && err.message ? err.message : "error"));
+        });
+    });
+  }
+  if (fusionStopBtn) fusionStopBtn.addEventListener("click", stopCam);
+})();
+</script>
+{% endblock %}

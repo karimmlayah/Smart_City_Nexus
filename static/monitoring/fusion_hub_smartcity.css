@@ -1,0 +1,1281 @@
+/**
+ * Smart City premium skin — Fusion Hub only (body.fusion-hub-sc).
+ * Overrides visuals only; layout and IDs unchanged.
+ */
+
+body.fusion-hub-sc {
+  font-family: "Inter", "Segoe UI", system-ui, sans-serif;
+}
+
+body.fusion-hub-sc .app-shell {
+  background: #03040a;
+  background-image: radial-gradient(
+      ellipse 90% 55% at 50% 0%,
+      rgba(30, 41, 59, 0.45),
+      transparent 55%
+    );
+  padding: 0.65rem 0.85rem 0.85rem 0.45rem;
+}
+
+/* ——— Global rail (icons) ——— */
+body.fusion-hub-sc .rail {
+  width: 56px;
+  padding: 0.85rem 0;
+  gap: 0.4rem;
+  background: linear-gradient(180deg, #08090f 0%, #03040a 55%, #03040a 100%);
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow: inset -1px 0 0 rgba(0, 0, 0, 0.35);
+}
+
+body.fusion-hub-sc .rail-link {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  color: #64748b;
+  transition: color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease,
+    transform 0.2s ease;
+}
+
+body.fusion-hub-sc .rail-link:hover {
+  color: #e2e8f0;
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: none;
+  transform: translateY(-1px);
+}
+
+body.fusion-hub-sc .rail-link-active {
+  color: #03040a;
+  background: linear-gradient(145deg, #38bdf8 0%, #22d3ee 100%);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.2) inset;
+}
+
+/* ——— Design tokens (Fusion root) ——— */
+body.fusion-hub-sc .fh-root {
+  --fh-bg0: #03040a;
+  --fh-bg1: #0c0e14;
+  --fh-bg2: #111827;
+  --fh-glass: rgba(17, 24, 39, 0.78);
+  --fh-border: rgba(255, 255, 255, 0.08);
+  --fh-cyan: #38bdf8;
+  --fh-text: #f1f5f9;
+  --fh-muted: #94a3b8;
+  --fh-red: #ef4444;
+  --fh-orange: #f97316;
+  --fh-blue: #64748b;
+  --fh-green: #22c55e;
+  --fh-yellow: #facc15;
+  --fh-r: 16px;
+  background: linear-gradient(180deg, #0a0c12 0%, #03040a 38%, #020308 100%);
+  padding-bottom: 0.85rem;
+}
+
+body.fusion-hub-sc .fh-glass {
+  background: rgba(17, 24, 39, 0.82);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+body.fusion-hub-sc .fh-glass:hover {
+  border-color: rgba(255, 255, 255, 0.11);
+}
+
+/* ——— Top command bar ——— */
+body.fusion-hub-sc .fh-nav {
+  border-radius: 14px;
+  margin: 0 0.85rem;
+  padding: 0.65rem 1rem;
+  background: linear-gradient(180deg, rgba(20, 22, 30, 0.98) 0%, rgba(12, 14, 22, 0.95) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+}
+
+body.fusion-hub-sc .fh-nav-logo {
+  letter-spacing: 0.06em;
+  font-size: 1.05rem;
+  font-weight: 800;
+  background: linear-gradient(90deg, #f8fafc, #94a3b8);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+body.fusion-hub-sc .fh-nav-tag {
+  letter-spacing: 0.14em;
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+body.fusion-hub-sc .fh-tab {
+  border-radius: 10px;
+  border: 1px solid transparent;
+}
+
+body.fusion-hub-sc .fh-tab:hover {
+  color: #cbd5e1;
+}
+
+body.fusion-hub-sc .fh-tab.is-active {
+  border-color: rgba(56, 189, 248, 0.45);
+  background: rgba(56, 189, 248, 0.1);
+  box-shadow: none;
+  color: #38bdf8;
+}
+
+body.fusion-hub-sc .fh-nav-meta {
+  gap: 0.75rem;
+}
+
+body.fusion-hub-sc .fh-nav-loc {
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #64748b;
+  padding: 0.35rem 0.65rem;
+  border-radius: 8px;
+  border: 1px solid rgba(148, 163, 184, 0.15);
+  background: rgba(15, 23, 42, 0.6);
+}
+
+body.fusion-hub-sc .fh-clock {
+  color: #e2e8f0;
+  font-weight: 600;
+  font-size: 0.78rem;
+}
+
+body.fusion-hub-sc .fh-icon-chip {
+  border-color: rgba(255, 255, 255, 0.1);
+  background: rgba(10, 12, 18, 0.85);
+  cursor: default;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+body.fusion-hub-sc .fh-icon-chip:hover {
+  border-color: rgba(255, 255, 255, 0.16);
+  box-shadow: none;
+}
+
+body.fusion-hub-sc .fh-nav-user {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: radial-gradient(circle at 30% 30%, #1e293b, #0a0c12);
+  box-shadow: none;
+}
+
+/* ——— Section kicker labels ——— */
+body.fusion-hub-sc .fh-panel-title .fh-kicker {
+  display: block;
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: #64748b;
+  margin-bottom: 0.28rem;
+}
+
+body.fusion-hub-sc .fh-panel-title {
+  text-transform: none;
+  letter-spacing: 0.04em;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #e2e8f0;
+}
+
+/* ——— Main grid spacing ——— */
+body.fusion-hub-sc .fh-main-grid {
+  gap: 0.85rem;
+  padding: 0 0.85rem;
+}
+
+body.fusion-hub-sc .fh-col,
+body.fusion-hub-sc .fh-col-center {
+  gap: 0.7rem;
+}
+
+/* ——— City / map monitoring canvas ——— */
+body.fusion-hub-sc .fh-city-canvas {
+  position: relative;
+  border-radius: 18px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6) inset, 0 24px 56px rgba(0, 0, 0, 0.65);
+}
+
+body.fusion-hub-sc .fh-city-canvas::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  border-radius: inherit;
+  background: linear-gradient(180deg, rgba(3, 4, 10, 0.35) 0%, transparent 24%, transparent 76%, rgba(3, 4, 10, 0.45) 100%),
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 31px,
+      rgba(255, 255, 255, 0.025) 31px,
+      rgba(255, 255, 255, 0.025) 32px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 31px,
+      rgba(255, 255, 255, 0.025) 31px,
+      rgba(255, 255, 255, 0.025) 32px
+    );
+  opacity: 0.85;
+}
+
+body.fusion-hub-sc .fh-city-canvas .video-stage-inner {
+  position: relative;
+  z-index: 1;
+}
+
+body.fusion-hub-sc .fh-city-canvas .video-corners {
+  z-index: 2;
+  border-color: rgba(255, 255, 255, 0.12);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.55);
+}
+
+/* ——— Threat cards ——— */
+body.fusion-hub-sc .fh-threat-card--fight {
+  border-color: rgba(239, 68, 68, 0.45);
+  box-shadow: 0 0 24px rgba(239, 68, 68, 0.12);
+}
+
+body.fusion-hub-sc .fh-threat-card--weapon {
+  border-color: rgba(249, 115, 22, 0.5);
+  box-shadow: 0 0 24px rgba(249, 115, 22, 0.12);
+}
+
+body.fusion-hub-sc .fh-threat-card--suspicious {
+  border-color: rgba(148, 163, 184, 0.35);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.35);
+}
+
+/* ——— System / analytics cards ——— */
+body.fusion-hub-sc .fh-sys-card {
+  border-radius: 14px;
+}
+
+body.fusion-hub-sc .fusion-model-card {
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.25s ease;
+}
+
+body.fusion-hub-sc .fusion-model-card:hover {
+  transform: translateY(-2px);
+}
+
+body.fusion-hub-sc .fusion-model-card--fight.is-on {
+  box-shadow: 0 0 28px rgba(239, 68, 68, 0.18);
+  border-color: rgba(239, 68, 68, 0.4);
+}
+
+body.fusion-hub-sc .fusion-model-card--weapon.is-on {
+  box-shadow: 0 0 28px rgba(249, 115, 22, 0.2);
+  border-color: rgba(249, 115, 22, 0.42);
+}
+
+/* ——— Face / intelligence column ——— */
+body.fusion-hub-sc .fh-face-card {
+  border-color: rgba(255, 255, 255, 0.1);
+  background: rgba(10, 12, 18, 0.92);
+}
+
+body.fusion-hub-sc .fh-digital-id-card {
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+/* ——— Bottom timeline strip ——— */
+body.fusion-hub-sc .fh-timeline-strip {
+  gap: 0.5rem;
+  padding: 0.55rem 0.65rem;
+  border-radius: 14px;
+  background: rgba(15, 23, 42, 0.55);
+  border: 1px solid rgba(148, 163, 184, 0.1);
+}
+
+body.fusion-hub-sc .fh-tl-marker {
+  width: 11px;
+  height: 11px;
+  box-shadow: none;
+}
+
+body.fusion-hub-sc .fh-tl-marker--fight {
+  background: #ef4444;
+  color: #ef4444;
+}
+
+body.fusion-hub-sc .fh-tl-marker--weapon {
+  background: #f97316;
+  color: #f97316;
+}
+
+body.fusion-hub-sc .fh-tl-marker--dual {
+  background: #38bdf8;
+  color: #38bdf8;
+}
+
+body.fusion-hub-sc .fh-tl-thumb {
+  border-radius: 10px;
+  border: 1px solid rgba(148, 163, 184, 0.15);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
+}
+
+body.fusion-hub-sc .fh-tl-thumb:hover {
+  border-color: rgba(255, 255, 255, 0.22);
+  transform: translateY(-2px);
+}
+
+body.fusion-hub-sc .fh-tl-thumb.is-current {
+  border-color: #38bdf8;
+  box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.35);
+}
+
+/* Neutral timeline dot (sampled frame, no threat highlight in strip) */
+body.fusion-hub-sc .fh-tl-marker:not(.fh-tl-marker--fight):not(.fh-tl-marker--weapon):not(.fh-tl-marker--dual) {
+  background: rgba(148, 163, 184, 0.35);
+  border: 1px solid rgba(148, 163, 184, 0.45);
+  color: #94a3b8;
+  box-shadow: none;
+}
+
+/* ——— Input card & buttons ——— */
+body.fusion-hub-sc .fh-input-card {
+  margin: 0 0.85rem;
+  border-radius: 16px;
+}
+
+body.fusion-hub-sc .fh-btn-outline,
+body.fusion-hub-sc .fh-quick-actions button {
+  border-radius: 11px;
+  transition: transform 0.15s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+body.fusion-hub-sc .fh-btn-outline:hover {
+  border-color: rgba(56, 189, 248, 0.5);
+  box-shadow: none;
+  color: #f8fafc;
+}
+
+body.fusion-hub-sc .fh-btn-danger {
+  border-color: rgba(239, 68, 68, 0.55);
+  background: rgba(239, 68, 68, 0.12);
+  color: #fecaca;
+}
+
+/* ——— Loading overlay ——— */
+body.fusion-hub-sc .fh-loading-inner {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.6);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body.fusion-hub-sc .rail-link,
+  body.fusion-hub-sc .fusion-model-card,
+  body.fusion-hub-sc .fh-tl-thumb,
+  body.fusion-hub-sc .fh-glass {
+    transition: none !important;
+  }
+  body.fusion-hub-sc .rail-link:hover,
+  body.fusion-hub-sc .fusion-model-card:hover,
+  body.fusion-hub-sc .fh-tl-thumb:hover {
+    transform: none !important;
+  }
+}
+
+/* ——— Premium dashboard polish (reference: Smart City command center) ——— */
+
+body.fusion-hub-sc .fh-nav {
+  align-items: center;
+  gap: 1rem;
+}
+
+body.fusion-hub-sc .fh-nav-brand.fh-brand-cluster {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+body.fusion-hub-sc .fh-brand-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.06rem;
+  min-width: 0;
+}
+
+body.fusion-hub-sc .fh-brand-orb {
+  flex-shrink: 0;
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+  background: linear-gradient(145deg, #1e293b 0%, #0f172a 55%, #020617 100%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 8px 24px rgba(0, 0, 0, 0.45);
+  position: relative;
+  overflow: hidden;
+}
+
+body.fusion-hub-sc .fh-brand-orb::before {
+  content: "";
+  position: absolute;
+  inset: 10px 8px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    #38bdf8 18%,
+    #22c55e 42%,
+    #38bdf8 58%,
+    #facc15 78%,
+    transparent 100%
+  );
+  opacity: 0.55;
+  border-radius: 4px;
+  filter: blur(0.5px);
+}
+
+body.fusion-hub-sc .fh-brand-orb::after {
+  content: "";
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  top: 50%;
+  height: 2px;
+  transform: translateY(-50%);
+  background: repeating-linear-gradient(
+    90deg,
+    rgba(56, 189, 248, 0.9) 0 3px,
+    transparent 3px 6px,
+    rgba(34, 197, 94, 0.85) 6px 9px,
+    transparent 9px 12px,
+    rgba(250, 204, 21, 0.75) 12px 15px,
+    transparent 15px 18px
+  );
+  opacity: 0.85;
+}
+
+body.fusion-hub-sc .fh-nav-logo {
+  margin: 0;
+  letter-spacing: 0.02em;
+  font-size: 1.08rem;
+  font-weight: 800;
+  line-height: 1.15;
+}
+
+body.fusion-hub-sc .fh-tab-rail {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 4px 5px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+body.fusion-hub-sc .fh-tab-rail .fh-nav-tabs {
+  justify-content: center;
+  gap: 0.2rem;
+}
+
+body.fusion-hub-sc .fh-tab {
+  padding: 0.42rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+}
+
+body.fusion-hub-sc .fh-tab.is-active {
+  background: linear-gradient(180deg, rgba(56, 189, 248, 0.22) 0%, rgba(56, 189, 248, 0.08) 100%);
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  color: #e0f2fe;
+}
+
+body.fusion-hub-sc a.fh-tab--link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  color: inherit;
+  box-sizing: border-box;
+  font: inherit;
+  cursor: pointer;
+}
+
+body.fusion-hub-sc a.fh-tab--link:hover {
+  color: #38bdf8;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+body.fusion-hub-sc .fh-input-card--premium {
+  position: relative;
+  overflow: hidden;
+  padding-top: 1rem;
+}
+
+body.fusion-hub-sc .fh-input-card--premium::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #38bdf8, #22c55e, #facc15, #38bdf8);
+  opacity: 0.75;
+}
+
+body.fusion-hub-sc .fh-input-card-head {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  margin-bottom: 0.65rem;
+}
+
+body.fusion-hub-sc .fh-input-kicker {
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+body.fusion-hub-sc .fh-input-card-head .fh-input-title {
+  margin: 0;
+  font-size: 0.82rem;
+  letter-spacing: 0.16em;
+  color: #cbd5e1;
+}
+
+/* ——— Single-line “Analyze” model rail ——— */
+body.fusion-hub-sc .fh-source-rail {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 0.5rem 0.6rem;
+  padding: 0.45rem 0.55rem 0.45rem 0.6rem;
+  margin-bottom: 0.65rem;
+  border-radius: 14px;
+  background: rgba(5, 7, 13, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 10px 36px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+body.fusion-hub-sc .fh-source-rail__lead {
+  display: flex;
+  flex-direction: column;
+  gap: 0.12rem;
+  flex-shrink: 0;
+  margin: 0;
+  padding-right: 0.55rem;
+  margin-right: 0.1rem;
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  min-width: 6.75rem;
+}
+
+body.fusion-hub-sc .fh-source-rail__lead .fh-input-kicker {
+  margin: 0;
+}
+
+body.fusion-hub-sc .fh-input-title--rail {
+  margin: 0;
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #f1f5f9;
+  line-height: 1.25;
+  white-space: nowrap;
+}
+
+body.fusion-hub-sc .fh-source-rail .fusion-model-card.fh-mchip {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.4rem;
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 260px;
+  padding: 0.32rem 0.45rem 0.32rem 0.4rem;
+  margin: 0;
+  border-radius: 12px;
+  cursor: pointer;
+}
+
+body.fusion-hub-sc .fh-source-rail .fusion-model-card.fh-mchip:hover {
+  transform: translateY(-1px);
+}
+
+body.fusion-hub-sc .fh-mchip .fusion-model-card-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.04rem;
+  min-width: 0;
+  flex: 1;
+  align-items: flex-start;
+}
+
+body.fusion-hub-sc .fh-mchip .fusion-model-card-title {
+  font-size: 0.52rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #94a3b8;
+  line-height: 1.2;
+}
+
+body.fusion-hub-sc .fusion-model-card--fight.fh-mchip .fusion-model-card-title {
+  color: #fca5a5;
+}
+
+body.fusion-hub-sc .fusion-model-card--weapon.fh-mchip .fusion-model-card-title {
+  color: #fde047;
+}
+
+body.fusion-hub-sc .fh-mchip .fusion-model-card-file {
+  display: block;
+  font-size: 0.66rem !important;
+  font-weight: 600;
+  color: #38bdf8 !important;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  line-height: 1.25;
+}
+
+body.fusion-hub-sc .fh-mchip-hint,
+body.fusion-hub-sc .fh-mchip .fusion-model-card-hint {
+  display: block;
+  font-size: 0.55rem !important;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: #64748b !important;
+  margin: 0 !important;
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+body.fusion-hub-sc .fh-mchip .fusion-model-card-icon {
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  font-size: 0.95rem;
+  border-radius: 10px;
+}
+
+body.fusion-hub-sc .fh-mchip .fusion-model-toggle {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  margin-left: 0.1rem;
+}
+
+body.fusion-hub-sc .fh-mchip .fusion-model-check {
+  width: 1rem;
+  height: 1rem;
+  accent-color: #22c55e;
+  cursor: pointer;
+}
+
+body.fusion-hub-sc .fh-source-rail__selects {
+  display: flex;
+  flex: 1 1 220px;
+  min-width: 180px;
+  gap: 0.45rem;
+  align-items: center;
+}
+
+body.fusion-hub-sc .fh-toolbar-field {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+body.fusion-hub-sc .fh-toolbar-field .fight-label.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}
+
+body.fusion-hub-sc .fh-toolbar-sel-label {
+  font-size: 0.5rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #64748b;
+  line-height: 1;
+  padding-left: 0.08rem;
+}
+
+body.fusion-hub-sc .fh-toolbar-field .fight-model-select,
+body.fusion-hub-sc .fh-toolbar-field select {
+  width: 100%;
+  min-height: 2rem;
+  padding: 0.28rem 0.45rem !important;
+  font-size: 0.68rem !important;
+  border-radius: 10px !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  background: rgba(3, 4, 10, 0.85) !important;
+  color: #e2e8f0 !important;
+}
+
+body.fusion-hub-sc .fh-toolbar-field .fight-field-errors {
+  margin: 0.2rem 0 0;
+  padding: 0;
+  font-size: 0.65rem;
+  color: #fecaca;
+}
+
+@media (max-width: 1100px) {
+  body.fusion-hub-sc .fh-source-rail {
+    flex-wrap: wrap;
+  }
+  body.fusion-hub-sc .fh-source-rail__selects {
+    flex: 1 1 100%;
+    min-width: 100%;
+  }
+}
+
+body.fusion-hub-sc .fh-input-grid .fight-url-input,
+body.fusion-hub-sc .fh-input-grid .fight-file-input,
+body.fusion-hub-sc .fh-input-grid .fight-model-select,
+body.fusion-hub-sc .fh-root .fight-url-input,
+body.fusion-hub-sc .fh-root .fight-model-select {
+  padding: 0.55rem 0.7rem;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(3, 4, 10, 0.75);
+  color: #f1f5f9;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+body.fusion-hub-sc .fh-input-grid .fight-url-input:focus,
+body.fusion-hub-sc .fh-input-grid .fight-file-input:focus,
+body.fusion-hub-sc .fh-input-grid .fight-model-select:focus,
+body.fusion-hub-sc .fh-root .fight-url-input:focus,
+body.fusion-hub-sc .fh-root .fight-model-select:focus {
+  outline: none;
+  border-color: rgba(56, 189, 248, 0.45);
+  box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.2);
+}
+
+body.fusion-hub-sc .fh-btn-primary {
+  border-radius: 12px;
+  padding: 0.58rem 1.35rem;
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  background: linear-gradient(135deg, #0ea5e9 0%, #38bdf8 45%, #22d3ee 100%);
+  color: #020617;
+  box-shadow: 0 4px 20px rgba(14, 165, 233, 0.25);
+}
+
+body.fusion-hub-sc .fh-btn-primary:hover {
+  box-shadow: 0 6px 28px rgba(56, 189, 248, 0.3);
+}
+
+body.fusion-hub-sc .fusion-dropdown-row {
+  border-radius: 14px !important;
+  border: 1px solid rgba(255, 255, 255, 0.06) !important;
+  background: rgba(3, 4, 10, 0.45) !important;
+}
+
+body.fusion-hub-sc .fusion-model-card-icon {
+  width: 38px;
+  height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  font-size: 1.1rem;
+}
+
+body.fusion-hub-sc .fusion-model-card--fight.is-on .fusion-model-card-icon {
+  border-color: rgba(239, 68, 68, 0.35);
+}
+
+body.fusion-hub-sc .fusion-model-card--weapon.is-on .fusion-model-card-icon {
+  border-color: rgba(249, 115, 22, 0.35);
+}
+
+body.fusion-hub-sc .fusion-side-panel,
+body.fusion-hub-sc .fusion-intel-panel {
+  border-radius: 18px;
+  padding: 0.5rem 0.35rem 0.65rem;
+  background: rgba(12, 14, 22, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+body.fusion-hub-sc .fh-stage-dock {
+  position: absolute;
+  right: 0.65rem;
+  bottom: 3.25rem;
+  z-index: 24;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  pointer-events: none;
+}
+
+body.fusion-hub-sc .fh-dock-btn {
+  min-width: 36px;
+  min-height: 34px;
+  padding: 0 0.45rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #e2e8f0;
+  background: rgba(8, 10, 16, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+body.fusion-hub-sc .fh-dock-btn--wide {
+  font-size: 0.58rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+body.fusion-hub-sc .fh-chip-live {
+  border-radius: 999px;
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  background: rgba(8, 10, 16, 0.75);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+body.fusion-hub-sc .fh-chip-live-dot {
+  box-shadow: 0 0 8px var(--fh-red);
+}
+
+body.fusion-hub-sc .live-stat.glass {
+  border-radius: 999px !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  background: rgba(8, 10, 16, 0.72) !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+body.fusion-hub-sc .fh-threat-card {
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+body.fusion-hub-sc .fh-sys-card {
+  padding: 0.75rem 0.9rem;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(3, 4, 10, 0.35);
+}
+
+body.fusion-hub-sc .fh-batch-panel {
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+body.fusion-hub-sc .fusion-source-tab {
+  border-radius: 999px;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+body.fusion-hub-sc .fusion-source-tab-active {
+  background: rgba(56, 189, 248, 0.15);
+  color: #e0f2fe;
+}
+
+@media (max-width: 900px) {
+  body.fusion-hub-sc .fh-tab-rail .fh-nav-tabs {
+    justify-content: flex-start;
+  }
+}
+
+/* ——— Report preview modal (dark glass, same theme as hub) ——— */
+body.fusion-hub-sc .fh-report-backdrop {
+  background: rgba(2, 3, 8, 0.82);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+body.fusion-hub-sc .fh-report-modal {
+  width: min(720px, 100%);
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: linear-gradient(165deg, rgba(17, 24, 39, 0.95) 0%, rgba(8, 10, 16, 0.98) 100%);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(56, 189, 248, 0.08) inset,
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+body.fusion-hub-sc .fh-report-modal__head {
+  padding: 0.75rem 1rem 0.65rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  align-items: flex-start;
+}
+
+body.fusion-hub-sc .fh-report-modal__head-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+body.fusion-hub-sc .fh-report-modal__kicker {
+  font-size: 0.52rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+body.fusion-hub-sc .fh-report-modal__h {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: #f1f5f9;
+}
+
+body.fusion-hub-sc .fh-report-modal__close {
+  border-radius: 10px;
+  width: 2.25rem;
+  height: 2.25rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+body.fusion-hub-sc .fh-report-modal__close:hover {
+  background: rgba(239, 68, 68, 0.12);
+  color: #fecaca;
+}
+
+body.fusion-hub-sc .fh-report-modal__body {
+  padding: 0.85rem 1rem 1rem;
+  background: radial-gradient(ellipse 80% 40% at 50% 0%, rgba(56, 189, 248, 0.06), transparent 55%);
+}
+
+body.fusion-hub-sc .fh-report-modal__footer {
+  padding: 0 1rem 1rem;
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  padding-top: 0.75rem;
+  margin-top: 0;
+}
+
+body.fusion-hub-sc .fh-report-print-btn {
+  border-radius: 12px;
+  padding: 0.5rem 1.25rem;
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  box-shadow: 0 4px 20px rgba(14, 165, 233, 0.2);
+}
+
+body.fusion-hub-sc .fusion-report-sheet {
+  position: relative;
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 1.1rem 1.15rem 1.15rem;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(5, 7, 13, 0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  color: #e2e8f0;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 12px 40px rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+}
+
+body.fusion-hub-sc .fusion-report-sheet__glow {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #38bdf8, #22c55e, #38bdf8, transparent);
+  opacity: 0.85;
+  pointer-events: none;
+}
+
+body.fusion-hub-sc .fusion-report-sheet__title {
+  margin: 0 0 1rem;
+  padding-top: 0.15rem;
+  font-size: 0.95rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: #f8fafc;
+}
+
+body.fusion-hub-sc .fusion-report-meta {
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.55rem;
+}
+
+body.fusion-hub-sc .fusion-report-meta__row {
+  display: grid;
+  grid-template-columns: minmax(100px, 130px) 1fr;
+  gap: 0.65rem;
+  align-items: baseline;
+  padding: 0.45rem 0.55rem;
+  border-radius: 10px;
+  background: rgba(15, 23, 42, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+body.fusion-hub-sc .fusion-report-kicker {
+  margin: 0;
+  font-size: 0.52rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+body.fusion-hub-sc .fusion-report-value {
+  margin: 0;
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: #cbd5e1;
+  word-break: break-word;
+}
+
+body.fusion-hub-sc .fusion-report-meta dd {
+  margin-inline-start: 0;
+}
+
+body.fusion-hub-sc .fusion-report-value--accent {
+  color: #38bdf8;
+}
+
+body.fusion-hub-sc .fusion-report-table-wrap {
+  margin-top: 1rem;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+  background: rgba(3, 4, 10, 0.5);
+}
+
+body.fusion-hub-sc .fusion-report-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.78rem;
+}
+
+body.fusion-hub-sc .fusion-report-table thead {
+  background: rgba(15, 23, 42, 0.85);
+}
+
+body.fusion-hub-sc .fusion-report-table th {
+  padding: 0.55rem 0.65rem;
+  text-align: left;
+  font-size: 0.52rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #94a3b8;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+body.fusion-hub-sc .fusion-report-table th:not(:first-child) {
+  text-align: center;
+}
+
+body.fusion-hub-sc .fusion-report-table td {
+  padding: 0.55rem 0.65rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  color: #e2e8f0;
+}
+
+body.fusion-hub-sc .fusion-report-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+body.fusion-hub-sc .fusion-report-table td:nth-child(2) {
+  text-align: center;
+  color: #94a3b8;
+  font-variant-numeric: tabular-nums;
+}
+
+body.fusion-hub-sc .fusion-report-table td:nth-child(3) {
+  text-align: center;
+  font-weight: 700;
+  color: #38bdf8;
+  font-variant-numeric: tabular-nums;
+}
+
+body.fusion-hub-sc .fusion-report-table__row:nth-child(even) td {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+body.fusion-hub-sc .fusion-report-table__empty td {
+  text-align: center;
+  color: #64748b;
+  font-style: italic;
+  padding: 1rem 0.75rem;
+}
+
+body.fusion-hub-sc .fusion-report-ident {
+  margin-top: 1rem;
+  padding: 0.65rem 0.75rem;
+  border-radius: 12px;
+  border: 1px solid rgba(56, 189, 248, 0.15);
+  background: rgba(56, 189, 248, 0.04);
+}
+
+body.fusion-hub-sc .fusion-report-ident__title {
+  margin: 0 0 0.35rem;
+}
+
+body.fusion-hub-sc .fusion-report-ident__body {
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: #cbd5e1;
+}
+
+body.fusion-hub-sc .fusion-report-action {
+  margin: 1rem 0 0;
+  padding: 0.75rem 0.85rem;
+  border-radius: 12px;
+  border: 1px solid rgba(250, 204, 21, 0.2);
+  background: rgba(250, 204, 21, 0.05);
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+body.fusion-hub-sc .fusion-report-action__label {
+  display: block;
+}
+
+body.fusion-hub-sc .fusion-report-action__text {
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: #e2e8f0;
+}
+
+@media (max-width: 520px) {
+  body.fusion-hub-sc .fusion-report-meta__row {
+    grid-template-columns: 1fr;
+    gap: 0.25rem;
+  }
+}
+
+@media print {
+  body.fusion-hub-sc .rail,
+  body.fusion-hub-sc .fh-root,
+  body.fusion-hub-sc #fusionLiveMeta,
+  body.fusion-hub-sc #fusionProgressiveBoot,
+  body.fusion-hub-sc #tplFusionBioScanner,
+  body.fusion-hub-sc #fhEventBackdrop,
+  body.fusion-hub-sc .messages-top {
+    display: none !important;
+  }
+
+  body.fusion-hub-sc .fh-report-backdrop {
+    position: static !important;
+    display: flex !important;
+    align-items: flex-start !important;
+    justify-content: center !important;
+    background: #fff !important;
+    backdrop-filter: none !important;
+    padding: 1rem !important;
+  }
+
+  body.fusion-hub-sc .fh-report-modal {
+    max-height: none !important;
+    width: 100% !important;
+    box-shadow: none !important;
+    border: none !important;
+    background: #fff !important;
+    color: #111 !important;
+  }
+
+  body.fusion-hub-sc .fh-report-modal__h,
+  body.fusion-hub-sc .fh-report-modal__kicker {
+    color: #334155 !important;
+  }
+
+  body.fusion-hub-sc .fh-report-modal__footer {
+    display: none !important;
+  }
+
+  body.fusion-hub-sc .fusion-report-sheet {
+    background: #fff !important;
+    color: #111 !important;
+    border: 1px solid #e2e8f0 !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+  }
+
+  body.fusion-hub-sc .fusion-report-sheet__glow {
+    display: none !important;
+  }
+
+  body.fusion-hub-sc .fusion-report-meta__row {
+    background: #f8fafc !important;
+    border-color: #e2e8f0 !important;
+  }
+
+  body.fusion-hub-sc .fusion-report-kicker {
+    color: #64748b !important;
+  }
+
+  body.fusion-hub-sc .fusion-report-value,
+  body.fusion-hub-sc .fusion-report-table td {
+    color: #0f172a !important;
+  }
+
+  body.fusion-hub-sc .fusion-report-table-wrap {
+    border-color: #e2e8f0 !important;
+    background: #fff !important;
+  }
+
+  body.fusion-hub-sc .fusion-report-table thead {
+    background: #f1f5f9 !important;
+  }
+
+  body.fusion-hub-sc .fusion-report-ident {
+    background: #f0f9ff !important;
+    border-color: #bae6fd !important;
+  }
+
+  body.fusion-hub-sc .fusion-report-action {
+    background: #fffbeb !important;
+    border-color: #fde68a !important;
+  }
+}

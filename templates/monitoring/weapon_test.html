@@ -1,0 +1,217 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ page_title|default:"Weapon Test" }} — Smart City{% endblock %}
+
+{% block content %}
+<div class="live-rt-wrap fight-rt-wrap weapon-test-wrap">
+  <header class="live-rt-header glass">
+    <div class="cockpit-brand">
+      <span class="cockpit-logo">🔫</span>
+      <div>
+        <h1 class="cockpit-title">{{ page_title|default:"Weapon Test" }}</h1>
+        <p class="cockpit-sub">
+          YOLOv8 direct · detection knife · modele <strong>{{ weapon_model_name }}</strong>
+        </p>
+      </div>
+    </div>
+    <div class="live-rt-header-actions">
+      <a href="{% url 'monitoring:dashboard' %}" class="btn-ghost-xl">Tableau de bord</a>
+    </div>
+  </header>
+
+  <div class="live-rt-body fight-rt-body weapon-test-body">
+    <aside class="glass live-rt-sources fight-panel">
+      <h2 class="panel-title">Analyse knife</h2>
+      <form method="post" class="fight-form" action="" enctype="multipart/form-data">
+        {% csrf_token %}
+        {% if form.non_field_errors %}
+          <ul class="fight-field-errors fight-form-errors">
+            {% for e in form.non_field_errors %}<li>{{ e }}</li>{% endfor %}
+          </ul>
+        {% endif %}
+        <div class="fight-field">
+          <label for="id_youtube_url" class="fight-label">{{ form.youtube_url.label }}</label>
+          {{ form.youtube_url }}
+          {% if form.youtube_url.errors %}
+            <ul class="fight-field-errors">
+              {% for e in form.youtube_url.errors %}<li>{{ e }}</li>{% endfor %}
+            </ul>
+          {% endif %}
+        </div>
+        <p class="muted small fight-or">ou</p>
+        <div class="fight-field">
+          <label for="id_video_file" class="fight-label">{{ form.video_file.label }}</label>
+          {{ form.video_file }}
+          {% if form.video_file.errors %}
+            <ul class="fight-field-errors">
+              {% for e in form.video_file.errors %}<li>{{ e }}</li>{% endfor %}
+            </ul>
+          {% endif %}
+          <p class="muted small fight-hint">MP4, WebM, MKV, MOV, AVI — max. {{ fight_upload_max_mb }}&nbsp;Mo.</p>
+        </div>
+        <p class="muted small fight-or">ou</p>
+        <div class="fight-field">
+          <label for="id_image_file" class="fight-label">{{ form.image_file.label }}</label>
+          {{ form.image_file }}
+          {% if form.image_file.errors %}
+            <ul class="fight-field-errors">
+              {% for e in form.image_file.errors %}<li>{{ e }}</li>{% endfor %}
+            </ul>
+          {% endif %}
+          <p class="muted small fight-hint">JPG, JPEG, PNG, WebP — max. 25 Mo.</p>
+        </div>
+        <button type="submit" class="btn-neon-block fight-submit">Tester la vidéo</button>
+      </form>
+
+      {% if run_error %}
+        <div class="fight-alert fight-alert-error" role="alert">
+          <strong>Erreur</strong>
+          <p>{{ run_error }}</p>
+        </div>
+      {% endif %}
+
+      {% if result %}
+        {% if result.error %}
+          <div class="fight-alert fight-alert-error" role="alert">
+            <strong>Analyse impossible</strong>
+            <p>{{ result.error }}</p>
+          </div>
+        {% else %}
+          <div class="fight-result">
+            <div class="fight-verdict {% if result.verdict == 'knife' %}is-fight{% else %}is-calm{% endif %}">
+              <span class="fight-verdict-label">Verdict knife</span>
+              <span class="fight-verdict-meta">
+                {{ result.verdict_label }} · confiance max <strong>{{ result.max_conf|floatformat:3 }}</strong>
+                · {{ result.weapon_frames }} frame(s) avec knife / {{ result.frames_analyzed }}
+              </span>
+            </div>
+            {% if result.details %}
+              <details class="fight-details">
+                <summary>Echantillons (t + score)</summary>
+                <ul class="fight-detail-list">
+                  {% for d in result.details %}
+                    <li>
+                      <span class="muted">{{ d.t }}s</span>
+                      ·
+                      <span class="{% if d.has_weapon %}fight-tag{% else %}nofight-tag{% endif %}">
+                        {% if d.has_weapon %}knife{% else %}aucun knife{% endif %}
+                      </span>
+                      conf={{ d.weapon_max|floatformat:3 }}
+                      {% if d.weapon_compact %}
+                        · <span class="weapon-tag">{{ d.weapon_compact }}</span>
+                      {% endif %}
+                    </li>
+                  {% endfor %}
+                </ul>
+              </details>
+            {% endif %}
+          </div>
+        {% endif %}
+      {% endif %}
+    </aside>
+
+    <div class="live-rt-main weapon-test-main">
+      <div class="weapon-test-visual">
+        <div class="weapon-test-video-col">
+          <div class="video-stage glass weapon-test-stage" id="mainStage">
+            <div class="video-corners" aria-hidden="true"></div>
+            <div class="video-stage-inner fight-video-inner">
+              {% if annotated_image_url %}
+                <div class="fight-embed-wrap">
+                  <img class="fight-local-video weapon-local-video" src="{{ annotated_image_url }}" alt="Image annotee knife">
+                </div>
+              {% elif local_image_url %}
+                <div class="fight-embed-wrap">
+                  <img class="fight-local-video weapon-local-video" src="{{ local_image_url }}" alt="Image source">
+                </div>
+              {% elif annotated_video_url %}
+                <div class="fight-embed-wrap">
+                  <video
+                    class="fight-local-video weapon-local-video"
+                    src="{{ annotated_video_url }}"
+                    controls
+                    playsinline
+                    preload="metadata"
+                  ></video>
+                </div>
+              {% elif local_video_url %}
+                <div class="fight-embed-wrap">
+                  <video
+                    class="fight-local-video weapon-local-video"
+                    src="{{ local_video_url }}"
+                    controls
+                    playsinline
+                    preload="metadata"
+                  ></video>
+                </div>
+              {% elif youtube_video_id %}
+                <div class="fight-embed-wrap">
+                  <iframe
+                    class="fight-youtube-embed"
+                    src="https://www.youtube.com/embed/{{ youtube_video_id }}?rel=0"
+                    title="Lecture YouTube"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    referrerpolicy="strict-origin-when-cross-origin"
+                    allowfullscreen
+                  ></iframe>
+                </div>
+              {% else %}
+                <div class="stage-empty">
+                  <p class="stage-empty-kicker">Video</p>
+                  <p class="muted small">Collez une URL YouTube ou choisissez un fichier, puis lancez le test.</p>
+                </div>
+              {% endif %}
+            </div>
+            <div class="stage-toolbar">
+              <button type="button" class="stage-icon-btn" id="btnFullscreen" title="Plein ecran">⛶</button>
+              <span class="stage-hint-toolbar">
+                {% if annotated_video_url %}
+                  Video annotee (cercle sur knife) · seuil {{ weapon_alert_pct }}%
+                {% elif annotated_image_url %}
+                  Image annotee (cercle sur knife) · seuil {{ weapon_alert_pct }}%
+                {% else %}
+                  Detection knife >= {{ weapon_alert_pct }}%
+                {% endif %}
+              </span>
+            </div>
+          </div>
+        </div>
+        {% if knife_crop_items %}
+          <aside class="glass weapon-crops-panel" aria-label="Extractions knife">
+            <h3 class="weapon-crops-title">Zoom knife</h3>
+            <p class="muted small weapon-crops-hint">Recadrage auto de la zone detectee.</p>
+            <div class="weapon-crops-grid">
+              {% for c in knife_crop_items %}
+                <figure class="weapon-crop-card">
+                  <div class="weapon-crop-img-wrap">
+                    <img class="weapon-crop-img" src="{{ c.url }}" alt="Zoom {{ c.label }}">
+                  </div>
+                  <figcaption class="weapon-crop-cap">
+                    {% if c.t != None %}t≈{{ c.t }}s · {% endif %}{{ c.label }} · {{ c.conf_pct }}%
+                  </figcaption>
+                </figure>
+              {% endfor %}
+            </div>
+          </aside>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  var stage = document.getElementById("mainStage");
+  var btn = document.getElementById("btnFullscreen");
+  if (stage && btn) {
+    btn.addEventListener("click", function () {
+      if (!document.fullscreenElement) stage.requestFullscreen().catch(function () {});
+      else document.exitFullscreen();
+    });
+  }
+})();
+</script>
+{% endblock %}

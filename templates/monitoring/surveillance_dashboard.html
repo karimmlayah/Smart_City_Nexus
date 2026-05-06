@@ -1,0 +1,916 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}AI Surveillance Command — Smart City{% endblock %}
+
+{% block extra_head %}
+  <link rel="stylesheet" href="{% static 'monitoring/surveillance-dashboard.css' %}">
+{% endblock %}
+
+{% block body_class %}cockpit{% endblock %}
+
+{% block content %}
+<div
+  id="jarvisRoot"
+  class="jarvis-dashboard"
+  data-frame-url="{{ fusion_live_frame_url|escape }}"
+>
+  <header class="jarvis-glass-panel jarvis-head">
+    <div class="jarvis-head-left">
+      <div class="jarvis-brand">
+        <span class="jarvis-brand-mark" aria-hidden="true">▣</span>
+        <div>
+          <h1 class="jarvis-title">Surveillance AI</h1>
+          <p class="jarvis-sub">Live vision · threat correlation · biometric match</p>
+        </div>
+      </div>
+      <span class="jarvis-badge" id="jarvisThreatBadge" aria-live="polite" title="New threats"></span>
+    </div>
+    <div class="jarvis-head-actions">
+      <button type="button" class="jarvis-icon-btn" id="jarvisSoundBtn" title="Alert tone" aria-label="Toggle alert tone">🔔</button>
+      <button type="button" class="jarvis-btn jarvis-btn-ghost" id="jarvisBtnReport">Generate Report</button>
+      <a href="{% url 'monitoring:fusion_hub' %}" class="jarvis-btn jarvis-btn-ghost" style="text-decoration:none;display:inline-flex;align-items:center;">Studio fusion</a>
+      <button type="button" class="jarvis-btn jarvis-btn-primary" id="jarvisCamStart">Start camera</button>
+      <button type="button" class="jarvis-btn jarvis-btn-ghost" id="jarvisCamStop" disabled>Stop</button>
+    </div>
+  </header>
+
+  <div class="jarvis-glass-panel jarvis-toolbar" aria-label="Model options">
+    <div class="jarvis-toggles">
+      <label><span>{{ form.use_fight.label }}</span>{{ form.use_fight }}</label>
+      <label><span>{{ form.use_weapon.label }}</span>{{ form.use_weapon }}</label>
+    </div>
+    <label>{{ form.fight_weights.label }}{{ form.fight_weights }}</label>
+    <label>{{ form.weapon_weights.label }}{{ form.weapon_weights }}</label>
+    <span class="muted" style="font-size:0.75rem;color:var(--jarvis-muted, #8ba4c9);align-self:center;">{{ fight_model_name }} · {{ weapon_model_name }}</span>
+    <canvas id="jarvisHiddenCap" hidden></canvas>
+  </div>
+
+  <div class="jarvis-grid">
+    <aside class="jarvis-glass-panel jarvis-col" aria-labelledby="jarvisThreatsTitle">
+      <div class="jarvis-panel-header">
+        <h2 class="jarvis-panel-title" id="jarvisThreatsTitle">Detected Threats</h2>
+      </div>
+      <div class="jarvis-scroll" id="jarvisThreatList"></div>
+    </aside>
+
+    <section class="jarvis-col jarvis-col-center" aria-labelledby="jarvisVisionTitle">
+      <div class="jarvis-panel-header">
+        <h2 class="jarvis-panel-title" id="jarvisVisionTitle">Live AI Vision</h2>
+      </div>
+      <div class="jarvis-glass-panel" style="flex:1;display:flex;flex-direction:column;min-height:0;">
+        <div class="jarvis-vision-wrap" id="jarvisVisionWrap">
+          <div class="jarvis-scanline-overlay" aria-hidden="true"></div>
+          <video id="jarvisVideo" class="jarvis-video" playsinline muted autoplay></video>
+          <canvas id="jarvisOverlay" class="jarvis-overlay-canvas" aria-hidden="true"></canvas>
+          <div class="jarvis-top-hud">
+            <span class="jarvis-analyzing" id="jarvisAnalyzingText"></span>
+          </div>
+          <div class="jarvis-corner-hud" id="jarvisCornerHud"></div>
+        </div>
+        <div class="jarvis-stage-foot">
+          <span id="jarvisCamStatus">Camera idle</span>
+          <span id="jarvisFpsHud" style="opacity:0.75;"></span>
+        </div>
+      </div>
+    </section>
+
+    <aside class="jarvis-glass-panel jarvis-col" aria-labelledby="jarvisFacesTitle">
+      <div class="jarvis-panel-header">
+        <h2 class="jarvis-panel-title" id="jarvisFacesTitle">Face Recognition</h2>
+      </div>
+      <div class="jarvis-scroll">
+        <p class="jarvis-empty" id="jarvisFacesHint" style="margin:0.35rem;display:block;">Subjects appear when persons are detected. Database match runs periodically.</p>
+        <div class="face-grid" id="jarvisFaceGrid"></div>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<div class="jarvis-modal-backdrop" id="jarvisModalThreat" role="dialog" aria-modal="true" aria-labelledby="jarvisModalThreatTitle" hidden>
+  <div class="jarvis-modal">
+    <div class="jarvis-modal-head">
+      <h3 id="jarvisModalThreatTitle">Incident detail</h3>
+      <button type="button" class="jarvis-modal-close" data-close-modal="jarvisModalThreat">&times;</button>
+    </div>
+    <div class="jarvis-modal-body" id="jarvisModalThreatBody"></div>
+  </div>
+</div>
+
+<div class="jarvis-modal-backdrop" id="jarvisModalReport" role="dialog" aria-modal="true" aria-labelledby="jarvisModalReportTitle" hidden>
+  <div class="jarvis-modal">
+    <div class="jarvis-modal-head">
+      <h3 id="jarvisModalReportTitle">Incident report (preview)</h3>
+      <button type="button" class="jarvis-modal-close" data-close-modal="jarvisModalReport">&times;</button>
+    </div>
+    <div class="jarvis-modal-body">
+      <div id="jarvisReportPreview"></div>
+      <p style="margin-top:1rem;font-size:0.8rem;color:#8ba4c9;">Use your browser Print dialog to export as PDF.</p>
+      <button type="button" class="jarvis-btn jarvis-btn-primary" id="jarvisPrintReport">Print / Save PDF</button>
+    </div>
+  </div>
+</div>
+
+<div id="jarvisAnalyzingPhrase" hidden>Analyzing scene...</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  var root = document.getElementById("jarvisRoot");
+  if (!root) return;
+  var frameUrl = root.getAttribute("data-frame-url") || "";
+
+  function getCsrf() {
+    var m = document.cookie.match(/csrftoken=([^;]+)/);
+    if (m) return m[1];
+    var inp = document.querySelector("[name=csrfmiddlewaretoken]");
+    return inp ? inp.value : "";
+  }
+
+  var video = document.getElementById("jarvisVideo");
+  var canvas = document.getElementById("jarvisOverlay");
+  var cap = document.getElementById("jarvisHiddenCap");
+  var ctx = cap ? cap.getContext("2d") : null;
+  var octx = canvas ? canvas.getContext("2d") : null;
+
+  var startBtn = document.getElementById("jarvisCamStart");
+  var stopBtn = document.getElementById("jarvisCamStop");
+  var statusEl = document.getElementById("jarvisCamStatus");
+  var fpsHud = document.getElementById("jarvisFpsHud");
+  var threatList = document.getElementById("jarvisThreatList");
+  var faceGrid = document.getElementById("jarvisFaceGrid");
+  var facesHint = document.getElementById("jarvisFacesHint");
+  var cornerHud = document.getElementById("jarvisCornerHud");
+  var badge = document.getElementById("jarvisThreatBadge");
+  var analyzingEl = document.getElementById("jarvisAnalyzingText");
+  var phrase = (
+    document.getElementById("jarvisAnalyzingPhrase") || { textContent: "Analyzing scene..." }
+  ).textContent.trim() || "Analyzing scene...";
+
+  var soundBtn = document.getElementById("jarvisSoundBtn");
+  var soundOn = localStorage.getItem("jarvisSound") === "1";
+  function syncSoundBtn() {
+    if (!soundBtn) return;
+    soundBtn.classList.toggle("is-active", soundOn);
+    soundBtn.title = soundOn ? "Alert tone on" : "Alert tone muted";
+  }
+  syncSoundBtn();
+  if (soundBtn)
+    soundBtn.addEventListener("click", function () {
+      soundOn = !soundOn;
+      localStorage.setItem("jarvisSound", soundOn ? "1" : "0");
+      syncSoundBtn();
+    });
+
+  function beep() {
+    if (!soundOn) return;
+    try {
+      var Ctx = window.AudioContext || window.webkitAudioContext;
+      if (!Ctx) return;
+      var ctxA = new Ctx();
+      var o = ctxA.createOscillator();
+      var g = ctxA.createGain();
+      o.connect(g);
+      g.connect(ctxA.destination);
+      o.type = "sine";
+      o.frequency.value = 880;
+      g.gain.setValueAtTime(0.06, ctxA.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.001, ctxA.currentTime + 0.12);
+      o.start(ctxA.currentTime);
+      o.stop(ctxA.currentTime + 0.15);
+      setTimeout(function () {
+        ctxA.close();
+      }, 200);
+    } catch (e) {}
+  }
+
+  var typingI = 0;
+  function tickTyping() {
+    if (!analyzingEl) return;
+    var n = phrase.length + 4;
+    var k = typingI++ % (n + 12);
+    var len = Math.min(phrase.length, Math.max(0, k));
+    analyzingEl.textContent = phrase.slice(0, len);
+  }
+  setInterval(tickTyping, 85);
+
+  var stream = null;
+  var iv = null;
+  var busy = false;
+  var frameIx = 0;
+  var lastDraw = null;
+  var pulse = 0;
+  var threats = [];
+  var unreadThreats = 0;
+  var lastSig = "";
+  var flashThreatId = null;
+  var seenFaceKeys = {};
+
+  requestAnimationFrame(function loop() {
+    pulse += 0.07;
+    if (lastDraw && octx && canvas && video && video.videoWidth) {
+      drawOverlay(lastDraw, pulse);
+    }
+    requestAnimationFrame(loop);
+  });
+
+  function thumbDataUrl() {
+    if (!cap || !ctx || !video || !video.videoWidth) return "";
+    cap.width = video.videoWidth;
+    cap.height = video.videoHeight;
+    ctx.drawImage(video, 0, 0);
+    try {
+      return cap.toDataURL("image/jpeg", 0.85);
+    } catch (e) {
+      return "";
+    }
+  }
+
+  function openModal(id) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    el.hidden = false;
+    requestAnimationFrame(function () {
+      el.classList.add("is-open");
+    });
+  }
+
+  function closeModal(id) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    el.classList.remove("is-open");
+    setTimeout(function () {
+      el.hidden = true;
+    }, 320);
+  }
+
+  document.querySelectorAll("[data-close-modal]").forEach(function (b) {
+    b.addEventListener("click", function () {
+      closeModal(b.getAttribute("data-close-modal"));
+    });
+  });
+
+  [[document.getElementById("jarvisModalThreat"), "jarvisModalThreat"],
+   [document.getElementById("jarvisModalReport"), "jarvisModalReport"]
+  ].forEach(function (pair) {
+    var el = pair[0];
+    var id = pair[1];
+    if (el)
+      el.addEventListener("click", function (e) {
+        if (e.target === el) closeModal(id);
+      });
+  });
+
+  function escapeHtml(s) {
+    var d = document.createElement("div");
+    d.textContent = String(s);
+    return d.innerHTML;
+  }
+
+  function maxWeaponConf(data) {
+    var dets = data && data.weapon && data.weapon.detections;
+    if (!dets || !dets.length) return 0;
+    var m = 0;
+    for (var i = 0; i < dets.length; i++) m = Math.max(m, Number(dets[i].conf || 0));
+    return m;
+  }
+
+  function threatSignature(data, wmax, fightHot, dual) {
+    return (
+      (wmax >= 0.38 ? "G" : "") +
+      (fightHot ? "F" : "") +
+      (dual ? "D" : "")
+    );
+  }
+
+  function ingestThreat(data, thumb) {
+    var wmax = maxWeaponConf(data);
+    var fightHot =
+      data.fight &&
+      (data.fight.label === "fight" || Number(data.fight.p_fight || 0) >= 0.52);
+    var dual = data.dual_view && data.dual_view.show;
+    if (wmax < 0.38 && !fightHot && !dual) return;
+
+    var sig = threatSignature(data, wmax, fightHot, dual);
+    var now = Date.now();
+    var labelParts = [];
+    var primaryConf = 0;
+    if (wmax >= 0.38) {
+      labelParts.push({ cls: "gun", text: "Gun Detected", conf: wmax * 100 });
+      primaryConf = Math.max(primaryConf, wmax * 100);
+    }
+    if (fightHot) {
+      var fp = Number((data.fight && data.fight.p_fight) || 0) * 100;
+      labelParts.push({ cls: "fight", text: "Fight", conf: fp });
+      primaryConf = Math.max(primaryConf, fp);
+    }
+    if (dual && !labelParts.length) {
+      labelParts.push({
+        cls: "gun",
+        text: "Correlation alert",
+        conf: Number((data.weapon && data.weapon.max_conf) || 0) * 100,
+      });
+      primaryConf = labelParts[0].conf;
+    }
+
+    var top = threats[0];
+    if (
+      top &&
+      now - top.t < 3200 &&
+      top.sig === sig &&
+      top.frames.length < 24
+    ) {
+      if (thumb) top.frames.push({ ts: now, url: thumb });
+      top.liveFaces = data.live_faces || top.liveFaces;
+      top.dual_faces = data.dual_view || top.dual_faces;
+      lastSig = sig;
+      renderThreats();
+      return;
+    }
+
+    var ev = {
+      id: String(now),
+      t: now,
+      sig: sig,
+      labels: labelParts,
+      thumb: thumb || "",
+      frames: thumb ? [{ ts: now, url: thumb }] : [],
+      liveFaces: data.live_faces ? JSON.parse(JSON.stringify(data.live_faces)) : [],
+      dual_faces: data.dual_view || null,
+      primaryConf: primaryConf,
+    };
+    threats.unshift(ev);
+    if (threats.length > 28) threats.length = 28;
+    flashThreatId = ev.id;
+    setTimeout(function () {
+      if (flashThreatId === ev.id) flashThreatId = null;
+      renderThreats();
+    }, 2200);
+    unreadThreats += 1;
+    if (badge) {
+      badge.textContent = String(Math.min(unreadThreats, 99));
+      badge.classList.add("is-on");
+      badge.classList.add("is-new-alert");
+      setTimeout(function () {
+        badge.classList.remove("is-new-alert");
+      }, 1800);
+    }
+    beep();
+    lastSig = sig;
+    renderThreats();
+  }
+
+  function renderThreats() {
+    if (!threatList) return;
+    if (!threats.length) {
+      threatList.innerHTML =
+        '<div class="jarvis-empty">No kinetic threats yet. Weapon or fight cues will stack here.</div>';
+      return;
+    }
+    var html = "";
+    for (var i = 0; i < threats.length; i++) {
+      var e = threats[i];
+      var main = e.labels[0] || {
+        cls: "gun",
+        text: "Threat",
+        conf: e.primaryConf || 0,
+      };
+      var imgSrc = e.thumb || (e.frames[0] && e.frames[0].url) || "";
+      var lblClass = main.cls === "fight" ? "fight" : "gun";
+      var timeStr = new Date(e.t).toLocaleTimeString();
+      var pct = Number(main.conf || 0).toFixed(1);
+      html +=
+        '<article class="jarvis-threat-card' +
+        (e.id === flashThreatId ? " is-new-alert" : "") +
+        '" data-threat-id="' +
+        escapeHtml(e.id) +
+        '" tabindex="0" role="button">' +
+        (imgSrc
+          ? '<img src="' + imgSrc.replace(/"/g, "&quot;") + '" alt="Threat crop"/>'
+          : '<div style="height:120px;background:rgba(0,20,60,.6)"></div>') +
+        '<div class="jarvis-threat-body">' +
+        '<div class="jarvis-threat-label ' +
+        lblClass +
+        '">' +
+        escapeHtml(main.text) +
+        "</div>" +
+        '<div class="jarvis-threat-meta">' +
+        escapeHtml(timeStr) +
+        ' · confidence <span class="jarvis-threat-pct">' +
+        escapeHtml(pct) +
+        "%</span></div></div></article>";
+    }
+    threatList.innerHTML = html;
+    threatList.querySelectorAll("[data-threat-id]").forEach(function (node) {
+      node.addEventListener("click", function () {
+        openThreatDetail(node.getAttribute("data-threat-id"));
+        unreadThreats = 0;
+        if (badge) {
+          badge.classList.remove("is-on");
+          badge.textContent = "";
+        }
+      });
+      node.addEventListener("keydown", function (evt) {
+        if (evt.key === "Enter" || evt.key === " ") {
+          evt.preventDefault();
+          node.click();
+        }
+      });
+    });
+  }
+
+  function openThreatDetail(id) {
+    var e = threats.find(function (x) {
+      return x.id === id;
+    });
+    if (!e) return;
+    var body = document.getElementById("jarvisModalThreatBody");
+    if (!body) return;
+    var lines = "";
+    for (var i = 0; i < e.labels.length; i++) {
+      lines +=
+        '<li>' +
+        escapeHtml(e.labels[i].text) +
+        " · " +
+        Number(e.labels[i].conf || 0).toFixed(1) +
+        "% confidence</li>";
+    }
+    var gal = "";
+    for (var j = 0; j < e.frames.length; j++) {
+      gal +=
+        '<img src="' +
+        e.frames[j].url.replace(/"/g, "&quot;") +
+        '" alt="Frame"/>';
+    }
+    var relFaces =
+      '<p class="jarvis-muted" style="color:var(--jarvis-muted)">Related faces</p>';
+    if (e.liveFaces && e.liveFaces.length) {
+      relFaces += '<div class="face-grid">';
+      for (var k = 0; k < e.liveFaces.length; k++) {
+        var lf = e.liveFaces[k];
+        var m = lf.match;
+    relFaces +=
+        '<div class="jarvis-face-card ' +
+          (m ? "is-matched" : "is-unknown") +
+          '" style="min-height:auto">' +
+          (lf.crop_data_url
+            ? '<div class="jarvis-face-img-wrap"><img src="' +
+              lf.crop_data_url.replace(/"/g, "&quot;") +
+              '" alt=""/></div>'
+            : "") +
+          '<div class="jarvis-face-caption">' +
+          (m
+            ? '<div class="jarvis-face-name">' +
+              escapeHtml(m.display_name || "") +
+              "</div>"
+            : "") +
+          (m && m.person_code
+            ? '<div class="jarvis-face-id">ID · ' +
+              escapeHtml(m.person_code) +
+              "</div>"
+            : !m ? '<div class="jarvis-face-name">Unknown Individual</div>' : "") +
+          "</div></div>";
+      }
+      relFaces += "</div>";
+    } else if (
+      e.dual_faces &&
+      e.dual_faces.face_matches &&
+      e.dual_faces.face_matches.length
+    ) {
+      relFaces += "<ul>";
+      for (var f = 0; f < e.dual_faces.face_matches.length; f++) {
+        var fm = e.dual_faces.face_matches[f];
+        relFaces +=
+          "<li><strong>" +
+          escapeHtml(fm.display_name || "") +
+          "</strong> · " +
+          escapeHtml(String(fm.distance)) +
+          "</li>";
+      }
+      relFaces += "</ul>";
+    } else relFaces += "<p>None correlated for this snippet.</p>";
+
+    var tl = "";
+    for (var t = 0; t < e.frames.length; t++) {
+      tl +=
+        '<div class="jarvis-timeline-row"><span class="jarvis-timeline-dot"></span>' +
+        new Date(e.frames[t].ts).toLocaleTimeString() +
+        " · Frame " +
+        (t + 1) +
+        "</div>";
+    }
+
+    body.innerHTML =
+      '<p><strong>Labels</strong></p><ul>' +
+      lines +
+      '</ul><p><strong>Captured frames</strong></p><div class="jarvis-gallery-row">' +
+      gal +
+      '</div>' +
+      relFaces +
+      '<p><strong>Detection timeline</strong></p><div class="jarvis-timeline">' +
+      (tl ||
+        '<div class="jarvis-timeline-row">Single capture</div>') +
+      "</div>";
+    openModal("jarvisModalThreat");
+  }
+
+  document.getElementById("jarvisBtnReport").addEventListener("click", function () {
+    var box = document.getElementById("jarvisReportPreview");
+    if (!box) return;
+    var ts = new Date().toISOString();
+    var rows = "";
+    for (var i = 0; i < threats.length; i++) {
+      var e = threats[i];
+      var lb = e.labels
+        .map(function (x) {
+          return x.text;
+        })
+        .join(" / ");
+      rows +=
+        "<tr><td>" +
+        escapeHtml(new Date(e.t).toISOString()) +
+        "</td><td>" +
+        escapeHtml(lb) +
+        "</td><td>" +
+        escapeHtml(Number(e.primaryConf || 0).toFixed(1)) +
+        "%</td></tr>";
+    }
+    box.innerHTML =
+      '<div class="jarvis-report-doc"><h1>AI Surveillance Incident Log</h1>' +
+      "<p>Generated · " +
+      escapeHtml(ts) +
+      "</p>" +
+      "<table><thead><tr><th>UTC time</th><th>Signals</th><th>Confidence</th></tr></thead>" +
+      "<tbody>" +
+      (rows ||
+        '<tr><td colspan="3">No threats logged in this session.</td></tr>') +
+      "</tbody></table></div>";
+    openModal("jarvisModalReport");
+  });
+
+  document
+    .getElementById("jarvisPrintReport")
+    .addEventListener("click", function () {
+      window.print();
+    });
+
+  function drawOverlay(data, p) {
+    if (!video.videoWidth || !octx || !canvas) return;
+    var fw =
+      data && data.frame && data.frame.w
+        ? data.frame.w
+        : video.videoWidth;
+    var fh =
+      data && data.frame && data.frame.h
+        ? data.frame.h
+        : video.videoHeight;
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    octx.clearRect(0, 0, canvas.width, canvas.height);
+    var sx = canvas.width / fw;
+    var sy = canvas.height / fh;
+    var pulseA = Math.sin(p) * 0.35 + 0.65;
+
+    var wd = data && data.weapon && data.weapon.detections;
+    if (wd && wd.length) {
+      for (var i = 0; i < wd.length; i++) {
+        if (wd[i].conf < 0.22) continue;
+        var bb = wd[i].bbox;
+        var x = bb[0] * sx;
+        var y = bb[1] * sy;
+        var ww = (bb[2] - bb[0]) * sx;
+        var hh = (bb[3] - bb[1]) * sy;
+        octx.strokeStyle = "rgba(255,59,74," + (0.55 + 0.25 * pulseA) + ")";
+        octx.lineWidth = 2 + pulseA * 0.85;
+        octx.shadowColor = "rgba(255,59,74,0.9)";
+        octx.shadowBlur = 12 + 8 * pulseA;
+        octx.strokeRect(x, y, ww, hh);
+        octx.shadowBlur = 0;
+      }
+    }
+
+    var pb = data.person_boxes || [];
+    for (var j = 0; j < pb.length; j++) {
+      var b = pb[j].bbox;
+      octx.strokeStyle = "rgba(77,163,255," + (0.45 + 0.3 * pulseA) + ")";
+      octx.lineWidth = 1.65 + pulseA * 0.55;
+      octx.shadowColor = "rgba(77,163,255,0.6)";
+      octx.shadowBlur = 10 + 6 * pulseA;
+      octx.strokeRect(
+        b[0] * sx,
+        b[1] * sy,
+        (b[2] - b[0]) * sx,
+        (b[3] - b[1]) * sy
+      );
+      octx.shadowBlur = 0;
+    }
+
+    var fightHot =
+      data.fight &&
+      (data.fight.label === "fight" || Number(data.fight.p_fight || 0) >= 0.52);
+    if (fightHot) {
+      var L = Math.min(canvas.width, canvas.height) * 0.085;
+      octx.strokeStyle = "rgba(255,140,66," + (0.58 + 0.25 * pulseA) + ")";
+      octx.lineWidth = 3;
+      cornerBracket(octx, 0, 0, L, L);
+      cornerBracket(octx, canvas.width - L, 0, L, L, "tr");
+      cornerBracket(octx, 0, canvas.height - L, L, L, "bl");
+      cornerBracket(octx, canvas.width - L, canvas.height - L, L, L, "br");
+    }
+  }
+
+  function cornerBracket(ctx2, bx, by, w, h, mode) {
+    mode = mode || "tl";
+    ctx2.beginPath();
+    if (mode === "tl") {
+      ctx2.moveTo(bx, by + h);
+      ctx2.lineTo(bx, by);
+      ctx2.lineTo(bx + w, by);
+    } else if (mode === "tr") {
+      ctx2.moveTo(bx - w, by);
+      ctx2.lineTo(bx, by);
+      ctx2.lineTo(bx, by + h);
+    } else if (mode === "bl") {
+      ctx2.moveTo(bx, by - h);
+      ctx2.lineTo(bx, by);
+      ctx2.lineTo(bx + w, by);
+    } else {
+      ctx2.moveTo(bx - w, by);
+      ctx2.lineTo(bx, by);
+      ctx2.lineTo(bx, by - h);
+    }
+    ctx2.stroke();
+  }
+
+  function syncCornerHud(data) {
+    if (!cornerHud) return;
+    var bits = [];
+    if (data.fight)
+      bits.push(
+        "Fight model · <span>P=" +
+          (Number(data.fight.p_fight || 0) * 100).toFixed(1) +
+          "%</span>"
+      );
+    if (data.weapon && data.weapon.max_conf != null)
+      bits.push(
+        "Weapon max · <span>" +
+          (Number(data.weapon.max_conf) * 100).toFixed(0) +
+          "%</span>"
+      );
+    cornerHud.innerHTML = bits.length
+      ? bits
+          .map(function (x) {
+            return '<span class="jarvis-pill">' + x + "</span>";
+          })
+          .join("")
+      : "";
+  }
+
+  function renderFaces(data, vizFacesRequested) {
+    if (!faceGrid) return;
+    var lf = data.live_faces;
+    if (!lf || !lf.length) {
+      faceGrid.innerHTML = "";
+      if (facesHint) facesHint.style.display = lf && lf.length === 0 ? "" : "";
+      var dual =
+        data.dual_view &&
+        data.dual_view.show &&
+        data.dual_view.crop_data_urls &&
+        data.dual_view.crop_data_urls.length;
+      if (
+        dual &&
+        data.dual_view.face_matches &&
+        data.dual_view.face_matches.length
+      ) {
+        facesHint.style.display = "none";
+        var mh = "";
+        var nFm = data.dual_view.face_matches.length;
+        var nCp = data.dual_view.crop_data_urls.length;
+        var nDual = Math.min(nFm, nCp);
+        for (var d = 0; d < nDual; d++) {
+          var fm = data.dual_view.face_matches[d];
+          var dist = fm.distance != null ? String(fm.distance) : "—";
+          var cp = Math.max(
+            0,
+            Math.min(100, Math.round((1 - Number(fm.distance || 0) / 0.55) * 100))
+          );
+          mh +=
+            '<article class="jarvis-face-card is-matched is-new"><div class="jarvis-face-img-wrap">';
+          mh +=
+            (data.dual_view.crop_data_urls[d]
+              ? '<img src="' +
+                data.dual_view.crop_data_urls[d].replace(/"/g, "&quot;") +
+                '" alt=""/>'
+              : "") +
+            '<span class="jarvis-face-scanner-line" aria-hidden="true"></span></div>';
+          mh +=
+            '<div class="jarvis-face-caption"><div class="jarvis-face-name">' +
+            escapeHtml(fm.display_name || "") +
+            '</div><div class="jarvis-face-id">Dist · ' +
+            escapeHtml(dist) +
+            "</div>";
+          mh +=
+            '<div class="jarvis-face-status">Match confidence ~ ' +
+            escapeHtml(cp) +
+            "%</div></div></article>";
+        }
+        faceGrid.innerHTML = mh;
+      }
+      if (vizFacesRequested && lf && lf.length === 0) {
+        facesHint.textContent =
+          "Matching with database… (no biometric hit on visible subjects).";
+      }
+      return;
+    }
+
+    facesHint.style.display = "none";
+    var html = "";
+    for (var i = 0; i < lf.length; i++) {
+      var row = lf[i];
+      var mch = row.match;
+      var bk = row.bbox
+        ? "b" +
+          Math.round(row.bbox[0] / 22) +
+          "-" +
+          Math.round(row.bbox[1] / 22)
+        : "r" + i;
+      var faceFresh = !seenFaceKeys[bk];
+      seenFaceKeys[bk] = 1;
+      html +=
+        '<article class="jarvis-face-card ' +
+        (vizFacesRequested && !mch ? "is-scanning " : "") +
+        (faceFresh ? "is-new " : "") +
+        (mch ? "is-matched" : "is-unknown") +
+        '">';
+      html += '<div class="jarvis-face-img-wrap">';
+      if (row.crop_data_url)
+        html +=
+          '<img src="' +
+          row.crop_data_url.replace(/"/g, "&quot;") +
+          '" alt="Subject"/>';
+      html +=
+        '<span class="jarvis-face-scanner-line" aria-hidden="true"></span></div>';
+      html += '<div class="jarvis-face-caption">';
+      if (vizFacesRequested && !mch) {
+        html +=
+          '<div class="jarvis-face-status">Matching with database...</div>';
+      }
+      if (mch) {
+        html +=
+          '<div class="jarvis-face-name">' +
+          escapeHtml(mch.display_name || "") +
+          "</div>";
+        if (mch.person_code)
+          html +=
+            '<div class="jarvis-face-id">ID · ' +
+            escapeHtml(mch.person_code) +
+            "</div>";
+        html +=
+          '<div class="jarvis-face-status">Confidence ' +
+          escapeHtml(mch.confidence_pct != null ? mch.confidence_pct : "?") +
+          "%</div>";
+      } else if (!vizFacesRequested) {
+        html +=
+          '<div class="jarvis-face-status" style="color:var(--jarvis-muted)">Biometric sweep pending...</div>';
+      } else {
+        html +=
+          '<div class="jarvis-face-name" style="color:var(--jarvis-warn,#ffc93d);">Unknown Individual</div>';
+        html +=
+          '<div class="jarvis-face-status">Not in enrolled gallery</div>';
+      }
+      html += "</div></article>";
+    }
+    faceGrid.innerHTML = html;
+  }
+
+  var lastLag = [];
+
+  function postFrame() {
+    if (!video || !cap || !ctx || busy) return;
+    if (!video.videoWidth) return;
+    busy = true;
+    cap.width = video.videoWidth;
+    cap.height = video.videoHeight;
+    ctx.drawImage(video, 0, 0);
+    cap.toBlob(function (blob) {
+      if (!blob) {
+        busy = false;
+        return;
+      }
+      frameIx += 1;
+      var doFace = frameIx % 3 === 0;
+      var fd = new FormData();
+      fd.append("frame", blob, "frame.jpg");
+      fd.append(
+        "use_fight",
+        document.getElementById("id_use_fight") &&
+        document.getElementById("id_use_fight").checked
+          ? "1"
+          : "0"
+      );
+      fd.append(
+        "use_weapon",
+        document.getElementById("id_use_weapon") &&
+        document.getElementById("id_use_weapon").checked
+          ? "1"
+          : "0"
+      );
+      var fws = document.getElementById("id_fight_weights");
+      var wws = document.getElementById("id_weapon_weights");
+      if (fws) fd.append("fight_weights", fws.value);
+      if (wws) fd.append("weapon_weights", wws.value);
+      fd.append("viz_persons", "1");
+      fd.append("viz_faces", doFace ? "1" : "0");
+      var t0 = performance.now();
+      fetch(frameUrl, {
+        method: "POST",
+        body: fd,
+        headers: { "X-CSRFToken": getCsrf() },
+        credentials: "same-origin",
+      })
+        .then(function (r) {
+          return r.json();
+        })
+        .then(function (data) {
+          busy = false;
+          var lag = Math.round(performance.now() - t0);
+          lastLag.push(lag);
+          if (lastLag.length > 6) lastLag.shift();
+          if (fpsHud) {
+            var avg =
+              lastLag.reduce(function (a, b) {
+                return a + b;
+              }, 0) / lastLag.length;
+            fpsHud.textContent = "~" + Math.round(avg) + " ms / frame · DB match every 3rd";
+          }
+          if (!data || !data.ok) return;
+          lastDraw = data;
+          ingestThreat(data, thumbDataUrl());
+          syncCornerHud(data);
+          renderFaces(data, doFace);
+        })
+        .catch(function () {
+          busy = false;
+        });
+    }, "image/jpeg", 0.82);
+  }
+
+  function stopCam() {
+    if (iv) {
+      clearInterval(iv);
+      iv = null;
+    }
+    if (stream) {
+      stream.getTracks().forEach(function (t) {
+        t.stop();
+      });
+      stream = null;
+    }
+    if (video) video.srcObject = null;
+    if (startBtn) startBtn.disabled = false;
+    if (stopBtn) stopBtn.disabled = true;
+    if (statusEl) statusEl.textContent = "Camera idle";
+    lastDraw = null;
+    if (octx && canvas) octx.clearRect(0, 0, canvas.width, canvas.height);
+  }
+
+  if (startBtn)
+    startBtn.addEventListener("click", function () {
+      stopCam();
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        statusEl.textContent = "Camera not supported.";
+        return;
+      }
+      navigator.mediaDevices
+        .getUserMedia({
+          video: {
+            facingMode: "user",
+            width: { ideal: 1280 },
+            height: { ideal: 720 },
+          },
+          audio: false,
+        })
+        .then(function (s) {
+          stream = s;
+          video.srcObject = s;
+          video.play().catch(function () {});
+          startBtn.disabled = true;
+          if (stopBtn) stopBtn.disabled = false;
+          if (statusEl) statusEl.textContent = "Neural pipelines active · 520 ms cadence";
+          iv = setInterval(postFrame, 520);
+        })
+        .catch(function (err) {
+          if (statusEl)
+            statusEl.textContent =
+              "Camera error: " + (err && err.message ? err.message : "blocked");
+        });
+    });
+
+  if (stopBtn) stopBtn.addEventListener("click", stopCam);
+
+  threatList.innerHTML =
+    '<div class="jarvis-empty">Awaiting telemetry. Start the camera feed.</div>';
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,686 @@
+
+{% extends "base.html" %}
+{% block title %}Street sign reader — Smart City{% endblock %}
+{% block content %}
+<style>
+  .ss-wrap { max-width:920px; margin:0 auto; padding:0 12px 48px; }
+  .ss-wrap h1 { margin-bottom:4px; }
+  .ss-sub { color:#666; font-size:13px; margin-bottom:20px; }
+
+  /* ── upload zone ── */
+  #dropZone {
+    display:block;
+    border:2px dashed #4a90d9; border-radius:10px; padding:38px 20px;
+    text-align:center; cursor:pointer; background:#f0f6ff;
+    transition:background .2s; user-select:none;
+  }
+  #dropZone:hover, #dropZone.over { background:#ddeeff; }
+  #dropZone .dz-icon { font-size:42px; margin-bottom:8px; }
+  #dropZone .dz-main { font-size:16px; font-weight:bold; color:#2255aa; }
+  #dropZone .dz-sub  { font-size:12px; color:#888; margin-top:4px; }
+  #fileInput { display:none; }
+
+  /* ── spinner ── */
+  #processingMsg { display:none; text-align:center; padding:32px; font-size:16px; color:#555; }
+  .spin {
+    display:inline-block; width:26px; height:26px;
+    border:4px solid #ccc; border-top-color:#4a90d9;
+    border-radius:50%; animation:spin .8s linear infinite;
+    vertical-align:middle; margin-right:10px;
+  }
+  @keyframes spin { to { transform:rotate(360deg); } }
+
+  /* ── results section ── */
+  #resultsSection { margin-top:24px; }
+  .result-video { width:100%; border-radius:8px; background:#000; display:block; }
+
+  /* ── stop-line panel (shown after video loads) ── */
+  #stopLineSection {
+    margin-top:18px;
+    border:2px solid #333;
+    border-radius:10px;
+    overflow:hidden;
+  }
+  #slHeader {
+    background:#1a1a2e; color:#fff;
+    padding:10px 16px;
+    display:flex; align-items:center; gap:12px; flex-wrap:wrap;
+  }
+  .sl-badge { background:#ff00ff; color:#fff; border-radius:20px; padding:2px 12px; font-size:12px; font-weight:bold; }
+  #slInstruct { font-size:14px; font-weight:bold; flex:1; }
+  #slHint { font-size:12px; color:#aaa; width:100%; padding-bottom:4px; }
+
+  /* ── first frame canvas for line drawing ── */
+  #firstFrameSection { margin-top:18px; border:2px solid #333; border-radius:10px; overflow:hidden; }
+  #ffHeader { background:#1a1a2e; color:#fff; padding:10px 16px; }
+  #ffTitle { font-size:15px; font-weight:bold; }
+  #ffHint { font-size:12px; color:#aaa; margin-top:4px; }
+  #canvasWrap { position:relative; background:#000; line-height:0; }
+  #drawCanvas { display:block; width:100%; cursor:crosshair; }
+  #canvasOverlay {
+    position:absolute; top:10px; left:50%; transform:translateX(-50%);
+    background:rgba(0,0,0,.7); color:#ff88ff;
+    font-size:14px; font-weight:bold; padding:6px 16px; border-radius:20px;
+    pointer-events:none;
+  }
+  #ffActions { background:#1a1a2e; padding:10px 16px; display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+  .ff-btn { padding:8px 20px; border:none; border-radius:6px; cursor:pointer; font-size:14px; font-weight:bold; }
+  .ff-btn:disabled { opacity:.4; cursor:default; }
+  #btnProcess { background:#00ff00; color:#000; font-size:15px; padding:10px 28px; }
+  #btnResetLine { background:#555; color:#fff; }
+  #btnAISuggest { background:#ff00ff; color:#fff; }
+  #ffCoords { font-size:12px; color:#888; margin-left:auto; }
+
+  /* ── video wrapper ── */
+  #videoWrapper { position:relative; display:inline-block; width:100%; line-height:0; margin-top:18px; }
+  .result-video { width:100%; border-radius:8px; background:#000; display:block; }
+
+  /* ── violation log ── */
+  #violationLog { margin-top:16px; border:2px solid #ff4444; border-radius:8px; overflow:hidden; }
+  .vlog-hdr { background:#ff4444; color:#fff; padding:8px 16px; font-weight:bold; font-size:15px; }
+  .vlog-body { background:#1a0000; padding:12px 16px; min-height:50px; }
+  .vlog-empty { color:#888; font-size:13px; font-style:italic; }
+  .vlog-pill {
+    display:inline-flex; align-items:center; gap:6px;
+    background:#3a0000; border:1px solid #ff4444; border-radius:20px;
+    padding:4px 14px; margin:4px 6px 4px 0;
+    color:#ff9999; font-size:14px; font-weight:bold;
+  }
+  .vlog-dot { width:10px; height:10px; background:#ff4444; border-radius:50%; flex-shrink:0; }
+
+  /* ── stats card ── */
+  .stats-card { background:#f8f9fb; border-radius:8px; padding:14px 18px; margin-top:12px; font-size:14px; }
+  .stats-card p { margin:4px 0; }
+
+  /* ── camera panel ── */
+  #cameraPanel { display:none; margin-top:12px; padding:10px; background:#f8f9fb; border-radius:8px; }
+  .cam-btn { padding:7px 14px; border:none; border-radius:5px; cursor:pointer; font-size:13px; margin-right:6px; }
+</style>
+
+<div class="ss-wrap">
+  <h1>Street sign &amp; traffic violation detector</h1>
+  <p class="ss-sub">
+    Upload a video or image. For videos, you'll first draw a <strong>stop line</strong> on the first frame,
+    then the video will be processed with violation detection. Cars crossing the line during a red light
+    will be marked with <span style="color:#ff0000;font-weight:bold;">RED boxes</span>.
+  </p>
+
+  <label id="dropZone" for="videoFile">
+    <div class="dz-icon">📂</div>
+    <div class="dz-main">Click here (or drag &amp; drop) to choose a video or image</div>
+    <div class="dz-sub">MP4 · AVI · MOV · MKV · WEBM · JPG · PNG · WEBP</div>
+  </label>
+
+  <form id="analyzeForm" action="{{ url_for('street_sign_analyze') }}"
+        method="post" enctype="multipart/form-data" style="display:none;">
+    <input type="file" name="media" id="videoFile"
+           accept="image/*,video/*,.mp4,.avi,.mov,.mkv,.webm" />
+    <input type="hidden" name="camera_image_data" id="cameraImageData" />
+    <input type="hidden" name="stop_line_data" id="stopLineData" />
+  </form>
+
+  <button type="button" id="openCameraBtn" class="cam-btn"
+          style="margin-top:10px;background:#2255aa;color:#fff;">📷 Open live camera</button>
+
+  <!-- First frame drawing (shown after file selected, before processing) -->
+  <div id="firstFrameSection" style="display:none;">
+    <div id="ffHeader">
+      <div id="ffTitle">📍 Draw stop line on first frame</div>
+      <div id="ffHint">Click 2 points to draw the line. Cars crossing it during red light = violation.</div>
+    </div>
+    <div id="canvasWrap">
+      <canvas id="drawCanvas"></canvas>
+      <div id="canvasOverlay">🖱 Click to place Point 1</div>
+    </div>
+    <div id="ffActions">
+      <button class="ff-btn" id="btnAISuggest">🤖 AI Suggest Line</button>
+      <button class="ff-btn" id="btnResetLine">↺ Reset line</button>
+      <button class="ff-btn" id="btnProcess" disabled>▶ Process video with this line</button>
+      <span id="ffCoords">no line yet</span>
+    </div>
+  </div>
+
+  <!-- spinner -->
+  <div id="processingMsg"><span class="spin"></span>Processing — this may take a minute…</div>
+
+  <!-- camera panel -->
+  <div id="cameraPanel">
+    <video id="camVideo" autoplay playsinline style="display:none;"></video>
+    <canvas id="camCanvas" style="display:none;"></canvas>
+    <canvas id="rtCanvas" style="width:100%;max-height:420px;background:#111;border-radius:8px;margin-top:8px;"></canvas>
+    <div style="margin-top:8px;">
+      <button type="button" id="startRtBtn"  class="cam-btn" style="background:#226622;color:#fff;">Start</button>
+      <button type="button" id="stopRtBtn"   class="cam-btn" style="background:#662222;color:#fff;">Stop</button>
+      <button type="button" id="voiceBtn"    class="cam-btn" style="background:#444;color:#fff;">Voice: ON</button>
+      <button type="button" id="xaiBtn"      class="cam-btn" style="background:#444;color:#fff;">Real XAI: OFF</button>
+      <button type="button" id="closeCamBtn" class="cam-btn" style="background:#333;color:#ccc;">Close camera</button>
+    </div>
+    <p id="rtStatus" style="font-size:12px;color:#444;margin:8px 0 0 0;">idle</p>
+    <div id="xaiPanel" style="margin-top:10px;background:#eef6ff;border-radius:8px;padding:10px;font-size:13px;">
+      <strong>Live XAI</strong>
+      <div id="xaiMode">Mode: detection boxes</div>
+      <div id="xaiTop">Top detection: none</div>
+      <div id="xaiFaith">Faithfulness: n/a</div>
+      <div id="xaiStab">Stability: n/a</div>
+      <div id="xaiUnc">Uncertainty: n/a</div>
+    </div>
+  </div>
+
+  {% if error %}
+    <p class="error" style="margin-top:16px;">{{ error }}</p>
+  {% endif %}
+
+  {% if result %}
+  <div id="resultsSection">
+    <!-- processed video -->
+    {% if output_url and result.media_type != 'image' %}
+      <div id="videoWrapper">
+        <video class="result-video" controls src="{{ output_url }}" id="resultVideo"></video>
+      </div>
+      
+      <!-- violation log (shown if stop line was used) -->
+      {% if result.stop_line_used %}
+      <div id="violationLog" style="display:block;margin-top:16px;">
+        <div class="vlog-hdr">🚨 Red-light violations — {{ result.violation_count or 0 }} car{{ 's' if (result.violation_count or 0) != 1 else '' }} caught</div>
+        <div class="vlog-body">
+          {% if result.violated_ids and result.violated_ids|length > 0 %}
+            {% for car_id in result.violated_ids %}
+              <span class="vlog-pill"><span class="vlog-dot"></span>Car ID {{ car_id }}</span>
+            {% endfor %}
+          {% else %}
+            <span class="vlog-empty">No violations — no car crossed the stop line during a red light.</span>
+          {% endif %}
+        </div>
+      </div>
+      
+      <!-- Dashboard button -->
+      {% if result.violation_count and result.violation_count > 0 and result.dashboard_token %}
+      <div style="margin-top:16px;text-align:center;">
+        <a href="/violation-dashboard/{{ result.dashboard_token }}" 
+           style="display:inline-block;padding:15px 30px;background:linear-gradient(135deg, #667eea 0%, #764ba2 100%);color:#fff;text-decoration:none;border-radius:10px;font-weight:bold;font-size:16px;box-shadow:0 4px 15px rgba(0,0,0,0.2);">
+          📊 View AI-Powered Dashboard & Generate Reports
+        </a>
+      </div>
+      {% endif %}
+      
+      <!-- detected plates (shown if plates were detected) -->
+      {% if result.plate_images %}
+      <div style="margin-top:16px;border:2px solid #00aaff;border-radius:8px;overflow:hidden;">
+        <div style="background:#00aaff;color:#fff;padding:8px 16px;font-weight:bold;font-size:15px;">
+          🚗 Detected License Plates — {{ result.plate_images|length }} plate{{ 's' if result.plate_images|length != 1 else '' }}
+        </div>
+        <div style="background:#f8f9fb;padding:16px;display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px;">
+          {% for car_id, plate_info in result.plate_images.items() %}
+          <div style="background:#fff;border:2px solid #ddd;border-radius:8px;padding:12px;text-align:center;">
+            <div style="font-weight:bold;font-size:14px;margin-bottom:8px;color:#333;">Car ID: {{ car_id }}</div>
+            <img src="{{ url_for('serve_output', filename=plate_info.path) }}" 
+                 alt="Plate {{ car_id }}" 
+                 style="width:100%;border:1px solid #ccc;border-radius:4px;margin-bottom:8px;">
+            <div style="font-size:12px;color:#666;">Confidence: {{ (plate_info.confidence * 100)|int }}%</div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+      {% endif %}
+      
+    {% elif output_url %}
+      <img src="{{ output_url }}" alt="output" style="max-width:100%;border-radius:8px;margin-top:12px;" />
+    {% endif %}
+
+    <!-- stats -->
+    <div class="stats-card">
+      <p><strong>Type:</strong> {{ result.media_type }}</p>
+      {% if result.media_type != 'image' %}
+        <p><strong>Frames processed:</strong> {{ result.frames_processed }}</p>
+      {% endif %}
+      <p><strong>Top sign:</strong> {{ result.top_sign }}</p>
+      <p><strong>Total detections:</strong>
+        {{ result.detections if result.media_type == 'image' else result.total_detections }}</p>
+      {% if result.sign_counts %}
+        <details style="margin-top:8px;">
+          <summary style="cursor:pointer;"><strong>Sign counts</strong></summary>
+          <pre style="white-space:pre-wrap;font-size:12px;background:#f0f0f0;padding:10px;border-radius:6px;margin-top:6px;">{% for k,v in result.sign_counts.items() %}{{ k }}: {{ v }}
+{% endfor %}</pre>
+        </details>
+      {% endif %}
+      {% if output_url %}
+        <p style="margin-top:10px;"><a href="{{ output_url }}" target="_blank">⬇ Download output</a></p>
+      {% endif %}
+    </div>
+
+    <!-- OCR Debug Section -->
+    {% if result.ocr_debug %}
+    <div style="margin-top:20px;border:2px solid #ff9800;border-radius:8px;overflow:hidden;">
+      <div style="background:#ff9800;color:#fff;padding:10px 16px;font-weight:bold;font-size:15px;">
+        🔍 OCR Debug Information
+      </div>
+      <div style="background:#fff3e0;padding:16px;">
+        <div style="font-family:monospace;font-size:13px;line-height:1.8;">
+          {% for debug_entry in result.ocr_debug %}
+          <div style="margin-bottom:16px;padding:12px;background:#fff;border-left:4px solid #ff9800;border-radius:4px;">
+            <div style="font-weight:bold;color:#e65100;margin-bottom:8px;">Car ID: {{ debug_entry.car_id }}</div>
+            
+            <div style="margin-bottom:6px;">
+              <span style="color:#666;">📝 Raw OCR Response:</span><br>
+              <span style="color:#d84315;font-weight:bold;">{{ debug_entry.ocr_raw or 'N/A' }}</span>
+            </div>
+            
+            <div style="margin-bottom:6px;">
+              <span style="color:#666;">🔧 Auto-Formatted:</span><br>
+              <span style="color:#f57c00;font-weight:bold;">{{ debug_entry.auto_formatted or 'N/A' }}</span>
+            </div>
+            
+            <div style="margin-bottom:6px;">
+              <span style="color:#666;">🤖 OpenAI Result:</span><br>
+              <span style="color:#2e7d32;font-weight:bold;">{{ debug_entry.openai_result or 'N/A' }}</span>
+            </div>
+            
+            <div style="margin-bottom:6px;">
+              <span style="color:#666;">✅ Final Plate:</span><br>
+              <span style="color:#1565c0;font-weight:bold;font-size:16px;">{{ debug_entry.final_plate or 'N/A' }}</span>
+            </div>
+            
+            {% if debug_entry.error %}
+            <div style="margin-top:8px;padding:8px;background:#ffebee;border-radius:4px;">
+              <span style="color:#c62828;">❌ Error: {{ debug_entry.error }}</span>
+            </div>
+            {% endif %}
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+</content>
+</file>  </div>
+  {% endif %}
+</div>
+
+<script>
+(() => {
+  /* ══════════════════════════════════════════════════════════════
+     UPLOAD / FORM
+  ══════════════════════════════════════════════════════════════ */
+  const dropZone = document.getElementById("dropZone");
+  const videoFile = document.getElementById("videoFile");
+  const analyzeForm = document.getElementById("analyzeForm");
+  const processingMsg = document.getElementById("processingMsg");
+  const firstFrameSection = document.getElementById("firstFrameSection");
+  const drawCanvas = document.getElementById("drawCanvas");
+  const canvasOverlay = document.getElementById("canvasOverlay");
+  const ffCoords = document.getElementById("ffCoords");
+  const btnResetLine = document.getElementById("btnResetLine");
+  const btnProcess = document.getElementById("btnProcess");
+  const btnAISuggest = document.getElementById("btnAISuggest");
+  const stopLineData = document.getElementById("stopLineData");
+
+  let selectedFile = null;
+  let isVideo = false;
+  let points = [];
+  let mousePos = null;
+
+  console.log("Upload elements loaded:", {dropZone, videoFile, analyzeForm, processingMsg});
+
+  dropZone.addEventListener("click", () => {
+    console.log("Drop zone clicked, opening file picker");
+    videoFile.click();
+  });
+
+  videoFile.addEventListener("change", () => {
+    console.log("File selected:", videoFile.files);
+    if (videoFile.files && videoFile.files[0]) {
+      selectedFile = videoFile.files[0];
+      const ext = selectedFile.name.split('.').pop().toLowerCase();
+      isVideo = ['mp4','avi','mov','mkv','webm'].includes(ext);
+      
+      console.log("File type:", isVideo ? "video" : "image");
+      
+      if (isVideo) {
+        // Show first frame for line drawing
+        extractFirstFrame(selectedFile);
+      } else {
+        // Images process immediately
+        dropZone.style.display = "none";
+        processingMsg.style.display = "block";
+        analyzeForm.submit();
+      }
+    } else {
+      console.log("No file selected");
+    }
+  });
+
+  function extractFirstFrame(file) {
+    const video = document.createElement("video");
+    video.preload = "metadata";
+    video.muted = true;
+    video.playsInline = true;
+    
+    video.addEventListener("loadeddata", () => {
+      video.currentTime = 0.1; // Seek to first frame
+    });
+    
+    video.addEventListener("seeked", () => {
+      // Draw to canvas
+      drawCanvas.width = video.videoWidth || 640;
+      drawCanvas.height = video.videoHeight || 360;
+      const ctx = drawCanvas.getContext("2d");
+      ctx.drawImage(video, 0, 0, drawCanvas.width, drawCanvas.height);
+      
+      // Show the drawing interface
+      dropZone.style.display = "none";
+      firstFrameSection.style.display = "block";
+      
+      // Clean up
+      URL.revokeObjectURL(video.src);
+    });
+    
+    video.src = URL.createObjectURL(file);
+  }
+
+  // Drawing on canvas
+  const ctx = drawCanvas.getContext("2d");
+  let frameImage = null;
+
+  function redraw(preview) {
+    if (!frameImage) {
+      // Save the current canvas as the base image
+      frameImage = ctx.getImageData(0, 0, drawCanvas.width, drawCanvas.height);
+    }
+    ctx.putImageData(frameImage, 0, 0);
+    
+    if (points.length >= 1) {
+      drawDot(points[0]);
+    }
+    if (points.length >= 2) {
+      drawLine(points[0], points[1], "#ff00ff");
+      drawDot(points[1]);
+      drawLabel(points[0], points[1]);
+    } else if (points.length === 1 && preview) {
+      drawLine(points[0], preview, "rgba(255,0,255,0.5)");
+    }
+  }
+
+  function drawDot(p) {
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, 8, 0, Math.PI * 2);
+    ctx.fillStyle = "#ff00ff";
+    ctx.fill();
+    ctx.strokeStyle = "#fff";
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  }
+
+  function drawLine(a, b, color) {
+    ctx.beginPath();
+    ctx.moveTo(a.x, a.y);
+    ctx.lineTo(b.x, b.y);
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 4;
+    ctx.stroke();
+  }
+
+  function drawLabel(a, b) {
+    const mx = (a.x + b.x) / 2;
+    const my = (a.y + b.y) / 2;
+    ctx.font = "bold 16px Arial";
+    ctx.fillStyle = "rgba(0,0,0,0.7)";
+    ctx.fillRect(mx - 55, my - 25, 110, 30);
+    ctx.fillStyle = "#ff00ff";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("STOP LINE", mx, my - 10);
+  }
+
+  function getCanvasXY(e) {
+    const rect = drawCanvas.getBoundingClientRect();
+    return {
+      x: Math.round((e.clientX - rect.left) * drawCanvas.width / rect.width),
+      y: Math.round((e.clientY - rect.top) * drawCanvas.height / rect.height)
+    };
+  }
+
+  drawCanvas.addEventListener("mousemove", e => {
+    if (points.length === 1) {
+      mousePos = getCanvasXY(e);
+      redraw(mousePos);
+    }
+  });
+
+  drawCanvas.addEventListener("mouseleave", () => {
+    if (points.length === 1) redraw(null);
+  });
+
+  drawCanvas.addEventListener("click", e => {
+    if (points.length >= 2) return;
+    const p = getCanvasXY(e);
+    points.push(p);
+    
+    if (points.length === 1) {
+      canvasOverlay.textContent = "🖱 Click to place Point 2";
+      ffCoords.textContent = `Point 1: (${p.x}, ${p.y})`;
+      redraw(null);
+    } else if (points.length === 2) {
+      canvasOverlay.textContent = "✅ Line set — click Process";
+      ffCoords.textContent = `(${points[0].x},${points[0].y}) → (${points[1].x},${points[1].y})`;
+      btnProcess.disabled = false;
+      redraw(null);
+    }
+  });
+
+  btnResetLine.addEventListener("click", () => {
+    points = [];
+    mousePos = null;
+    frameImage = null;
+    btnProcess.disabled = true;
+    ffCoords.textContent = "no line yet";
+    canvasOverlay.textContent = "🖱 Click to place Point 1";
+    // Reload the frame
+    if (selectedFile) extractFirstFrame(selectedFile);
+  });
+
+  btnAISuggest.addEventListener("click", async () => {
+    if (!drawCanvas.width) return;
+    btnAISuggest.disabled = true;
+    btnAISuggest.textContent = "🤖 AI thinking...";
+    canvasOverlay.textContent = "⏳ AI analyzing scene...";
+    
+    try {
+      // Get current canvas as base64
+      const frameData = drawCanvas.toDataURL("image/jpeg", 0.9);
+      
+      const res = await fetch("{{ url_for('street_sign_suggest_stop_line') }}", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ frame_data: frameData })
+      });
+      
+      const data = await res.json();
+      
+      if (!data.ok) {
+        alert("AI suggestion failed: " + (data.error || "unknown"));
+        return;
+      }
+      
+      // Apply suggested points
+      if (data.stop_line_points && data.stop_line_points.length === 2) {
+        points = [
+          { x: data.stop_line_points[0][0], y: data.stop_line_points[0][1] },
+          { x: data.stop_line_points[1][0], y: data.stop_line_points[1][1] }
+        ];
+        redraw(null);
+        btnProcess.disabled = false;
+        
+        // Show detailed info
+        const conf = Math.round(data.confidence * 100);
+        const lightType = data.traffic_light_type || "unknown";
+        const laneType = data.lane_type || "unknown";
+        
+        canvasOverlay.textContent = `✅ AI: ${conf}% conf | ${lightType} light | ${laneType} lane`;
+        ffCoords.textContent = `(${points[0].x},${points[0].y}) → (${points[1].x},${points[1].y})`;
+        
+        if (data.explanation) {
+          setTimeout(() => {
+            canvasOverlay.textContent = data.explanation;
+          }, 3000);
+        }
+      }
+    } catch (err) {
+      alert("Network error: " + err);
+    } finally {
+      btnAISuggest.disabled = false;
+      btnAISuggest.textContent = "🤖 AI Suggest Line";
+    }
+  });
+
+  btnProcess.addEventListener("click", () => {
+    if (points.length < 2) return;
+    // Store line data as JSON
+    stopLineData.value = JSON.stringify(points);
+    firstFrameSection.style.display = "none";
+    processingMsg.style.display = "block";
+    analyzeForm.submit();
+  });
+
+  dropZone.addEventListener("dragover",  e => { e.preventDefault(); dropZone.classList.add("over"); });
+  dropZone.addEventListener("dragleave", () => dropZone.classList.remove("over"));
+  dropZone.addEventListener("drop", e => {
+    e.preventDefault();
+    dropZone.classList.remove("over");
+    console.log("File dropped:", e.dataTransfer.files);
+    if (e.dataTransfer.files[0]) {
+      videoFile.files = e.dataTransfer.files;
+      videoFile.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+  });
+
+  /* ══════════════════════════════════════════════════════════════
+     CAMERA / REAL-TIME
+  ══════════════════════════════════════════════════════════════ */
+  const openCamBtn  = document.getElementById("openCameraBtn");
+  const closeCamBtn = document.getElementById("closeCamBtn");
+  const startRtBtn  = document.getElementById("startRtBtn");
+  const stopRtBtn   = document.getElementById("stopRtBtn");
+  const voiceBtn    = document.getElementById("voiceBtn");
+  const xaiBtn      = document.getElementById("xaiBtn");
+  const camPanel    = document.getElementById("cameraPanel");
+  const camVideo    = document.getElementById("camVideo");
+  const camCanvas   = document.getElementById("camCanvas");
+  const rtCanvas    = document.getElementById("rtCanvas");
+  const rtCtx       = rtCanvas.getContext("2d");
+  const rtStatus    = document.getElementById("rtStatus");
+  const xaiMode     = document.getElementById("xaiMode");
+  const xaiTop      = document.getElementById("xaiTop");
+  const xaiFaith    = document.getElementById("xaiFaith");
+  const xaiStab     = document.getElementById("xaiStab");
+  const xaiUnc      = document.getElementById("xaiUnc");
+
+  let stream=null, rtOn=false, inflight=false, lastSent=0;
+  let lastDets=[], lastCells=[], prevDets=[], roadZone=null;
+  let lastMeta={faithfulness:0}; let voiceOn=true, xaiOn=false;
+  const spoken={};
+  const COOLDOWN=4500, MIN_CONF=0.55;
+  const SPEECH={
+    "stop":"Attention, stop sign ahead.",
+    "red light":"Attention, red light. You must stop.",
+    "green light":"Green light. You can proceed.",
+    "car":"Car detected.",
+    "speed limit 20":"Speed limit twenty.",
+    "speed limit 30":"Speed limit thirty.",
+    "speed limit 40":"Speed limit forty.",
+    "speed limit 50":"Speed limit fifty.",
+    "speed limit 60":"Speed limit sixty.",
+    "speed limit 70":"Speed limit seventy.",
+    "speed limit 80":"Speed limit eighty.",
+    "speed limit 90":"Speed limit ninety.",
+    "speed limit 100":"Speed limit one hundred.",
+    "speed limit 110":"Speed limit one hundred ten.",
+    "speed limit 120":"Speed limit one hundred twenty.",
+  };
+
+  function openCam() {
+    navigator.mediaDevices.getUserMedia({video:{width:640,height:480},audio:false})
+      .then(s => { 
+        stream=s; 
+        camVideo.srcObject=s; 
+        camPanel.style.display="block"; 
+        openCameraBtn.style.display="none";
+        startRt(); 
+      })
+      .catch(err => alert("Camera failed: " + err.message));
+  }
+  function closeCam() {
+    stopRt();
+    if(stream){stream.getTracks().forEach(t=>t.stop());stream=null;}
+    camVideo.srcObject=null; 
+    camPanel.style.display="none";
+    openCameraBtn.style.display="block";
+  }
+  function drawRt() {
+    if(!camVideo.videoWidth) return;
+    if(rtCanvas.width!==camVideo.videoWidth){rtCanvas.width=camVideo.videoWidth;rtCanvas.height=camVideo.videoHeight;}
+    rtCtx.drawImage(camVideo,0,0,rtCanvas.width,rtCanvas.height);
+    rtCtx.lineWidth=2; rtCtx.font="15px Arial";
+    for(const d of lastDets){
+      const l=String(d.label||"").toLowerCase();
+      rtCtx.strokeStyle=l==="red light"?"#ff0000":l==="green light"?"#00ff00":l.startsWith("car")?"#ffcc00":"#00e5ff";
+      rtCtx.strokeRect(d.x1,d.y1,d.x2-d.x1,d.y2-d.y1);
+      rtCtx.fillStyle=rtCtx.strokeStyle;
+      rtCtx.fillText(`${d.label} ${(d.confidence*100).toFixed(0)}%`,d.x1+4,Math.max(16,d.y1-5));
+    }
+  }
+  function iou(a,b){const xA=Math.max(a.x1,b.x1),yA=Math.max(a.y1,b.y1),xB=Math.min(a.x2,b.x2),yB=Math.min(a.y2,b.y2);const i=Math.max(0,xB-xA)*Math.max(0,yB-yA);if(!i)return 0;const u=(a.x2-a.x1)*(a.y2-a.y1)+(b.x2-b.x1)*(b.y2-b.y1)-i;return u>0?i/u:0;}
+  function updXai(){
+    xaiMode.textContent=`Mode: ${xaiOn?"Real occlusion":"Detection boxes"}`;
+    if(!lastDets.length){xaiTop.textContent="Top: none";xaiFaith.textContent="Faithfulness: n/a";xaiStab.textContent="Stability: n/a";xaiUnc.textContent="Uncertainty: n/a";return;}
+    const top=[...lastDets].sort((a,b)=>(b.confidence||0)-(a.confidence||0))[0];
+    const c=Number(top.confidence||0);
+    xaiTop.textContent=`Top: ${top.label} (${(c*100).toFixed(1)}%)`;
+    xaiFaith.textContent=xaiOn?`Faithfulness: ${(Number(lastMeta.faithfulness||0)*100).toFixed(1)}%`:"Faithfulness: off";
+    let s=0,m=0;for(const d of lastDets){let b=0;for(const p of prevDets){if(p.label!==d.label)continue;b=Math.max(b,iou(d,p));}if(b>0){s+=b;m++;}}
+    const ss=m?s/m:0;
+    xaiStab.textContent=`Stability: ${(ss*100).toFixed(1)}%`;
+    xaiUnc.textContent=`Uncertainty: ${(Math.max(0,Math.min(1,1-(0.65*c+0.35*ss)))*100).toFixed(1)}%`;
+  }
+  async function sendFrame(){
+    if(!rtOn||inflight||!camVideo.videoWidth)return;
+    const now=Date.now();if(now-lastSent<300)return;
+    lastSent=now;inflight=true;
+    camCanvas.width=camVideo.videoWidth;camCanvas.height=camVideo.videoHeight;
+    camCanvas.getContext("2d").drawImage(camVideo,0,0,camCanvas.width,camCanvas.height);
+    const fd=new URLSearchParams();
+    fd.set("frame_data",camCanvas.toDataURL("image/jpeg",0.75));
+    fd.set("real_xai",xaiOn?"1":"0");
+    try{
+      const r=await fetch("{{ url_for('street_sign_realtime_frame') }}",{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded"},body:fd.toString()});
+      const d=await r.json();
+      if(d.ok){prevDets=lastDets;lastDets=d.detections||[];lastCells=d.xai_cells||[];lastMeta=d.xai_meta||{};roadZone=d.road_zone||null;rtStatus.textContent=`${lastDets.length} detections`;updXai();speakDets(lastDets);}
+      else rtStatus.textContent=d.error||"error";
+    }catch(e){rtStatus.textContent="network error";}
+    finally{inflight=false;}
+  }
+  function rtLoop(){if(!rtOn)return;drawRt();sendFrame();requestAnimationFrame(rtLoop);}
+  function startRt(){if(!stream||rtOn)return;rtOn=true;rtLoop();}
+  function stopRt(){rtOn=false;inflight=false;rtStatus.textContent="stopped";}
+  function speak(t){if(!("speechSynthesis"in window))return;window.speechSynthesis.speak(Object.assign(new SpeechSynthesisUtterance(t),{rate:1.0}));}
+  function speakDets(dets){
+    if(!voiceOn||!dets.length)return;
+    const now=Date.now();
+    for(const d of [...dets].sort((a,b)=>(b.confidence||0)-(a.confidence||0))){
+      const c=Number(d.confidence||0);if(c<MIN_CONF)continue;
+      const l=String(d.label||"").trim().toLowerCase();if(!l)continue;
+      if(now-(spoken[l]||0)<COOLDOWN)continue;
+      spoken[l]=now;speak(SPEECH[l]||`Attention, ${l}.`);break;
+    }
+  }
+
+  openCamBtn.addEventListener("click", openCam);
+  closeCamBtn.addEventListener("click", closeCam);
+  startRtBtn.addEventListener("click", startRt);
+  stopRtBtn.addEventListener("click", stopRt);
+  xaiBtn.addEventListener("click",()=>{xaiOn=!xaiOn;xaiBtn.textContent=`Real XAI: ${xaiOn?"ON":"OFF"}`;lastCells=[];});
+  voiceBtn.addEventListener("click",()=>{voiceOn=!voiceOn;voiceBtn.textContent=`Voice: ${voiceOn?"ON":"OFF"}`;if(!voiceOn&&"speechSynthesis"in window)window.speechSynthesis.cancel();});
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Smart Crowd Safety AI — Smart City{% endblock %}
+
+{% block content %}
+<div class="live-rt-wrap fight-rt-wrap weapon-test-wrap">
+  <header class="live-rt-header glass">
+    <div class="cockpit-brand">
+      <span class="cockpit-logo">🛡</span>
+      <div>
+        <h1 class="cockpit-title">Smart Crowd Safety AI</h1>
+        <p class="cockpit-sub">
+          Détection foule, combat (YOLO classify), panique, objets abandonnés — test dans le navigateur
+        </p>
+      </div>
+    </div>
+    <div class="live-rt-header-actions">
+      <a href="{% url 'monitoring:dashboard' %}" class="btn-ghost-xl">Tableau de bord</a>
+    </div>
+  </header>
+
+  <div class="live-rt-body fight-rt-body weapon-test-body">
+    <aside class="glass live-rt-sources fight-panel">
+      <h2 class="panel-title">Tester ici</h2>
+      <form method="post" class="fight-form" action="" enctype="multipart/form-data">
+        {% csrf_token %}
+        {% if form.non_field_errors %}
+          <ul class="fight-field-errors fight-form-errors">
+            {% for e in form.non_field_errors %}<li>{{ e }}</li>{% endfor %}
+          </ul>
+        {% endif %}
+        <div class="fight-field">
+          <label for="id_video_file" class="fight-label">{{ form.video_file.label }}</label>
+          {{ form.video_file }}
+          {% if form.video_file.errors %}
+            <ul class="fight-field-errors">
+              {% for e in form.video_file.errors %}<li>{{ e }}</li>{% endfor %}
+            </ul>
+          {% endif %}
+          <p class="muted small fight-hint">MP4, WebM, MKV, MOV, AVI — max. {{ smartcrowd_upload_max_mb }}&nbsp;Mo.</p>
+        </div>
+        <div class="fight-field">
+          <label for="id_max_frames" class="fight-label">{{ form.max_frames.label }}</label>
+          {{ form.max_frames }}
+          {% if form.max_frames.errors %}
+            <ul class="fight-field-errors">
+              {% for e in form.max_frames.errors %}<li>{{ e }}</li>{% endfor %}
+            </ul>
+          {% endif %}
+          <p class="muted small fight-hint">
+            <strong>0</strong> = {{ smartcrowd_default_frames }}&nbsp;frames (défaut rapide). Max. web&nbsp;: {{ smartcrowd_cap_frames }}.
+          </p>
+        </div>
+        <button type="submit" class="btn-neon-block fight-submit">Analyser la vidéo</button>
+      </form>
+
+      {% if run_error %}
+        <div class="fight-alert fight-alert-error" role="alert">
+          <strong>Erreur</strong>
+          <p>{{ run_error }}</p>
+        </div>
+      {% endif %}
+
+      {% if result %}
+        <div class="fight-result">
+          <div class="fight-verdict {% if result.explanation.alert %}is-fight{% else %}is-calm{% endif %}">
+            <span class="fight-verdict-label">Résultat</span>
+            <span class="fight-verdict-meta">
+              Risque max <strong>{{ result.stats.max_risk|floatformat:3 }}</strong>
+              {% if result.fight_backend %} · {{ result.fight_backend }}{% endif %}
+            </span>
+          </div>
+          {% if elapsed_sec %}
+            <p class="muted small">Durée traitement&nbsp;: {{ elapsed_sec }}&nbsp;s
+              {% if frames_used %}· {{ frames_used }}&nbsp;frames max{% endif %}
+            </p>
+          {% endif %}
+          <p class="muted small fight-hint-wide">
+            Personnes max&nbsp;: {{ result.stats.max_people }} · Alertes (frames)&nbsp;: {{ result.stats.alerts }} · Frames traitées&nbsp;: {{ result.stats.frames }}
+          </p>
+          {% if result.explanation.triggers %}
+            <p class="muted small"><strong>Explication :</strong></p>
+            <ul class="muted small">
+              {% for t in result.explanation.triggers %}
+                <li>{{ t }}</li>
+              {% endfor %}
+            </ul>
+          {% endif %}
+        </div>
+      {% endif %}
+
+      <h2 class="panel-title" style="margin-top:1.5rem;">Comment tester</h2>
+      <ol class="muted small fight-hint-wide" style="padding-left:1.2rem;">
+        <li>Lancez le serveur Django&nbsp;: <code>python manage.py runserver</code></li>
+        <li>Ouvrez cette page&nbsp;: <code>http://127.0.0.1:8000/smart-crowd-safety-ai/</code></li>
+        <li>Uploadez une courte vidéo (ou laissez «&nbsp;frames max&nbsp;» à 0 pour le défaut {{ smartcrowd_default_frames }})</li>
+        <li>Placez <code>best_fight_classifier.pt</code> à la racine du projet (même que <code>manage.py</code>) pour P(combat)</li>
+        <li>Attendez la fin du calcul (peut prendre 1–5&nbsp;min selon la durée et le PC)</li>
+      </ol>
+
+      <h2 class="panel-title" style="margin-top:1rem;">Projet &amp; CLI</h2>
+      <p class="muted small">
+        Dossier&nbsp;: <code>{{ project_dir }}</code>
+        {% if readme_exists %}(README présent){% endif %}
+      </p>
+      <pre class="fight-hint" style="white-space:pre-wrap; font-size:0.8rem;">python main.py demo --video vid.mp4 --output out.mp4
+streamlit run app/streamlit_app.py</pre>
+    </aside>
+
+    <div class="live-rt-main weapon-test-main">
+      <div class="video-stage glass weapon-test-stage">
+        <div class="video-corners" aria-hidden="true"></div>
+        <div class="video-stage-inner fight-video-inner">
+          {% if annotated_video_url %}
+            <div class="fight-embed-wrap">
+              <p class="muted small" style="margin-bottom:0.5rem;">Vidéo annotée (sortie pipeline)</p>
+              <video
+                class="fight-local-video weapon-local-video"
+                src="{{ annotated_video_url }}"
+                controls
+                playsinline
+                preload="metadata"
+              ></video>
+            </div>
+          {% endif %}
+          {% if local_video_url %}
+            <div class="fight-embed-wrap" {% if annotated_video_url %}style="margin-top:1rem;"{% endif %}>
+              <p class="muted small" style="margin-bottom:0.5rem;">{% if annotated_video_url %}Vidéo source (upload){% else %}Vidéo uploadée{% endif %}</p>
+              <video class="fight-local-video weapon-local-video" src="{{ local_video_url }}" controls playsinline preload="metadata"></video>
+            </div>
+          {% endif %}
+          {% if not annotated_video_url and not local_video_url %}
+            <div class="stage-empty">
+              <p class="stage-empty-kicker">Aperçu</p>
+              <p class="muted small">
+                Après analyse, la vidéo avec surimpressions (tracks, scores) s’affiche ici.
+              </p>
+            </div>
+          {% endif %}
+        </div>
+        <div class="stage-toolbar">
+          <span class="stage-hint-toolbar">YOLOv8 + classify combat · panique · abandonné</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,74 @@
+# Secrets — ne jamais versionner
+.env
+.env.local
+.env.*.local
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+.Python
+*.egg
+*.egg-info/
+.eggs/
+dist/
+build/
+pip-wheel-metadata/
+
+# Environnements virtuels (partout dans le dépôt)
+.venv/
+venv/
+env/
+**/venv/
+**/.venv/
+
+# Django / base de données locale
+db.sqlite3
+db.sqlite3-journal
+db.sqlite3-wal
+db.sqlite3-shm
+*.sqlite3
+
+# Fichiers uploadés, médias générés, exports temporaires
+media/
+
+# Coverage / tests / qualité
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.tox/
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+*.cover
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Logs
+*.log
+logs/
+
+# Dépendances front (React Native / Expo / Node)
+node_modules/
+**/node_modules/
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+desktop.ini
+.idea/
+.vscode/
+
+# Modèles & poids lourds — hors Git pour alléger le dépôt (copier localement ou CI)
+*.pt
+*.pth
+*.onnx
+*.keras
+*.h5
+*.safetensors
+*.pb
+*.tflite
+*.engine

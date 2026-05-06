@@ -1,0 +1,31 @@
+{# Progress ring + % + status + load bars — animated by static/monitoring/fusion_hub_dashboard.js #}
+<div class="bio-scanner-dock" aria-live="polite">
+  <div class="bio-scanner-progress-row">
+    <div class="bio-scanner-progress-ring" aria-hidden="true">
+      <svg class="bio-scanner-ring-svg" viewBox="0 0 44 44">
+        <circle class="bio-scanner-ring-bg" cx="22" cy="22" r="18" fill="none" />
+        <circle
+          class="bio-scanner-ring-fill"
+          cx="22"
+          cy="22"
+          r="18"
+          fill="none"
+          stroke-dasharray="113.1"
+          stroke-dashoffset="113.1"
+        />
+      </svg>
+    </div>
+    <div class="bio-scanner-pct-block">
+      <span class="bio-scanner-pct">0%</span>
+      <span class="bio-scanner-pct-label">SCAN PROGRESS</span>
+    </div>
+  </div>
+  <p class="bio-scanner-status">Capturing face...</p>
+  <div class="bio-scanner-loadbars" aria-hidden="true">
+    <span class="bio-loadbar"></span>
+    <span class="bio-loadbar"></span>
+    <span class="bio-loadbar"></span>
+    <span class="bio-loadbar"></span>
+    <span class="bio-loadbar"></span>
+  </div>
+</div>

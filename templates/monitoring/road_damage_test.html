@@ -1,0 +1,540 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block body_class %}cockpit fusion-hub-sc road-damage-sc{% endblock %}
+
+{% block title %}Smart City · Road Command Center{% endblock %}
+
+{% block extra_head %}
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'monitoring/fusion_hub_dashboard.css' %}">
+  <link rel="stylesheet" href="{% static 'monitoring/fusion_hub_smartcity.css' %}">
+  <link rel="stylesheet" href="{% static 'monitoring/road_damage_theme.css' %}">
+{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+<style>
+  :root {
+    --navy: #041e42;
+    --card: #082B5F;
+    --accent: #2F80ED;
+    --text: #e8f0ff;
+    --muted: #8ca0c4;
+    --crit: #e53935;
+    --ok: #43a047;
+    --warn: #fb8c00;
+  }
+  .ai-dash { background: var(--navy); min-height: 100vh; color: var(--text); padding: 20px 20px 48px 24px; margin: -8px 0 0 0; }
+  .ai-dash * { box-sizing: border-box; }
+  .ai-hero { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px; margin-bottom: 24px; }
+  .ai-hero h1 { font-size: 1.75rem; font-weight: 800; margin: 0; letter-spacing: 0.02em; }
+  .ai-hero p { color: var(--muted); margin: 6px 0 0; max-width: 640px; line-height: 1.5; }
+  .ai-hero a { color: var(--accent); }
+  .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin-bottom: 24px; }
+  .kpi-card { background: var(--card); border: 1px solid rgba(47,128,237,0.25); border-radius: 14px; padding: 16px 18px; }
+  .kpi-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted); font-weight: 700; }
+  .kpi-val { font-size: 1.85rem; font-weight: 800; margin-top: 6px; color: #fff; }
+  .kpi-hint { font-size: 0.8rem; color: var(--muted); margin-top: 4px; }
+  .section-title { font-size: 1.1rem; font-weight: 800; margin: 0 0 12px; display: flex; align-items: center; gap: 10px; }
+  .section-title span { display: inline-block; width: 4px; height: 20px; background: var(--accent); border-radius: 2px; }
+  .map-wrap { background: var(--card); border-radius: 16px; border: 1px solid rgba(47,128,237,0.2); overflow: hidden; margin-bottom: 28px; }
+  /* Hauteur carte : surchargée dans road_damage_theme.css (thème command center) */
+  #citizen-map { height: 420px; width: 100%; z-index: 1; }
+  .map-legend { display: flex; flex-wrap: wrap; gap: 16px; padding: 12px 16px; font-size: 0.85rem; color: var(--muted); border-top: 1px solid rgba(255,255,255,0.08); }
+  .map-legend i { display: inline-block; width: 12px; height: 12px; border-radius: 50%; margin-right: 6px; vertical-align: middle; }
+  .reports-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
+  .report-card { background: var(--card); border-radius: 16px; border: 1px solid rgba(255,255,255,0.08); padding: 16px; display: flex; flex-direction: column; gap: 10px; transition: border-color 0.15s, box-shadow 0.15s; }
+  .report-card:hover { border-color: rgba(47,128,237,0.45); box-shadow: 0 8px 28px rgba(0,0,0,0.35); }
+  .btn-ai-detail { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 10px; background: linear-gradient(135deg, #2F80ED, #2563c9); color: #fff !important; font-weight: 800; font-size: 0.82rem; text-decoration: none !important; border: none; cursor: pointer; }
+  .btn-ai-detail:hover { filter: brightness(1.08); }
+  .report-card .media-box { border-radius: 12px; overflow: hidden; background: #000; max-height: 200px; display: flex; align-items: center; justify-content: center; }
+  .report-card .media-box img, .report-card .media-box video { max-width: 100%; max-height: 200px; object-fit: cover; }
+  .badge-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .badge { padding: 4px 10px; border-radius: 999px; font-size: 0.72rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; }
+  .badge-new { background: rgba(47,128,237,0.25); color: #9ecbff; border: 1px solid rgba(47,128,237,0.5); }
+  .badge-analyzing { background: rgba(251,140,0,0.2); color: #ffc266; border: 1px solid rgba(251,140,0,0.45); }
+  .badge-crit { background: rgba(229,57,53,0.25); color: #ff8a80; border: 1px solid rgba(229,57,53,0.55); }
+  .badge-med { background: rgba(251,140,0,0.2); color: #ffcc80; border: 1px solid rgba(251,140,0,0.4); }
+  .badge-low { background: rgba(67,160,71,0.22); color: #a5d6a7; border: 1px solid rgba(67,160,71,0.45); }
+  .badge-no-damage { background: #757575; color: #eceff1; border: 1px solid rgba(255,255,255,0.25); text-transform: none; letter-spacing: 0.03em; }
+  .model-warning { color: #ffb74d; font-size: 0.78rem; margin-top: 6px; line-height: 1.45; }
+  .model-line { font-size: 0.82rem; margin-top: 8px; color: #cfe3ff; }
+  .score-bar { height: 8px; border-radius: 999px; background: rgba(0,0,0,0.35); overflow: hidden; margin-top: 4px; }
+  .score-bar > div { height: 100%; background: linear-gradient(90deg, var(--accent), #64b5f6); border-radius: 999px; }
+  .reco-block { background: rgba(0,0,0,0.2); border-radius: 12px; padding: 12px; font-size: 0.88rem; line-height: 1.55; color: #cfe3ff; margin-top: 6px; }
+  .reco-block ul { margin: 8px 0 0 18px; padding: 0; }
+  .owner-pill { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 10px; background: rgba(47,128,237,0.15); border: 1px solid rgba(47,128,237,0.35); font-size: 0.82rem; margin-top: 6px; }
+  .prior-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; margin-bottom: 28px; }
+  .prior-card { background: var(--card); border-radius: 14px; padding: 14px 16px; border-left: 4px solid var(--crit); }
+  .prior-card.med { border-left-color: var(--warn); }
+  .prior-card.low { border-left-color: var(--ok); }
+  details.yolo-lab { margin-top: 40px; background: rgba(8,43,95,0.5); border-radius: 16px; border: 1px dashed rgba(47,128,237,0.35); }
+  details.yolo-lab > summary { cursor: pointer; padding: 16px 20px; font-weight: 800; color: var(--accent); list-style: none; }
+  details.yolo-lab > summary::-webkit-details-marker { display: none; }
+  .yolo-inner { padding: 0 8px 20px 8px; }
+</style>
+
+<div class="fh-root">
+  <header class="fh-nav fh-glass" aria-label="Primary">
+    <div class="fh-nav-brand fh-brand-cluster">
+      <span class="fh-brand-orb" aria-hidden="true"></span>
+      <div class="fh-brand-text">
+        <h1 class="fh-nav-logo">Smart City Platform</h1>
+        <p class="fh-nav-tag">Road Command Center</p>
+      </div>
+    </div>
+    <div class="fh-nav-meta">
+      <span class="fh-nav-loc" title="Module">Infrastructure · Road damage</span>
+      <span class="fh-clock" id="fhClock" aria-live="polite">--:--:--</span>
+      <span class="fh-icon-chip" title="Notifications">🔔</span>
+      <span class="fh-nav-user" title="Operator" aria-hidden="true"></span>
+    </div>
+  </header>
+
+<div class="ai-dash">
+  <header class="ai-hero">
+    <div>
+      <h1>AI Road Damage Intelligence Dashboard</h1>
+      <p>Citizen reports → YOLO vision (when available) + IA multi-agents → scoring. La confiance modèle pèse 66 % dans le score de base ; un bonus s’ajoute quand beaucoup de détections « dégât chaussée » sont présentes (0,17×gravité + 0,17×localisation + 0,66×confiance + bonus volume).</p>
+    </div>
+    <a href="{% url 'monitoring:surveillance_dashboard' %}" class="btn-ghost-xl" style="border-color:rgba(47,128,237,0.5); color:#9ecbff;">Surveillance</a>
+  </header>
+
+  <section class="drone-live-panel" style="margin-bottom:28px; padding:20px 22px; border-radius:16px; border:1px solid rgba(47,128,237,0.35); background:rgba(8,43,95,0.55); backdrop-filter:blur(8px);">
+    <h2 class="section-title" style="margin-bottom:12px;"><span></span> Drone — vérification route en direct</h2>
+    <p style="color:var(--muted); margin:0 0 16px; font-size:0.9rem; line-height:1.55; max-width:920px;">
+      Saisissez l’identifiant d’un <strong>signalement citoyen</strong> pour ouvrir la <strong>même analyse IA</strong> que
+      <code>/reclamations/&lt;id&gt;/ai/</code> (YOLO road damage, scoring multi-agents, XAI, copilot), avec <strong>actualisation automatique</strong> pour suivre l’évolution comme un flux temps réel.
+    </p>
+    <form id="form-drone-live" style="display:flex; flex-wrap:wrap; align-items:flex-end; gap:14px;">
+      <label style="display:flex; flex-direction:column; gap:6px; font-size:0.82rem; font-weight:700; color:var(--muted);">
+        ID signalement
+        <input type="number" id="drone-rec-id" name="pk" min="1" step="1" placeholder="ex. 3" required
+               style="padding:10px 14px; border-radius:10px; border:1px solid rgba(47,128,237,0.45); background:rgba(0,0,0,0.35); color:var(--text); width:min(220px,100%); font-weight:600;">
+      </label>
+      <label style="display:flex; flex-direction:column; gap:6px; font-size:0.82rem; font-weight:700; color:var(--muted);">
+        Intervalle actualisation (s)
+        <input type="number" id="drone-refresh" name="refresh_sec" min="3" max="120" value="10"
+               style="padding:10px 14px; border-radius:10px; border:1px solid rgba(47,128,237,0.45); background:rgba(0,0,0,0.35); color:var(--text); width:110px; font-weight:600;">
+      </label>
+      <label style="display:flex; align-items:center; gap:8px; font-size:0.82rem; font-weight:600; color:var(--text); cursor:pointer; max-width:min(520px,100%);">
+        <input type="checkbox" id="drone-esp" name="esp" value="1" style="width:18px; height:18px; accent-color:#2F80ED;">
+        Utiliser la caméra ESP32 (<code>/capture</code> + flux MJPEG), comme <code>/fire-camera/detect/</code> — même pipeline road damage que la page IA du signalement.
+      </label>
+      <button type="submit" class="btn-ai-detail" style="padding:12px 22px; border:none; cursor:pointer; font-size:0.88rem;">
+        Sortir le drone — vérifier le road damage (temps réel)
+      </button>
+    </form>
+  </section>
+
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="kpi-label">Total reports</div>
+      <div class="kpi-val">{{ citizen_kpis.total_reports }}</div>
+      <div class="kpi-hint">CitizenReclamation</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Critical / High</div>
+      <div class="kpi-val" style="color:#ff8a80;">{{ citizen_kpis.critical_reports }}</div>
+      <div class="kpi-hint">Priorité IA Critical ou High</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Average AI score</div>
+      <div class="kpi-val">{{ citizen_kpis.avg_ai_score }}</div>
+      <div class="kpi-hint">0–100 agrégé</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Reports today</div>
+      <div class="kpi-val">{{ citizen_kpis.reports_today }}</div>
+      <div class="kpi-hint">Horloge serveur locale</div>
+    </div>
+  </div>
+
+  <h2 class="section-title"><span></span> Map &amp; heatmap</h2>
+  <div class="map-wrap">
+    <div id="citizen-map"></div>
+    <div class="map-legend">
+      <span><i style="background:#e53935;"></i> Critical / High</span>
+      <span><i style="background:#fb8c00;"></i> Medium</span>
+      <span><i style="background:#43a047;"></i> Low</span>
+      <span>Heatmap intensity ∝ AI score</span>
+    </div>
+  </div>
+
+  <h2 class="section-title"><span></span> AI prioritization</h2>
+  <div class="prior-grid">
+    {% for row in citizen_priority_queue %}
+        <div class="prior-card">
+          <strong>#{{ row.rec.pk }}</strong> · {{ row.rec.get_category_display }}
+          <div style="margin-top:6px; font-size:0.9rem; color:var(--muted);">AI {{ row.pipeline.ai_score }} · {{ row.pipeline.final_priority }}</div>
+          <div style="margin-top:8px; font-size:0.85rem;">{{ row.rec.description|truncatewords:22 }}</div>
+        </div>
+    {% empty %}
+      <p style="color:var(--muted);">Aucun signalement Critical/High — ou base vide.</p>
+    {% endfor %}
+  </div>
+
+  <h2 class="section-title"><span></span> Recommendations (aggregate)</h2>
+  <div class="kpi-card" style="margin-bottom:28px;">
+    <ul style="margin:0; padding-left: 20px; color: var(--muted); line-height: 1.7;">
+      <li>Pothole / chaussée → sécuriser zone, marquage temporaire, équipe maintenance route.</li>
+      <li>Déchets → service environnement / nettoyage municipal.</li>
+      <li>Fumée / incendie → vérification source, autorités &amp; protection citoyens.</li>
+      <li>Inondation → drainage, pompage, signalisation danger.</li>
+    </ul>
+  </div>
+
+  <h2 class="section-title"><span></span> Recent reports</h2>
+  <div class="reports-grid">
+    {% for row in citizen_enriched %}
+      {% with p=row.pipeline r=row.rec %}
+      <article class="report-card">
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;">
+          <span style="font-size:0.72rem; color:var(--muted); font-weight:700;">#{{ r.pk }}</span>
+          <span style="display:flex; flex-wrap:wrap; gap:8px; align-items:center;">
+            <a class="btn-ai-detail" href="{% url 'monitoring:reclamation_ai_detail' r.pk %}">Analyse IA</a>
+          </span>
+        </div>
+        <div class="media-box">
+          {% if r.media %}
+            {% if r.media_type == "image" %}
+              <a href="{% url 'monitoring:reclamation_ai_detail' r.pk %}" title="Ouvrir l’analyse IA">
+                <img src="{{ r.media.url }}" alt="Signalement">
+              </a>
+            {% else %}
+              <video src="{{ r.media.url }}" controls playsinline preload="metadata"></video>
+            {% endif %}
+          {% else %}
+            <span style="color:var(--muted); padding:24px;">Pas de média</span>
+          {% endif %}
+        </div>
+        <div class="badge-row">
+          {% if p.workflow_status == "New" %}
+            <span class="badge badge-new">New</span>
+          {% elif p.workflow_status == "Analyzing" %}
+            <span class="badge badge-analyzing">Analyzing</span>
+          {% elif p.workflow_status == "Critical" %}
+            <span class="badge badge-crit">Critical</span>
+          {% elif p.workflow_status == "Medium" %}
+            <span class="badge badge-med">Medium</span>
+          {% elif p.workflow_status == "Low" %}
+            <span class="badge badge-low">Low</span>
+          {% else %}
+            <span class="badge badge-analyzing">{{ p.workflow_status }}</span>
+          {% endif %}
+          {% if p.final_priority == "Critical" %}
+            <span class="badge badge-crit">Priority: Critical</span>
+          {% elif p.final_priority == "High" %}
+            <span class="badge badge-crit">Priority: High</span>
+          {% elif p.final_priority == "Medium" %}
+            <span class="badge badge-med">Priority: Medium</span>
+          {% else %}
+            <span class="badge badge-low">Priority: Low</span>
+          {% endif %}
+        </div>
+        <div><strong>{{ r.get_category_display }}</strong> · {{ r.media_type }} · {{ r.created_at|date:"Y-m-d H:i" }}</div>
+        <div style="font-size:0.9rem; color:#bcd;">{{ r.description|default:"(sans description)" }}</div>
+        <div style="font-size:0.82rem; color:var(--muted);">GPS {{ r.latitude|floatformat:5 }}, {{ r.longitude|floatformat:5 }}</div>
+        <div>
+          <div style="display:flex; justify-content:space-between; font-size:0.8rem;"><span>AI score</span><strong>{{ p.ai_score }}</strong></div>
+          {% if p.model_volume_boost %}
+            <div class="muted" style="font-size:0.72rem; margin-top:4px;">
+              Base {{ p.ai_score_base }} + bonus volume modèle <strong>+{{ p.model_volume_boost }}</strong>
+            </div>
+          {% endif %}
+          <div class="score-bar"><div style="width: {{ p.ai_score }}%;"></div></div>
+          <div style="display:flex; gap:12px; flex-wrap:wrap; margin-top:8px; font-size:0.78rem; color:var(--muted);">
+            <span>Sev {{ p.severity_score }}</span>
+            <span>Loc {{ p.location_score }}</span>
+            <span>Conf {{ p.confidence_score }}%</span>
+          </div>
+        </div>
+        <div class="model-line">
+          <strong>Model</strong> :
+          {% if p.yolo_used %}
+            detected <code style="color:#9ecbff;">{{ p.model_detection_label }}</code>
+            · confidence <strong>{{ p.confidence_score }}%</strong>
+          {% else %}
+            <span class="model-warning">⚠️ Model not used — rule-based estimation (max 60% conf.)</span>
+          {% endif %}
+        </div>
+        {% if p.yolo_used and p.model_detection_label == 'none' %}
+          <div><span class="badge badge-no-damage">No damage detected</span></div>
+        {% endif %}
+        <div class="reco-block">
+          <strong>Agents</strong>
+          <div style="margin-top:6px;">Issue détectée : <code style="color:#9ecbff;">{{ p.detected_issue }}</code></div>
+          <div style="margin-top:4px;">Signaux : {% for s in p.detected_signals %}<span style="display:inline-block;margin:2px 6px 2px 0;padding:2px 8px;border-radius:6px;background:rgba(0,0,0,.35);font-size:0.75rem;">{{ s }}</span>{% empty %}—{% endfor %}</div>
+          <div style="margin-top:8px;"><strong>Pourquoi ce score</strong><ul>{% for line in p.why_score %}<li>{{ line }}</li>{% endfor %}</ul></div>
+          {% if p.model_analysis.model_analysis_ready %}
+            <div style="margin-top:8px; color:#8ca0c4; font-size:0.8rem;">{{ p.model_analysis.model_note }}</div>
+          {% endif %}
+        </div>
+        <div>
+          <strong>Recommendations</strong>
+          <ul style="margin:8px 0 0 18px; font-size:0.88rem; line-height:1.5;">
+            {% for line in p.recommendations %}<li>{{ line }}</li>{% endfor %}
+          </ul>
+          <div class="owner-pill">Suggested owner: <strong>{{ p.suggested_owner }}</strong></div>
+        </div>
+      </article>
+      {% endwith %}
+    {% empty %}
+      <p style="color:var(--muted); grid-column: 1/-1;">Aucun signalement citoyen. Utilisez l’app mobile ou l’API <code>/api/reclamations/</code>.</p>
+    {% endfor %}
+  </div>
+
+  {{ citizen_map_payload|json_script:"citizen-map-data" }}
+
+  <details class="yolo-lab">
+    <summary>Laboratoire YOLO road damage (modèle dédié — upload image / vidéo / URL)</summary>
+    <div class="yolo-inner">
+<div class="live-rt-wrap fight-rt-wrap weapon-test-wrap" style="margin:0;">
+  <div class="live-rt-body fight-rt-body weapon-test-body" style="grid-template-columns: 340px 1fr;">
+    <aside class="glass live-rt-sources fight-panel">
+      <h2 class="panel-title">Analyse road damage</h2>
+      <form method="post" class="fight-form" action="" enctype="multipart/form-data">
+        {% csrf_token %}
+        {% if form.non_field_errors %}
+          <ul class="fight-field-errors fight-form-errors">
+            {% for e in form.non_field_errors %}<li>{{ e }}</li>{% endfor %}
+          </ul>
+        {% endif %}
+        <div class="fight-field">
+          <label for="id_image_file" class="fight-label">{{ form.image_file.label }}</label>
+          {{ form.image_file }}
+        </div>
+        <p class="muted small fight-or">ou</p>
+        <div class="fight-field">
+          <label for="id_image_url" class="fight-label">{{ form.image_url.label }}</label>
+          {{ form.image_url }}
+        </div>
+        <p class="muted small fight-or">ou</p>
+        <div class="fight-field">
+          <label for="id_video_file" class="fight-label">{{ form.video_file.label }}</label>
+          {{ form.video_file }}
+          <p class="muted small fight-hint">MP4, WebM, MKV, MOV, AVI — max. {{ fight_upload_max_mb }} Mo.</p>
+        </div>
+        <p class="muted small fight-or">ou</p>
+        <div class="fight-field">
+          <label for="id_video_url" class="fight-label">{{ form.video_url.label }}</label>
+          {{ form.video_url }}
+        </div>
+        <div class="fight-field">
+          <label for="id_route_name" class="fight-label">{{ form.route_name.label }}</label>
+          {{ form.route_name }}
+        </div>
+        <div class="fight-field" style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+          <div>
+            <label for="id_latitude" class="fight-label">{{ form.latitude.label }}</label>
+            {{ form.latitude }}
+          </div>
+          <div>
+            <label for="id_longitude" class="fight-label">{{ form.longitude.label }}</label>
+            {{ form.longitude }}
+          </div>
+        </div>
+        <button type="submit" class="btn-neon-block fight-submit">Tester road damage</button>
+      </form>
+
+      {% if run_error %}
+        <div class="fight-alert fight-alert-error" role="alert">
+          <strong>Erreur</strong>
+          <p>{{ run_error }}</p>
+        </div>
+      {% endif %}
+
+      {% if result %}
+        {% if result.error %}
+          <div class="fight-alert fight-alert-error" role="alert">
+            <strong>Analyse impossible</strong>
+            <p>{{ result.error }}</p>
+          </div>
+        {% else %}
+          <div class="fight-result">
+            <div class="fight-verdict {% if result.verdict == 'damage' %}is-fight{% else %}is-calm{% endif %}">
+              <span class="fight-verdict-label">Verdict road</span>
+              <span class="fight-verdict-meta">
+                {{ result.verdict_label }} · confiance max <strong>{{ result.max_conf|floatformat:3 }}</strong>
+                · {{ result.damage_frames }} frame(s) positives / {{ result.frames_analyzed }}
+              </span>
+            </div>
+            {% if risk_level_label %}
+              <div style="margin-top:10px; border:1px solid rgba(255,255,255,.14); border-radius:10px; padding:10px; background:rgba(0,0,0,.22);">
+                <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
+                  <strong>Niveau de risque</strong>
+                  <span style="padding:4px 10px; border-radius:999px; font-weight:700;
+                      {% if risk_level_tone == 'high' %}background:rgba(255,72,72,.18); color:#ff7f7f; border:1px solid rgba(255,72,72,.5);
+                      {% elif risk_level_tone == 'medium' %}background:rgba(255,190,60,.18); color:#ffd166; border:1px solid rgba(255,190,60,.5);
+                      {% else %}background:rgba(88,208,125,.18); color:#7df9a1; border:1px solid rgba(88,208,125,.45);{% endif %}">
+                    {{ risk_level_label }} ({{ risk_score_pct }}%)
+                  </span>
+                </div>
+              </div>
+            {% endif %}
+          </div>
+        {% endif %}
+      {% endif %}
+    </aside>
+
+    <div class="live-rt-main weapon-test-main">
+      <div class="weapon-test-visual">
+        <div class="weapon-test-video-col">
+          <div class="video-stage glass weapon-test-stage" id="mainStage">
+            <div class="video-corners" aria-hidden="true"></div>
+            <div class="video-stage-inner fight-video-inner">
+              {% if annotated_image_url %}
+                {% if xai_heatmap_url %}
+                  <div style="display:flex; justify-content:flex-end; margin-bottom:10px; gap:8px;">
+                    <button type="button" id="btnToggleHeatmap" class="btn-ghost-xl">Afficher heatmap XAI</button>
+                  </div>
+                {% endif %}
+                <div class="fight-embed-wrap">
+                  <img id="mainRoadImage" class="fight-local-video weapon-local-video" src="{{ annotated_image_url }}"
+                    data-model-src="{{ annotated_image_url }}" data-heatmap-src="{{ xai_heatmap_url }}" alt="Image annotee road damage">
+                </div>
+              {% elif local_image_url %}
+                <div class="fight-embed-wrap">
+                  <img class="fight-local-video weapon-local-video" src="{{ local_image_url }}" alt="Image source">
+                </div>
+              {% elif annotated_video_url %}
+                <div class="fight-embed-wrap">
+                  <video class="fight-local-video weapon-local-video" src="{{ annotated_video_url }}" controls playsinline preload="metadata"></video>
+                </div>
+              {% elif local_video_url %}
+                <div class="fight-embed-wrap">
+                  <video class="fight-local-video weapon-local-video" src="{{ local_video_url }}" controls playsinline preload="metadata"></video>
+                </div>
+              {% else %}
+                <div class="stage-empty">
+                  <p class="stage-empty-kicker">Road damage YOLO</p>
+                  <p class="muted small">Modèle : {{ road_model_name }}</p>
+                </div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+      {% if xai_report_markdown %}
+        <section class="glass" style="margin-top:14px; padding:16px;">
+          <h3 class="panel-title">Rapport (Groq)</h3>
+          <div style="background:rgba(0,0,0,0.32); padding:14px; border-radius:10px; font-size:0.95rem;">{{ xai_report_markdown|linebreaksbr }}</div>
+        </section>
+      {% endif %}
+      {% if route_history %}
+        <section class="glass" style="margin-top:14px; padding:14px;">
+          <h3 class="panel-title">Historique analyses YOLO</h3>
+          <div style="overflow:auto;">
+            <table style="width:100%; border-collapse:collapse; font-size:.9rem;">
+              <thead><tr><th style="text-align:left;padding:6px;">Date</th><th style="text-align:left;padding:6px;">Route</th><th style="text-align:left;padding:6px;">Risque</th><th style="text-align:left;padding:6px;">Priorité</th></tr></thead>
+              <tbody>
+                {% for h in route_history %}
+                  <tr>
+                    <td style="padding:6px;border-top:1px solid rgba(255,255,255,.08);">{{ h.created_at|date:"Y-m-d H:i" }}</td>
+                    <td style="padding:6px;border-top:1px solid rgba(255,255,255,.08);">{{ h.route_name|default:"-" }}</td>
+                    <td style="padding:6px;border-top:1px solid rgba(255,255,255,.08);">{{ h.risk_level }}</td>
+                    <td style="padding:6px;border-top:1px solid rgba(255,255,255,.08);">{{ h.priority }}</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      {% endif %}
+    </div>
+  </div>
+</div>
+    </div>
+  </details>
+</div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script src="https://cdn.jsdelivr.net/npm/leaflet.heat@0.2.0/dist/leaflet-heat.min.js"></script>
+<script>
+(function () {
+  function pad(n) {
+    return (n < 10 ? "0" : "") + n;
+  }
+  function tickClock() {
+    var el = document.getElementById("fhClock");
+    if (!el) return;
+    var d = new Date();
+    el.textContent =
+      pad(d.getHours()) + ":" + pad(d.getMinutes()) + ":" + pad(d.getSeconds());
+  }
+  setInterval(tickClock, 1000);
+  tickClock();
+})();
+(function () {
+  var el = document.getElementById("citizen-map-data");
+  if (!el || !window.L) return;
+  var payload = JSON.parse(el.textContent);
+  var center = payload.center || { lat: 35.7643, lng: 10.8113, zoom: 8 };
+  var z =
+    center.zoom != null && center.zoom !== "" && !isNaN(Number(center.zoom))
+      ? Number(center.zoom)
+      : 8;
+  var map = L.map("citizen-map").setView([Number(center.lat), Number(center.lng)], z);
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    maxZoom: 19,
+    attribution: "&copy; OpenStreetMap"
+  }).addTo(map);
+  (payload.markers || []).forEach(function (m) {
+    var col = m.color || "#2F80ED";
+    var icon = L.divIcon({
+      className: "citizen-marker",
+      html: '<div style="width:14px;height:14px;border-radius:50%;background:' + col + ';border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.45);"></div>',
+      iconSize: [18, 18],
+      iconAnchor: [9, 9]
+    });
+    var popup =
+      "<strong>#" + (m.rid || "") + "</strong><br>" +
+      (m.category || "") + "<br>AI " + (m.ai_score || "") + " · " + (m.priority || "") + "<br>" +
+      "<small>" + (m.created || "").replace("T", " ").slice(0, 19) + "</small><br>" +
+      "<span style='opacity:.85'>" + (m.description || "").replace(/</g, "&lt;") + "</span>";
+    L.marker([m.lat, m.lng], { icon: icon }).addTo(map).bindPopup(popup);
+  });
+  var heatPts = payload.heatmap || [];
+  if (heatPts.length && L.heatLayer) {
+    L.heatLayer(heatPts, { radius: 28, blur: 22, maxZoom: 17, max: 1.0, gradient: { 0.4: "blue", 0.65: "lime", 1: "red" } }).addTo(map);
+  }
+})();
+(function () {
+  var btnHeatmap = document.getElementById("btnToggleHeatmap");
+  var mainRoadImage = document.getElementById("mainRoadImage");
+  var showingHeatmap = false;
+  if (btnHeatmap && mainRoadImage) {
+    btnHeatmap.addEventListener("click", function () {
+      var modelSrc = mainRoadImage.getAttribute("data-model-src") || "";
+      var heatmapSrc = mainRoadImage.getAttribute("data-heatmap-src") || "";
+      if (!heatmapSrc) return;
+      showingHeatmap = !showingHeatmap;
+      mainRoadImage.src = showingHeatmap ? heatmapSrc : modelSrc;
+      btnHeatmap.textContent = showingHeatmap ? "Retour sortie modèle" : "Afficher heatmap XAI";
+    });
+  }
+})();
+(function () {
+  var form = document.getElementById("form-drone-live");
+  if (!form) return;
+  var tpl = "{{ reclamation_ai_live_url_template|escapejs }}";
+  form.addEventListener("submit", function (e) {
+    e.preventDefault();
+    var pkEl = document.getElementById("drone-rec-id");
+    var rsEl = document.getElementById("drone-refresh");
+    var espEl = document.getElementById("drone-esp");
+    var pk = pkEl && pkEl.value ? String(pkEl.value).trim() : "";
+    var rs = rsEl && rsEl.value ? String(rsEl.value).trim() : "10";
+    if (!pk) return;
+    var esp = espEl && espEl.checked ? "&esp=1" : "";
+    window.location.href = tpl.replace("__PK__", pk) + "?refresh_sec=" + encodeURIComponent(rs) + esp;
+  });
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,172 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Smart City · AI Dashboard{% endblock %}
+{% block body_class %}cockpit fusion-hub-sc road-damage-sc ai-dashboard-sc{% endblock %}
+
+{% block extra_head %}
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'monitoring/fusion_hub_dashboard.css' %}">
+  <link rel="stylesheet" href="{% static 'monitoring/fusion_hub_smartcity.css' %}">
+  <link rel="stylesheet" href="{% static 'monitoring/road_damage_theme.css' %}">
+  <link rel="stylesheet" href="{% static 'monitoring/ai_dashboard.css' %}">
+{% endblock %}
+
+{% block content %}
+<div
+  class="fh-root ai-dash-root"
+  id="aiDashRoot"
+  data-ai-theme="dark"
+  data-api-url="{% url 'monitoring:ai_dashboard_api_summary' %}"
+>
+  <header class="fh-nav fh-glass" aria-label="Primary">
+    <div class="fh-nav-brand fh-brand-cluster">
+      <span class="fh-brand-orb" aria-hidden="true"></span>
+      <div class="fh-brand-text">
+        <h1 class="fh-nav-logo">Smart City Platform</h1>
+        <p class="fh-nav-tag">AI analytics · Models</p>
+      </div>
+    </div>
+    <div class="fh-nav-meta">
+      <span class="fh-nav-loc" title="Module">Observability · AI APIs</span>
+      <span class="fh-clock" id="fhClock" aria-live="polite">--:--:--</span>
+      <span class="fh-icon-chip" title="Notifications">🔔</span>
+      <span class="fh-nav-user" title="Operator" aria-hidden="true"></span>
+    </div>
+  </header>
+
+  <div class="ai-dash ai-dash--analytics">
+    <div style="display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:1rem;margin:0 0 1rem;">
+      <div>
+        <h2 class="ai-dash-hero-title">AI Dashboard</h2>
+        <p class="ai-dash-sub">Overview of system performance</p>
+        <p class="ai-meta-hint" id="aiGeneratedAt"></p>
+      </div>
+    </div>
+
+    <div class="ai-dash-toolbar fh-glass" role="toolbar" aria-label="Filters">
+      <label class="ai-field">
+        Model
+        <select id="aiFilterModel" name="model" aria-label="Filter by model">
+          <option value="all">All models</option>
+        </select>
+      </label>
+      <label class="ai-field">
+        From
+        <input type="date" name="date_from" aria-label="Start date">
+      </label>
+      <label class="ai-field">
+        To
+        <input type="date" name="date_to" aria-label="End date">
+      </label>
+      <div class="ai-toolbar-actions">
+        <label class="ai-toggle">
+          <input type="checkbox" id="aiAutoRefresh" checked>
+          Auto-refresh (45s)
+        </label>
+        <button type="button" class="ai-btn ai-btn--ghost" id="aiBtnTheme" title="Toggle light/dark">
+          Theme
+        </button>
+        <button type="button" class="ai-btn ai-btn--primary" id="aiBtnRefresh">
+          Refresh
+        </button>
+      </div>
+    </div>
+
+    <section class="ai-kpi-grid" id="aiKpiGrid" aria-live="polite" aria-busy="false"></section>
+
+    <div class="ai-dash-layout">
+      <div class="ai-dash-primary">
+        <div class="ai-charts-grid">
+          <section class="ai-panel">
+            <div class="ai-panel-head">
+              <div>
+                <span class="ai-panel-kicker">Traffic</span>
+                <h3 class="ai-panel-title">Requests over time</h3>
+              </div>
+            </div>
+            <div class="ai-chart-wrap">
+              <canvas id="aiChartLine" aria-label="Line chart requests over time"></canvas>
+            </div>
+          </section>
+          <section class="ai-panel">
+            <div class="ai-panel-head">
+              <div>
+                <span class="ai-panel-kicker">Volume</span>
+                <h3 class="ai-panel-title">Usage per model</h3>
+              </div>
+            </div>
+            <div class="ai-chart-wrap">
+              <canvas id="aiChartBar" aria-label="Bar chart usage per model"></canvas>
+            </div>
+          </section>
+        </div>
+
+        <section class="ai-panel">
+          <div class="ai-panel-head">
+            <div>
+              <span class="ai-panel-kicker">Distribution</span>
+              <h3 class="ai-panel-title">Model share</h3>
+            </div>
+          </div>
+          <div class="ai-chart-wrap ai-chart-wrap--pie">
+            <canvas id="aiChartPie" aria-label="Pie chart model distribution"></canvas>
+          </div>
+        </section>
+
+        <section class="ai-panel" style="padding:0;overflow:hidden;">
+          <div class="ai-panel-head" style="padding:1rem 1.05rem 0;">
+            <div>
+              <span class="ai-panel-kicker">Registry</span>
+              <h3 class="ai-panel-title">Models performance</h3>
+            </div>
+          </div>
+          <div class="ai-table-wrap">
+            <table class="ai-table" id="aiModelTable">
+              <thead>
+                <tr>
+                  <th scope="col" data-sort="name">Model name</th>
+                  <th scope="col" data-sort="provider">API provider</th>
+                  <th scope="col" data-sort="requests">Requests</th>
+                  <th scope="col" data-sort="avg_ms">Avg response</th>
+                  <th scope="col" data-sort="error_rate">Error rate</th>
+                  <th scope="col" data-sort="status">Status</th>
+                </tr>
+              </thead>
+              <tbody id="aiModelTableBody"></tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+
+      <aside class="ai-panel" aria-label="Activity feed">
+        <div class="ai-panel-head">
+          <div>
+            <span class="ai-panel-kicker">Live</span>
+            <h3 class="ai-panel-title">Activity</h3>
+          </div>
+        </div>
+        <div class="ai-feed" id="aiActivityFeed"></div>
+      </aside>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script id="ai-dash-bootstrap-json" type="application/json">{{ dashboard_bootstrap_json|safe }}</script>
+<script>
+(function () {
+  var el = document.getElementById("ai-dash-bootstrap-json");
+  try {
+    window.__AI_DASHBOARD_BOOTSTRAP = el ? JSON.parse(el.textContent) : null;
+  } catch (e) {
+    window.__AI_DASHBOARD_BOOTSTRAP = null;
+  }
+})();
+</script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js" crossorigin="anonymous"></script>
+<script src="{% static 'monitoring/ai_dashboard.js' %}"></script>
+{% endblock %}

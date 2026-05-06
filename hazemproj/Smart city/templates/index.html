@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Stray / CCTV tools — Smart City{% endblock %}
+{% block content %}
+<div class="wrap">
+  <h1>Stray / CCTV tools</h1>
+  <p>Upload a CCTV/video clip and run the model in your browser workflow.</p>
+
+  <form action="/analyze" method="post" enctype="multipart/form-data">
+    <input type="file" name="video" accept=".mp4,.avi,.mov,.mkv,.webm" required />
+    <select name="mode">
+      <option value="stray" {% if mode == "stray" %}selected{% endif %}>Stray animal health detector</option>
+      <option value="xai" {% if mode == "xai" %}selected{% endif %}>Zero-shot CLIP (old)</option>
+      <option value="yolo" {% if mode == "yolo" %}selected{% endif %}>YOLO project detector (new folder)</option>
+    </select>
+    <input
+      type="text"
+      name="weights_path"
+      placeholder="YOLO .pt path (optional)"
+      value="{{ weights_path or '' }}"
+      style="min-width: 320px;"
+    />
+    <button type="submit">Analyze Video</button>
+    <button type="submit" name="set_baseline" value="1">Use this as healthy baseline</button>
+  </form>
+  <p style="font-size: 13px; color: #555;">
+    Default mode is stray-animal health and works by video upload (no webcam).<br />
+    Baseline status:
+    <strong>{% if has_stray_baseline %}Loaded{% else %}Not set (upload a healthy dog clip and click "Use this as healthy baseline"){% endif %}</strong><br />
+    For YOLO mode, provide your custom shoplifting model .pt path. If empty, app uses
+    <code>Shoplifting-Detection-using-Computer-Vision-and-Machine-Learning-main/shoplifting_wights.pt</code>.
+  </p>
+  {% if baseline_message %}
+    <p style="color: #0a7f2e;">{{ baseline_message }}</p>
+  {% endif %}
+
+  {% if error %}
+    <p class="error">{{ error }}</p>
+  {% endif %}
+
+  {% if result %}
+    <div class="result">
+      <p><strong>Frames processed:</strong> {{ result.frames_processed }}</p>
+      <p><strong>Peak score:</strong> {{ result.peak_score }}</p>
+      <p><strong>Suspicious frames:</strong> {{ result.suspicious_frames }}</p>
+      <p><strong>Alert frames:</strong> {{ result.alert_frames }}</p>
+      <p><a href="{{ output_url }}" target="_blank">Open processed video</a></p>
+    </div>
+    {% if output_url %}
+      <video controls src="{{ output_url }}"></video>
+    {% endif %}
+  {% endif %}
+</div>
+{% endblock %}

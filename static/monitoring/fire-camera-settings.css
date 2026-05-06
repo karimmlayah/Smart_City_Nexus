@@ -1,0 +1,921 @@
+/* Page Réglages caméra — accent aligné Road Command Center (road-damage-test), sans néon jaune */
+body.fusion-hub-sc.road-damage-sc.fc-camera-page {
+  --neon: #38bdf8;
+  --neon-dim: rgba(56, 189, 248, 0.45);
+}
+
+body.fusion-hub-sc.road-damage-sc.fc-camera-page .fc-hero {
+  background: linear-gradient(145deg, rgba(17, 24, 39, 0.95) 0%, rgba(3, 4, 10, 0.98) 100%);
+  box-shadow: 0 0 40px rgba(56, 189, 248, 0.07);
+  border-color: rgba(56, 189, 248, 0.12);
+}
+
+body.fusion-hub-sc.road-damage-sc.fc-camera-page .fc-btn-neon {
+  color: #020617;
+}
+
+body.fusion-hub-sc.road-damage-sc.fc-camera-page .fc-camera-dashboard {
+  font-family: "Inter", "Segoe UI", system-ui, sans-serif;
+}
+
+/* Page Réglages caméra ESP — thème cockpit Smart City */
+
+.fc-page {
+  max-width: none;
+  width: 100%;
+  margin: 0;
+  padding: 0 0 0.35rem;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.fc-hero {
+  padding: 1rem 1.25rem 1.1rem;
+  margin-bottom: 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: linear-gradient(145deg, rgba(20, 22, 18, 0.95) 0%, rgba(12, 14, 10, 0.98) 100%);
+  box-shadow: 0 0 40px rgba(56, 189, 248, 0.06);
+}
+
+.fc-hero-title {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--neon);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.fc-badge {
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  border: 1px solid rgba(56, 189, 248, 0.45);
+  color: var(--neon);
+  opacity: 0.95;
+}
+
+.fc-badge-cyan {
+  border-color: rgba(61, 158, 255, 0.5);
+  color: var(--chart-blue);
+}
+
+.fc-hero-desc {
+  margin: 0.65rem 0 0;
+  font-size: 0.88rem;
+  color: var(--muted);
+  max-width: none;
+  line-height: 1.55;
+}
+
+.fc-hero-desc a {
+  color: var(--neon);
+}
+
+.fc-hero-desc code {
+  font-size: 0.82rem;
+  color: var(--neon);
+  background: rgba(56, 189, 248, 0.1);
+  padding: 0.1rem 0.35rem;
+  border-radius: 4px;
+}
+
+.fc-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(320px, 1fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+@media (max-width: 960px) {
+  .fc-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.fc-panel {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--glass);
+  backdrop-filter: blur(12px);
+  padding: 1rem 1.1rem;
+}
+
+.fc-panel-title {
+  margin: 0 0 0.85rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  border-bottom: 1px solid rgba(56, 189, 248, 0.2);
+  padding-bottom: 0.45rem;
+}
+
+.fc-section-header .fc-panel-title {
+  margin-bottom: 0.5rem;
+}
+
+.fc-field {
+  margin-bottom: 0.65rem;
+}
+
+.fc-field label.fc-label {
+  display: block;
+  font-size: 0.78rem;
+  color: var(--muted);
+  margin-bottom: 0.25rem;
+}
+
+.fc-field input[type="text"],
+.fc-field select {
+  width: 100%;
+  max-width: 100%;
+  padding: 0.45rem 0.55rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(0, 0, 0, 0.35);
+  color: var(--text);
+  font-size: 0.9rem;
+}
+
+.fc-field input[type="range"] {
+  width: 100%;
+  accent-color: var(--neon);
+}
+
+.fc-row-btns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-top: 0.65rem;
+}
+
+.fc-stream-placeholder {
+  min-height: 280px;
+  border-radius: var(--radius-sm);
+  border: 1px dashed rgba(255, 255, 255, 0.12);
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+  font-size: 0.9rem;
+  text-align: center;
+  padding: 1rem;
+}
+
+.fc-stream-placeholder .fc-cam-ico {
+  font-size: 2.5rem;
+  margin-bottom: 0.35rem;
+  opacity: 0.45;
+}
+
+.fc-stream-img {
+  width: 100%;
+  max-height: min(52vh, 520px);
+  object-fit: contain;
+  border-radius: var(--radius-sm);
+  background: #000;
+  display: none;
+}
+
+.fc-stream-img.is-on {
+  display: block;
+}
+
+.fc-stream-placeholder.is-off {
+  display: none;
+}
+
+.fc-help summary {
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.fc-help .fc-help-body {
+  margin-top: 0.5rem;
+  font-size: 0.82rem;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.fc-slider-val {
+  font-family: ui-monospace, monospace;
+  font-size: 0.78rem;
+  color: var(--neon);
+  margin-top: 0.15rem;
+}
+
+.fc-subhint {
+  font-size: 0.72rem;
+  color: var(--muted);
+  margin: 0.15rem 0 0.35rem;
+}
+
+.fc-grid-inner {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem 0.75rem;
+}
+
+.fc-grid-inner.fc-grid-inner-stack {
+  grid-template-columns: 1fr;
+}
+
+.fc-grid-inner.fc-grid-checks {
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+}
+
+@media (max-width: 600px) {
+  .fc-grid-inner {
+    grid-template-columns: 1fr;
+  }
+}
+
+.fc-grid-inner-stack label.fc-label {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  cursor: pointer;
+}
+
+.fc-phone-box {
+  margin-top: 0.75rem;
+  padding: 0.65rem 0.85rem;
+  border-radius: var(--radius-sm);
+  background: rgba(0, 0, 0, 0.28);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.fc-phone-box code {
+  word-break: break-all;
+  font-size: 0.78rem;
+  color: var(--neon);
+}
+
+.fc-status-strip {
+  margin-top: 0.75rem;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.fc-link-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0.5rem 0 0;
+}
+
+.fc-link-row a {
+  color: var(--neon);
+  text-decoration: none;
+  font-size: 0.85rem;
+}
+
+.fc-link-row a:hover {
+  text-decoration: underline;
+  color: var(--neon);
+}
+
+.fc-link-capture {
+  color: var(--neon);
+  font-size: 0.85rem;
+  text-decoration: none;
+}
+
+.fc-link-capture:hover {
+  text-decoration: underline;
+}
+
+/* ——— Réglages caméra : thème noir cockpit (rail / app.css) ——— */
+body.fc-camera-page .app-shell {
+  padding: 0.5rem 0.65rem 0.65rem 0.5rem;
+}
+
+.fc-camera-dashboard {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.fc-status-cluster {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.35rem;
+  max-width: min(100%, 520px);
+}
+
+.fc-conn-badge {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 0.25rem 0.6rem;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.fc-conn-badge.is-ok {
+  border-color: rgba(61, 255, 120, 0.45);
+  color: #8fffab;
+}
+
+.fc-conn-badge.is-bad {
+  border-color: rgba(255, 92, 92, 0.45);
+  color: var(--danger);
+}
+
+.fc-conn-badge.is-warn {
+  border-color: rgba(249, 115, 22, 0.45);
+  color: #fdba74;
+}
+
+.fc-camera-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.65rem 1rem;
+  border-radius: var(--radius);
+}
+
+.fc-camera-head-left {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1rem;
+  min-width: 0;
+}
+
+.fc-camera-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.fc-camera-brand-mark {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  font-size: 1.15rem;
+  background: linear-gradient(145deg, #1a1a1a 0%, #0d0d0d 100%);
+  border: 1px solid var(--border);
+  box-shadow: 0 0 18px rgba(56, 189, 248, 0.15);
+}
+
+.fc-camera-title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text);
+}
+
+.fc-camera-sub {
+  margin: 0.15rem 0 0;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.fc-camera-head-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.fc-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.45rem 0.85rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-decoration: none;
+  border: none;
+  cursor: pointer;
+  transition: transform 0.12s, box-shadow 0.12s, border-color 0.12s, color 0.12s;
+}
+
+.fc-btn-neon {
+  background: var(--neon);
+  color: #0d0d0d;
+  box-shadow: 0 0 18px rgba(56, 189, 248, 0.3);
+}
+
+.fc-btn-neon:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 0 26px rgba(56, 189, 248, 0.4);
+}
+
+.fc-btn-ghost {
+  background: transparent;
+  color: var(--muted);
+  border: 1px solid var(--border);
+}
+
+.fc-btn-ghost:hover {
+  color: var(--neon);
+  border-color: var(--neon-dim);
+}
+
+.fc-btn-block {
+  width: 100%;
+}
+
+.fc-camera-grid {
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) minmax(280px, 1fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+@media (max-width: 960px) {
+  .fc-camera-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.fc-camera-dashboard .fc-col.glass {
+  padding: 0.65rem 0.85rem;
+}
+
+.fc-col-stream .fc-panel-inner,
+.fc-controls-wrap {
+  padding: 0.35rem 0.35rem 0.5rem;
+}
+
+/* Pas de scroll interne : tout le bloc Capteur & corrections s’affiche en entier */
+.fc-controls-wrap {
+  overflow: visible;
+  max-height: none;
+}
+
+.fc-col-controls {
+  overflow: visible;
+}
+
+.fc-panel-inner {
+  padding: 0.35rem 0.25rem;
+}
+
+.fc-panel-block {
+  padding-bottom: 0.5rem;
+}
+
+.fc-save-block {
+  padding-top: 0.75rem;
+  border-top: 1px solid rgba(56, 189, 248, 0.12);
+  margin-top: 0.5rem;
+}
+
+.fc-snap-meta {
+  font-size: 0.78rem;
+  color: var(--muted);
+  margin: 0.35rem 0 0.25rem;
+  min-height: 1.2em;
+}
+
+.fc-snap-meta.is-warn {
+  color: #f97316;
+}
+
+.fc-snap-preview-box {
+  margin-top: 0.85rem;
+  padding-top: 0.65rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.fc-snap-preview-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 0.65rem;
+  margin-top: 0.45rem;
+}
+
+.fc-snap-preview {
+  display: block;
+  max-width: min(100%, 400px);
+  height: auto;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: #000;
+}
+
+.fc-stream-wrap {
+  margin-top: 0.85rem;
+  position: relative;
+}
+
+.fc-stream-img {
+  max-height: min(48vh, 480px);
+}
+
+.fc-footer-actions {
+  margin-top: 1rem;
+  text-align: center;
+}
+
+.fc-header-clock {
+  font-family: ui-monospace, monospace;
+  font-size: 0.82rem;
+  letter-spacing: 0.06em;
+  color: var(--neon);
+  padding: 0.35rem 0.6rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: rgba(0, 0, 0, 0.45);
+}
+
+.fc-esp-status {
+  font-size: 0.72rem;
+  max-width: min(420px, 52vw);
+  line-height: 1.35;
+  padding: 0.35rem 0.65rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: rgba(0, 0, 0, 0.35);
+  color: var(--muted);
+}
+
+.fc-esp-status.is-ok {
+  border-color: rgba(61, 255, 120, 0.45);
+  color: #8fffab;
+}
+
+.fc-esp-status.is-bad {
+  border-color: rgba(255, 92, 92, 0.45);
+  color: var(--danger);
+}
+
+.fc-esp-status.is-warn {
+  border-color: rgba(249, 115, 22, 0.4);
+  color: #fdba74;
+}
+
+/* Page détection feu */
+.fc-detect-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.fc-detect-hero {
+  padding: 1rem 1.15rem;
+  border-radius: 14px;
+}
+
+.fc-detect-title {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--fh-text, #f1f5f9);
+}
+
+.fc-detect-lead {
+  margin: 0.5rem 0 0;
+  font-size: 0.88rem;
+  color: var(--fh-muted, #94a3b8);
+  line-height: 1.5;
+}
+
+.fc-detect-list {
+  margin: 0.65rem 0 0;
+  padding-left: 1.15rem;
+  font-size: 0.82rem;
+  color: var(--fh-muted, #94a3b8);
+  line-height: 1.55;
+}
+
+.fc-detect-list a {
+  color: #38bdf8;
+}
+
+.fc-detect-list code {
+  font-size: 0.8rem;
+  background: rgba(56, 189, 248, 0.1);
+  padding: 0.08rem 0.35rem;
+  border-radius: 4px;
+}
+
+.fc-ok {
+  color: #22c55e;
+}
+
+.fc-bad {
+  color: #f87171;
+}
+
+.fc-detect-ip {
+  margin: 0.55rem 0 0;
+  font-size: 0.82rem;
+  color: #cbd5e1;
+}
+
+.fc-detect-actions {
+  margin: 0.75rem 0 0;
+}
+
+.fc-detect-panel {
+  padding: 1rem 1.1rem;
+  border-radius: 14px;
+}
+
+.fc-detect-warn {
+  border-left: 3px solid #f97316;
+}
+
+.fc-detect-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1rem;
+  align-items: center;
+  font-size: 0.85rem;
+  color: #cbd5e1;
+}
+
+.fc-detect-toolbar label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.fc-detect-toolbar input[type="number"] {
+  padding: 0.25rem 0.35rem;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(0, 0, 0, 0.35);
+  color: #f1f5f9;
+}
+
+.fc-detect-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .fc-detect-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.fc-detect-subtitle {
+  margin: 0 0 0.5rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #e2e8f0;
+}
+
+.fc-detect-stream,
+.fc-detect-out {
+  width: 100%;
+  border-radius: 10px;
+  background: #000;
+}
+
+.fc-detect-out {
+  min-height: 140px;
+  background: #0f172a;
+}
+
+.fc-detect-status {
+  margin: 0.5rem 0 0;
+  font-size: 0.85rem;
+  color: #94a3b8;
+}
+
+.fc-detect-muted {
+  opacity: 0.75;
+  font-size: 0.85rem;
+}
+
+.fc-detect-details summary {
+  cursor: pointer;
+  color: #94a3b8;
+  font-size: 0.88rem;
+}
+
+.fc-detect-twilio-list {
+  margin: 0.5rem 0 0;
+  padding-left: 1.1rem;
+  font-size: 0.8rem;
+  color: #94a3b8;
+}
+
+/* ——— Détection feu : modale Twilio + panneau XAI ONNX ——— */
+.fc-detect-onnx-col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.fc-xai-block {
+  margin-top: 0.35rem;
+  padding: 0.75rem 0.85rem;
+  border-radius: 12px;
+  background: rgba(3, 4, 10, 0.55);
+  border: 1px solid rgba(56, 189, 248, 0.12);
+}
+
+.fc-xai-block h4 {
+  margin: 0 0 0.5rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #94a3b8;
+}
+
+.fc-xai-summary {
+  font-size: 0.82rem;
+  line-height: 1.55;
+  color: #cbd5e1;
+  margin-bottom: 0.65rem;
+}
+
+.fc-xai-table-wrap {
+  overflow-x: auto;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.fc-xai-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.78rem;
+}
+
+.fc-xai-table th,
+.fc-xai-table td {
+  padding: 0.4rem 0.5rem;
+  text-align: left;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  color: #e2e8f0;
+}
+
+.fc-xai-table th {
+  color: #94a3b8;
+  font-weight: 600;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.fc-xai-table tr:last-child td {
+  border-bottom: none;
+}
+
+.fc-xai-empty {
+  color: #64748b;
+  font-style: italic;
+}
+
+.fc-xai-badge {
+  display: inline-block;
+  padding: 0.12rem 0.45rem;
+  border-radius: 6px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.fc-xai-badge--yes {
+  background: rgba(239, 68, 68, 0.2);
+  color: #fca5a5;
+  border: 1px solid rgba(239, 68, 68, 0.35);
+}
+
+.fc-xai-badge--no {
+  background: rgba(148, 163, 184, 0.12);
+  color: #94a3b8;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+}
+
+.fc-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10050;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+  background: rgba(2, 6, 23, 0.72);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.fc-modal-overlay[hidden] {
+  display: none !important;
+}
+
+.fc-modal-card {
+  width: min(100%, 440px);
+  border-radius: 16px;
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  background: linear-gradient(165deg, rgba(17, 24, 39, 0.98) 0%, rgba(3, 4, 10, 0.99) 100%);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.04) inset;
+  overflow: hidden;
+  animation: fc-modal-in 0.22s ease-out;
+}
+
+@keyframes fc-modal-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.fc-modal-card--success {
+  border-color: rgba(34, 197, 94, 0.45);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.55), 0 0 40px rgba(34, 197, 94, 0.08);
+}
+
+.fc-modal-card--danger {
+  border-color: rgba(239, 68, 68, 0.45);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.55), 0 0 40px rgba(239, 68, 68, 0.1);
+}
+
+.fc-modal-card--warning {
+  border-color: rgba(249, 115, 22, 0.5);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.55), 0 0 48px rgba(249, 115, 22, 0.12);
+}
+
+.fc-modal-card--info {
+  border-color: rgba(56, 189, 248, 0.35);
+}
+
+.fc-modal-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 1rem 1rem 0.65rem 1.15rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.fc-modal-title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: #f8fafc;
+  line-height: 1.35;
+}
+
+.fc-modal-close {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.06);
+  color: #cbd5e1;
+  font-size: 1.35rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.fc-modal-close:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+}
+
+.fc-modal-body {
+  padding: 0.85rem 1.15rem 1.15rem;
+  font-size: 0.9rem;
+  line-height: 1.55;
+  color: #cbd5e1;
+  white-space: pre-wrap;
+  word-break: break-word;
+}

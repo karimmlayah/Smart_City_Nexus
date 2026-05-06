@@ -1,0 +1,7 @@
+streamlit
+ultralytics
+opencv-python
+numpy
+streamlit-drawable-canvas
+yt-dlp
+Pillow

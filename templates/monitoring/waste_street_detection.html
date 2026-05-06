@@ -1,0 +1,1128 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Smart City · Waste Street Detection{% endblock %}
+
+{% block body_class %}cockpit fusion-hub-sc road-damage-sc waste-street-sc{% endblock %}
+
+{% block extra_head %}
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'monitoring/fusion_hub_dashboard.css' %}">
+  <link rel="stylesheet" href="{% static 'monitoring/fusion_hub_smartcity.css' %}">
+  <link rel="stylesheet" href="{% static 'monitoring/road_damage_theme.css' %}">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+{% endblock %}
+
+{% block content %}
+<style>
+  /* Dark theme aligned with Road Command Center / fusion hub */
+  :root {
+    --ws-navy: #041e42;
+    --ws-card: #082b5f;
+    --ws-accent: #2f80ed;
+    --ws-text: #e8f0ff;
+    --ws-muted: #8ca0c4;
+    --ws-low: #43a047;
+    --ws-med: #fb8c00;
+    --ws-high: #e53935;
+  }
+  .ws-wrap {
+    font-family: "Inter", system-ui, sans-serif;
+    background: var(--ws-navy);
+    color: var(--ws-text);
+    min-height: calc(100vh - 24px);
+    padding: 20px 24px 48px;
+    margin: -8px 0 0;
+    box-sizing: border-box;
+  }
+  .ws-wrap * { box-sizing: border-box; }
+  .ws-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 22px;
+    padding-bottom: 18px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+  }
+  .ws-head h1 { margin: 0; font-size: 1.65rem; font-weight: 800; letter-spacing: 0.02em; }
+  .ws-head p { margin: 8px 0 0; color: var(--ws-muted); max-width: 760px; line-height: 1.55; font-size: 0.92rem; }
+  .ws-head code { font-size: 0.72rem; color: #9ecbff; word-break: break-all; }
+  .ws-grid {
+    display: grid;
+    grid-template-columns: minmax(300px, 1fr) minmax(320px, 1.15fr);
+    gap: 20px;
+    align-items: start;
+  }
+  @media (max-width: 960px) {
+    .ws-grid { grid-template-columns: 1fr; }
+  }
+  .ws-card {
+    background: var(--ws-card);
+    border: 1px solid rgba(47, 128, 237, 0.22);
+    border-radius: 16px;
+    padding: 18px 20px;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.35);
+  }
+  .ws-card h2 {
+    margin: 0 0 14px;
+    font-size: 1.05rem;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .ws-card h2 span.bar {
+    width: 4px;
+    height: 18px;
+    background: var(--ws-accent);
+    border-radius: 2px;
+  }
+  .ws-loc-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  @media (max-width: 520px) { .ws-loc-grid { grid-template-columns: 1fr; } }
+  .ws-tabs {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 14px;
+  }
+  .ws-tab {
+    padding: 8px 16px;
+    border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.15);
+    background: rgba(0,0,0,0.25);
+    color: var(--ws-muted);
+    font-weight: 700;
+    font-size: 0.85rem;
+    cursor: pointer;
+  }
+  .ws-tab.ws-tab-on {
+    border-color: var(--ws-accent);
+    color: #fff;
+    background: rgba(47, 128, 237, 0.18);
+  }
+  .ws-field { margin-bottom: 12px; }
+  .ws-field label {
+    display: block;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--ws-muted);
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .ws-field input[type="url"],
+  .ws-field input[type="text"],
+  .ws-field input[type="number"],
+  .ws-field input[type="email"],
+  .ws-field textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.12);
+    background: rgba(0,0,0,0.35);
+    color: var(--ws-text);
+    font-size: 0.9rem;
+  }
+  .ws-field input[type="file"] {
+    width: 100%;
+    padding: 10px;
+    border-radius: 10px;
+    border: 1px dashed rgba(255,255,255,0.2);
+    background: rgba(0,0,0,0.28);
+    color: var(--ws-muted);
+    font-size: 0.85rem;
+  }
+  .ws-field textarea { min-height: 72px; resize: vertical; }
+  .ws-preview {
+    margin-top: 14px;
+    border-radius: 14px;
+    overflow: hidden;
+    background: #000;
+    border: 1px solid rgba(255,255,255,0.1);
+    min-height: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .ws-preview img { max-width: 100%; max-height: 360px; display: block; object-fit: contain; }
+  .ws-preview .ws-ph { color: var(--ws-muted); padding: 40px; text-align: center; font-size: 0.88rem; }
+  .ws-actions { margin-top: 16px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  .ws-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 11px 22px;
+    border-radius: 11px;
+    font-weight: 800;
+    font-size: 0.9rem;
+    cursor: pointer;
+    border: none;
+    background: linear-gradient(135deg, var(--ws-accent), #2563c9);
+    color: #fff;
+  }
+  .ws-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .ws-btn-secondary {
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.2);
+    color: var(--ws-text);
+  }
+  .ws-spinner {
+    width: 18px;
+    height: 18px;
+    border: 2px solid rgba(255,255,255,0.35);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: ws-spin 0.7s linear infinite;
+    display: none;
+  }
+  .ws-spinner.on { display: inline-block; }
+  @keyframes ws-spin { to { transform: rotate(360deg); } }
+  .ws-alert-strip {
+    margin-bottom: 16px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    font-size: 0.88rem;
+    font-weight: 600;
+    display: none;
+  }
+  .ws-alert-strip.on { display: block; }
+  .ws-alert-ok { background: rgba(67, 160, 71, 0.22); border: 1px solid rgba(67, 160, 71, 0.45); color: #c8e6c9; }
+  .ws-alert-warn { background: rgba(251, 140, 0, 0.18); border: 1px solid rgba(251, 140, 0, 0.4); color: #ffe0b2; }
+  .ws-alert-err { background: rgba(229, 57, 53, 0.2); border: 1px solid rgba(229, 57, 53, 0.45); color: #ffcdd2; }
+  .ws-modal {
+    position: fixed !important;
+    inset: 0;
+    z-index: 2147483647;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    background: rgba(1, 7, 18, 0.68);
+    backdrop-filter: blur(2px);
+  }
+  .ws-modal.on { display: flex; }
+  .ws-modal-card {
+    width: min(460px, 100%);
+    border-radius: 14px;
+    border: 1px solid rgba(255,255,255,0.14);
+    background: #07234d;
+    box-shadow: 0 22px 70px rgba(0,0,0,0.45);
+    padding: 16px 16px 14px;
+  }
+  .ws-modal-title { margin: 0 0 8px; font-size: 1rem; font-weight: 800; }
+  .ws-modal-body { margin: 0; color: #d7e7ff; font-size: 0.9rem; line-height: 1.45; white-space: pre-line; }
+  .ws-modal-actions { margin-top: 14px; display: flex; justify-content: flex-end; }
+  .ws-modal-success .ws-modal-card { border-color: rgba(67,160,71,0.6); }
+  .ws-modal-error .ws-modal-card { border-color: rgba(229,57,53,0.62); }
+  .ws-result-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+  @media (max-width: 700px) { .ws-result-grid { grid-template-columns: 1fr; } }
+  .ws-kpi-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+  .ws-kpi {
+    background: rgba(0,0,0,0.28);
+    border-radius: 12px;
+    padding: 12px;
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+  .ws-kpi .lbl { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ws-muted); font-weight: 700; }
+  .ws-kpi .val { font-size: 1.25rem; font-weight: 800; margin-top: 4px; }
+  .ws-sev-low { color: var(--ws-low) !important; }
+  .ws-sev-med { color: var(--ws-med) !important; }
+  .ws-sev-high { color: var(--ws-high) !important; }
+  .ws-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    max-height: 220px;
+    overflow: auto;
+  }
+  .ws-list li {
+    padding: 10px 12px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    font-size: 0.84rem;
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .ws-list li span.tag { font-weight: 700; color: #9ecbff; }
+  .ws-reco {
+    margin-top: 12px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    background: rgba(0,0,0,0.22);
+    border: 1px solid rgba(255,255,255,0.08);
+    font-size: 0.88rem;
+    line-height: 1.5;
+    color: #cfe3ff;
+    min-height: 52px;
+  }
+  .ws-report-ta {
+    margin-top: 14px;
+    width: 100%;
+    min-height: 160px;
+    padding: 12px;
+    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,0.12);
+    background: rgba(0,0,0,0.35);
+    color: var(--ws-text);
+    font-family: ui-monospace, monospace;
+    font-size: 0.82rem;
+    line-height: 1.45;
+  }
+  .ws-muted-note { font-size: 0.78rem; color: var(--ws-muted); margin-top: 10px; line-height: 1.45; }
+  .ws-map-section { margin-top: 22px; }
+  .ws-map-wrap {
+    background: var(--ws-card);
+    border-radius: 16px;
+    border: 1px solid rgba(47, 128, 237, 0.2);
+    overflow: hidden;
+    margin-bottom: 22px;
+  }
+  .ws-map-wrap h3 {
+    margin: 0;
+    padding: 14px 18px;
+    font-size: 1rem;
+    font-weight: 800;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .ws-map-wrap h3 span {
+    width: 4px;
+    height: 16px;
+    background: var(--ws-accent);
+    border-radius: 2px;
+  }
+  .leaflet-container { background: #020814; font-family: inherit; }
+  #ws-map-incident { height: 340px; width: 100%; z-index: 1; }
+  .ws-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: 14px;
+    margin-bottom: 22px;
+  }
+  .ws-stat-card {
+    background: var(--ws-card);
+    border: 1px solid rgba(47, 128, 237, 0.22);
+    border-radius: 14px;
+    padding: 16px 18px;
+  }
+  .ws-stat-card .lbl {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--ws-muted);
+    font-weight: 700;
+  }
+  .ws-stat-card .val { font-size: 1.75rem; font-weight: 800; margin-top: 8px; color: #fff; }
+  .ws-table-wrap {
+    background: var(--ws-card);
+    border-radius: 16px;
+    border: 1px solid rgba(255,255,255,0.08);
+    overflow: auto;
+  }
+  .ws-table-wrap h3 {
+    margin: 0;
+    padding: 16px 18px;
+    font-size: 1rem;
+    font-weight: 800;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+  }
+  .ws-table { width: 100%; border-collapse: collapse; font-size: 0.84rem; }
+  .ws-table th, .ws-table td { padding: 10px 14px; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.06); }
+  .ws-table th { color: var(--ws-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; font-size: 0.72rem; }
+  .ws-badge {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-weight: 800;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .ws-badge-low { background: rgba(67,160,71,0.22); color: #a5d6a7; border: 1px solid rgba(67,160,71,0.45); }
+  .ws-badge-med { background: rgba(251,140,0,0.2); color: #ffcc80; border: 1px solid rgba(251,140,0,0.4); }
+  .ws-badge-high { background: rgba(229,57,53,0.25); color: #ff8a80; border: 1px solid rgba(229,57,53,0.55); }
+  .map-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    padding: 12px 16px;
+    font-size: 0.82rem;
+    color: var(--ws-muted);
+    border-top: 1px solid rgba(255,255,255,0.08);
+  }
+  .map-legend i {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-right: 6px;
+    vertical-align: middle;
+  }
+  /* Même shell que Road Command Center */
+  .fh-root .ws-wrap {
+    background: transparent;
+    margin: 0;
+    min-height: auto;
+    padding: 0;
+  }
+  body.fusion-hub-sc.road-damage-sc .fh-root .ws-wrap {
+    --ws-navy: transparent;
+    --ws-card: var(--card);
+    --ws-accent: var(--accent);
+    --ws-text: var(--text);
+    --ws-muted: var(--muted);
+    --ws-low: var(--ok);
+    --ws-med: var(--warn);
+    --ws-high: var(--crit);
+  }
+</style>
+
+<div class="fh-root">
+  <header class="fh-nav fh-glass" aria-label="Primary">
+    <div class="fh-nav-brand fh-brand-cluster">
+      <span class="fh-brand-orb" aria-hidden="true"></span>
+      <div class="fh-brand-text">
+        <h1 class="fh-nav-logo">Smart City Platform</h1>
+        <p class="fh-nav-tag">Waste Street Detection</p>
+      </div>
+    </div>
+    <div class="fh-nav-meta">
+      <span class="fh-nav-loc" title="Module">Environment · Waste AI</span>
+      <span class="fh-clock" id="fhClock" aria-live="polite">--:--:--</span>
+      <span class="fh-icon-chip" title="Notifications">🔔</span>
+      <span class="fh-nav-user" title="Operator" aria-hidden="true"></span>
+    </div>
+  </header>
+
+  <div class="ai-dash">
+<div class="ws-wrap">
+  <header class="ws-head">
+    <div>
+      <h1>Waste Street Detection</h1>
+      <p>
+        Upload an image or paste a URL, run AI waste detection, review severity and recommended action,
+        then save a report and alert the municipality by SMS. Configure model path (<code>WASTE_MODEL_PATH</code>)
+        and Twilio in <code>settings.py</code> (see comments in waste services).
+      </p>
+    </div>
+    <div class="ws-muted-note" style="max-width:300px;">
+      POST {{ detect_url }}<br>
+      POST {{ sms_url }}<br>
+      GET/POST {{ reports_url }} · GET {{ statistics_url }}
+    </div>
+  </header>
+
+  <div id="ws-alert" class="ws-alert-strip" role="status"></div>
+
+  <div class="ws-grid">
+    <section class="ws-card" aria-labelledby="ws-source-title">
+      <h2 id="ws-source-title"><span class="bar"></span> Image &amp; location</h2>
+
+      <div class="ws-loc-grid">
+        <div class="ws-field">
+          <label for="ws-city">City</label>
+          <input type="text" id="ws-city" placeholder="e.g. Tunis" autocomplete="address-level2" />
+        </div>
+        <div class="ws-field">
+          <label for="ws-address">Address / zone</label>
+          <input type="text" id="ws-address" placeholder="Street, district…" autocomplete="street-address" />
+        </div>
+        <div class="ws-field">
+          <label for="ws-lat">Latitude</label>
+          <input type="number" step="any" id="ws-lat" placeholder="36.8" />
+        </div>
+        <div class="ws-field">
+          <label for="ws-lng">Longitude</label>
+          <input type="number" step="any" id="ws-lng" placeholder="10.18" />
+        </div>
+      </div>
+
+      <div class="ws-field">
+        <label for="ws-notes">Notes (optional)</label>
+        <textarea id="ws-notes" placeholder="Details for the cleaning team…"></textarea>
+      </div>
+
+      <div class="ws-tabs" role="tablist">
+        <button type="button" class="ws-tab ws-tab-on" data-tab="upload" id="tab-upload">Upload from PC</button>
+        <button type="button" class="ws-tab" data-tab="url" id="tab-url">Image URL</button>
+      </div>
+
+      <div id="pane-upload" class="ws-pane">
+        <div class="ws-field">
+          <label for="ws-file">Image file (JPEG / PNG / WebP)</label>
+          <input type="file" id="ws-file" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" />
+        </div>
+      </div>
+      <div id="pane-url" class="ws-pane" style="display:none;">
+        <div class="ws-field">
+          <label for="ws-url">Image URL (https)</label>
+          <input type="url" id="ws-url" placeholder="https://example.com/street.jpg" autocomplete="off" />
+        </div>
+      </div>
+
+      <div class="ws-preview" id="ws-preview">
+        <div class="ws-ph" id="ws-preview-ph">Preview appears after file selection or URL</div>
+        <img id="ws-preview-img" alt="Preview" style="display:none;" decoding="async" />
+      </div>
+
+      <div class="ws-actions">
+        <button type="button" class="ws-btn" id="ws-detect">
+          <span class="ws-spinner" id="ws-spin-detect"></span>
+          Detect Waste
+        </button>
+      </div>
+    </section>
+
+    <section class="ws-card" aria-labelledby="ws-result-title">
+      <h2 id="ws-result-title"><span class="bar"></span> Detection results &amp; alerts</h2>
+
+      <div class="ws-kpi-row">
+        <div class="ws-kpi"><div class="lbl">Objects</div><div class="val" id="ws-kpi-count">—</div></div>
+        <div class="ws-kpi"><div class="lbl">Max confidence</div><div class="val" id="ws-kpi-conf">—</div></div>
+        <div class="ws-kpi"><div class="lbl">Severity</div><div class="val" id="ws-kpi-severity">—</div></div>
+        <div class="ws-kpi"><div class="lbl">Sensitive zone</div><div class="val" id="ws-kpi-sensitive" style="font-size:0.95rem;">—</div></div>
+      </div>
+
+      <div class="ws-reco" id="ws-reco"><span class="ws-muted-note" style="margin:0;">Recommended action appears after detection.</span></div>
+
+      <div class="ws-result-grid" style="margin-top:14px;">
+        <div>
+          <div class="ws-field" style="margin:0 0 8px;">
+            <label>Annotated image</label>
+          </div>
+          <div class="ws-preview" style="min-height:180px;">
+            <div class="ws-ph" id="ws-anno-ph">—</div>
+            <img id="ws-anno-img" alt="Annotated" style="display:none;max-height:280px;" decoding="async" />
+          </div>
+        </div>
+        <div>
+          <label class="ws-field" style="margin:0 0 8px;">
+            <span style="font-size:0.78rem;font-weight:700;color:var(--ws-muted);text-transform:uppercase;letter-spacing:0.06em;">Detections</span>
+          </label>
+          <ul class="ws-list" id="ws-det-list"><li class="ws-ph">Run detection to see objects.</li></ul>
+        </div>
+      </div>
+
+      <label class="ws-field" style="margin-top:14px;">
+        <span style="font-size:0.78rem;font-weight:700;color:var(--ws-muted);text-transform:uppercase;letter-spacing:0.06em;">Auto-generated report</span>
+        <textarea class="ws-report-ta" id="ws-auto-report" readonly rows="8"></textarea>
+      </label>
+
+      <div class="ws-actions">
+        <button type="button" class="ws-btn" id="ws-save-report">
+          <span class="ws-spinner" id="ws-spin-save"></span>
+          Save Report
+        </button>
+        <button type="button" class="ws-btn ws-btn-secondary" id="ws-send-sms">
+          <span class="ws-spinner" id="ws-spin-sms"></span>
+          Send SMS
+        </button>
+      </div>
+      <p class="ws-muted-note">
+        SMS: set <code>TWILIO_ACCOUNT_SID</code>, <code>TWILIO_AUTH_TOKEN</code>, <code>TWILIO_PHONE_NUMBER</code>,
+        <code>MUNICIPALITY_PHONE_NUMBER</code>. If not configured, mock mode logs only.
+      </p>
+    </section>
+  </div>
+
+  <div class="ws-map-section">
+    <div class="ws-map-wrap">
+      <h3><span></span> Incident location map</h3>
+      <div id="ws-map-incident"></div>
+      <div class="map-legend">
+        <span><i style="background:#2f80ed;"></i>Marker uses latitude / longitude fields</span>
+      </div>
+    </div>
+
+    <div class="ws-stats-grid" aria-label="Dashboard statistics">
+      <div class="ws-stat-card"><div class="lbl">Total reports</div><div class="val" id="ws-st-total">—</div></div>
+      <div class="ws-stat-card"><div class="lbl">High severity</div><div class="val" id="ws-st-high">—</div></div>
+      <div class="ws-stat-card"><div class="lbl">Detected objects (total)</div><div class="val" id="ws-st-objs">—</div></div>
+      <div class="ws-stat-card"><div class="lbl">SMS sent</div><div class="val" id="ws-st-sms">—</div></div>
+      <div class="ws-stat-card"><div class="lbl">Most reported zone</div><div class="val" id="ws-st-zone" style="font-size:1.15rem;line-height:1.25;">—</div></div>
+    </div>
+
+    <div class="ws-table-wrap">
+      <h3>Recent reports</h3>
+      <table class="ws-table" id="ws-reports-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Location</th>
+            <th>Severity</th>
+            <th>Count</th>
+            <th>SMS</th>
+          </tr>
+        </thead>
+        <tbody id="ws-reports-body">
+          <tr><td colspan="5" style="color:var(--ws-muted);">Loading…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+</div>
+</div>
+
+<div class="ws-modal" id="ws-modal" role="dialog" aria-modal="true" aria-labelledby="ws-modal-title" aria-describedby="ws-modal-body">
+  <div class="ws-modal-card">
+    <h4 class="ws-modal-title" id="ws-modal-title">Notification</h4>
+    <p class="ws-modal-body" id="ws-modal-body"></p>
+    <div class="ws-modal-actions">
+      <button type="button" class="ws-btn ws-btn-secondary" id="ws-modal-close">Close</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script>
+(function () {
+  var DETECT_URL = "{{ detect_url|escapejs }}";
+  var SMS_URL = "{{ sms_url|escapejs }}";
+  var REPORTS_URL = "{{ reports_url|escapejs }}";
+  var STATS_URL = "{{ statistics_url|escapejs }}";
+
+  function absMedia(u) {
+    if (!u || typeof u !== "string") return "";
+    if (/^https?:\/\//i.test(u)) return u;
+    if (u.charAt(0) === "/") return u;
+    return "/" + u.replace(/^\/+/, "");
+  }
+
+  function showAlert(kind, msg) {
+    var el = document.getElementById("ws-alert");
+    if (!el) return;
+    el.className = "ws-alert-strip on ws-alert-" + kind;
+    el.textContent = msg;
+  }
+  function hideAlert() {
+    var el = document.getElementById("ws-alert");
+    if (!el) return;
+    el.className = "ws-alert-strip";
+    el.textContent = "";
+  }
+
+  var modalEl = document.getElementById("ws-modal");
+  var modalTitleEl = document.getElementById("ws-modal-title");
+  var modalBodyEl = document.getElementById("ws-modal-body");
+  var modalCloseBtn = document.getElementById("ws-modal-close");
+  function showSmsPopup(ok, title, message) {
+    if (!modalEl || !modalTitleEl || !modalBodyEl) {
+      window.alert((title || "Notification") + "\n\n" + (message || ""));
+      return;
+    }
+    modalEl.classList.remove("ws-modal-success", "ws-modal-error");
+    modalEl.classList.add(ok ? "ws-modal-success" : "ws-modal-error");
+    modalTitleEl.textContent = title || (ok ? "SMS sent" : "SMS failed");
+    modalBodyEl.textContent = message || "";
+    modalEl.classList.add("on");
+    modalEl.style.display = "flex";
+  }
+  function hideSmsPopup() {
+    if (!modalEl) return;
+    modalEl.classList.remove("on");
+    modalEl.style.display = "";
+  }
+  if (modalCloseBtn) modalCloseBtn.addEventListener("click", hideSmsPopup);
+  if (modalEl) {
+    modalEl.addEventListener("click", function (evt) {
+      if (evt.target === modalEl) hideSmsPopup();
+    });
+  }
+
+  function pctDisplay(c) {
+    var mc = Number(c) || 0;
+    return mc <= 1 ? (mc * 100).toFixed(1) + "%" : mc.toFixed(1) + "%";
+  }
+
+  function severityClass(sev) {
+    var s = String(sev || "").toLowerCase();
+    if (s === "high") return "ws-sev-high";
+    if (s === "medium") return "ws-sev-med";
+    return "ws-sev-low";
+  }
+
+  function severityBadge(sev) {
+    var s = String(sev || "").toLowerCase();
+    if (s === "high") return "ws-badge ws-badge-high";
+    if (s === "medium") return "ws-badge ws-badge-med";
+    return "ws-badge ws-badge-low";
+  }
+
+  function locationLine() {
+    var city = (document.getElementById("ws-city").value || "").trim();
+    var addr = (document.getElementById("ws-address").value || "").trim();
+    if (city && addr) return city + ", " + addr;
+    return city || addr || "Unknown location";
+  }
+
+  var tabUpload = document.getElementById("tab-upload");
+  var tabUrl = document.getElementById("tab-url");
+  var paneUpload = document.getElementById("pane-upload");
+  var paneUrl = document.getElementById("pane-url");
+  var mode = "upload";
+
+  function setMode(m) {
+    mode = m;
+    var uploadOn = m === "upload";
+    tabUpload.classList.toggle("ws-tab-on", uploadOn);
+    tabUrl.classList.toggle("ws-tab-on", !uploadOn);
+    paneUpload.style.display = uploadOn ? "block" : "none";
+    paneUrl.style.display = uploadOn ? "none" : "block";
+    hideAlert();
+  }
+  tabUpload.addEventListener("click", function () { setMode("upload"); });
+  tabUrl.addEventListener("click", function () { setMode("url"); });
+
+  var fileEl = document.getElementById("ws-file");
+  var urlEl = document.getElementById("ws-url");
+  var prevImg = document.getElementById("ws-preview-img");
+  var prevPh = document.getElementById("ws-preview-ph");
+
+  fileEl.addEventListener("change", function () {
+    var f = fileEl.files && fileEl.files[0];
+    if (!f) return;
+    var r = new FileReader();
+    r.onload = function () {
+      prevImg.src = r.result;
+      prevImg.style.display = "block";
+      prevPh.style.display = "none";
+    };
+    r.readAsDataURL(f);
+  });
+
+  urlEl.addEventListener("change", function () {
+    var u = (urlEl.value || "").trim();
+    if (!u) return;
+    prevImg.onload = function () {
+      prevImg.style.display = "block";
+      prevPh.style.display = "none";
+    };
+    prevImg.onerror = function () {
+      showAlert("err", "Could not load preview from this URL.");
+    };
+    prevImg.src = u;
+  });
+
+  var lastPayload = {
+    detections: [],
+    count: 0,
+    max_confidence: 0,
+    annotated_image_url: "",
+    source_image_url: "",
+    severity: "",
+    recommended_action: "",
+    sensitive_area_boost: false
+  };
+
+  var lastReportId = null;
+  var lastReportSnapshot = null;
+
+  function setLoading(btnSpinId, on) {
+    var sp = document.getElementById(btnSpinId);
+    if (sp) sp.classList.toggle("on", on);
+  }
+
+  function buildAlertText(locLine, confPctStr) {
+    return (
+      "Smart City Alert: Waste detected at " + locLine +
+      ". Severity: " + (lastPayload.severity || "—") +
+      ". Objects detected: " + lastPayload.count +
+      ". Confidence: " + confPctStr +
+      ". Recommended action: " + (lastPayload.recommended_action || "—") +
+      ". Please send cleaning team."
+    );
+  }
+
+  function refreshAutoReport() {
+    var ta = document.getElementById("ws-auto-report");
+    if (!ta) return;
+    var locLine = locationLine();
+    var imgSrc = lastPayload.source_image_url || (mode === "url" ? (urlEl.value || "").trim() : "(upload)");
+    var confPct = pctDisplay(lastPayload.max_confidence).replace("%", "");
+    var smsSt = lastReportSnapshot ? String(lastReportSnapshot.sms_status || "pending") : "—";
+    ta.value = [
+      "Report ID: " + (lastReportSnapshot && lastReportSnapshot.id ? "#" + lastReportSnapshot.id : "(save to assign ID)"),
+      "Date/time: " + (lastReportSnapshot && lastReportSnapshot.created_at ? lastReportSnapshot.created_at : new Date().toISOString()),
+      "Location: " + locLine,
+      "Image source: " + imgSrc,
+      "Detected objects: " + JSON.stringify(lastPayload.detections || [], null, 0),
+      "Max confidence: " + pctDisplay(lastPayload.max_confidence),
+      "Severity: " + (lastPayload.severity || "—"),
+      "Recommended municipality action: " + (lastPayload.recommended_action || "—"),
+      "Notes: " + ((document.getElementById("ws-notes").value || "").trim() || "—"),
+      "SMS status: " + smsSt,
+      "",
+      "Alert message:",
+      buildAlertText(locLine, confPct)
+    ].join("\n");
+  }
+
+  var incidentMap = null;
+  var incidentMarker = null;
+
+  function ensureIncidentMap(lat, lng) {
+    if (!window.L) return;
+    if (!incidentMap) {
+      incidentMap = L.map("ws-map-incident").setView([lat, lng], 14);
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 19,
+        attribution: "&copy; OpenStreetMap"
+      }).addTo(incidentMap);
+    } else {
+      incidentMap.setView([lat, lng], 14);
+    }
+    if (incidentMarker) incidentMarker.remove();
+    incidentMarker = L.circleMarker([lat, lng], {
+      radius: 10,
+      color: "#2f80ed",
+      fillColor: "#2f80ed",
+      fillOpacity: 0.85
+    }).addTo(incidentMap);
+    setTimeout(function () { incidentMap.invalidateSize(); }, 120);
+  }
+
+  function updateIncidentMapFromInputs() {
+    var la = parseFloat(document.getElementById("ws-lat").value);
+    var ln = parseFloat(document.getElementById("ws-lng").value);
+    if (!isFinite(la) || !isFinite(ln)) return;
+    ensureIncidentMap(la, ln);
+  }
+
+  ["ws-lat", "ws-lng"].forEach(function (id) {
+    var el = document.getElementById(id);
+    if (el) el.addEventListener("change", updateIncidentMapFromInputs);
+  });
+
+  async function loadStatistics() {
+    try {
+      var res = await fetch(STATS_URL);
+      var data = await res.json();
+      if (!data.success) return;
+      document.getElementById("ws-st-total").textContent = String(data.total_reports ?? "—");
+      document.getElementById("ws-st-high").textContent = String(data.high_severity ?? "—");
+      document.getElementById("ws-st-objs").textContent = String(data.total_detected_objects ?? "—");
+      document.getElementById("ws-st-sms").textContent = String(data.sms_sent ?? "—");
+      document.getElementById("ws-st-zone").textContent = String(data.most_reported_zone ?? "—");
+    } catch (_e) {}
+  }
+
+  function formatSmsStatus(s) {
+    if (!s) return "—";
+    return String(s).replace(/_/g, " ");
+  }
+
+  function escHtml(s) {
+    return String(s == null ? "" : s)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+
+  async function loadReportsTable() {
+    var tbody = document.getElementById("ws-reports-body");
+    try {
+      var res = await fetch(REPORTS_URL);
+      var data = await res.json();
+      var rows = (data.reports || []).slice(0, 50);
+      tbody.innerHTML = "";
+      if (!rows.length) {
+        tbody.innerHTML = '<tr><td colspan="5" style="color:#8ca0c4;">No saved reports yet.</td></tr>';
+        updateIncidentMapFromInputs();
+        return;
+      }
+      rows.forEach(function (r) {
+        var tr = document.createElement("tr");
+        var dt = (r.created_at || "").replace("T", " ").slice(0, 19);
+        var loc = (r.location || "").trim() || [r.city, r.address].filter(Boolean).join(", ") || "—";
+        var badgeClass = severityBadge(r.severity);
+        tr.innerHTML =
+          "<td>" + escHtml(dt) + "</td>" +
+          "<td>" + escHtml(loc) + "</td>" +
+          '<td><span class="' + badgeClass + '">' + escHtml(r.severity || "—") + "</span></td>" +
+          "<td>" + escHtml(r.count != null ? r.count : "—") + "</td>" +
+          "<td>" + escHtml(formatSmsStatus(r.sms_status)) + "</td>";
+        tbody.appendChild(tr);
+      });
+      updateIncidentMapFromInputs();
+    } catch (e) {
+      tbody.innerHTML = '<tr><td colspan="5" style="color:#ffcdd2;">Failed to load reports.</td></tr>';
+    }
+  }
+
+  document.getElementById("ws-detect").addEventListener("click", async function () {
+    hideAlert();
+    var btn = document.getElementById("ws-detect");
+    btn.disabled = true;
+    setLoading("ws-spin-detect", true);
+
+    document.getElementById("ws-kpi-count").textContent = "…";
+    document.getElementById("ws-kpi-conf").textContent = "…";
+    document.getElementById("ws-kpi-severity").textContent = "…";
+    document.getElementById("ws-kpi-severity").className = "val";
+    document.getElementById("ws-kpi-sensitive").textContent = "…";
+    document.getElementById("ws-reco").innerHTML = '<span class="ws-muted-note" style="margin:0;">Running model…</span>';
+
+    var list = document.getElementById("ws-det-list");
+    list.innerHTML = "";
+    var annoImg = document.getElementById("ws-anno-img");
+    var annoPh = document.getElementById("ws-anno-ph");
+    annoImg.style.display = "none";
+    annoPh.style.display = "block";
+    annoPh.textContent = "—";
+
+    var city = (document.getElementById("ws-city").value || "").trim();
+    var address = (document.getElementById("ws-address").value || "").trim();
+
+    try {
+      var res;
+      if (mode === "upload") {
+        var f = fileEl.files && fileEl.files[0];
+        if (!f) {
+          showAlert("warn", "Choose an image file.");
+          return;
+        }
+        var fd = new FormData();
+        fd.append("image", f);
+        fd.append("city", city);
+        fd.append("address", address);
+        res = await fetch(DETECT_URL, { method: "POST", body: fd });
+      } else {
+        var u = (urlEl.value || "").trim();
+        if (!u) {
+          showAlert("warn", "Paste an image URL (https).");
+          return;
+        }
+        res = await fetch(DETECT_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ image_url: u, city: city, address: address })
+        });
+      }
+
+      var data = {};
+      try {
+        data = await res.json();
+      } catch (_e) {
+        showAlert("err", "Invalid response from detection API.");
+        return;
+      }
+
+      if (!res.ok) {
+        showAlert("err", data.message || data.error || "Detection request failed.");
+        document.getElementById("ws-reco").textContent = "";
+        return;
+      }
+
+      if (!data.success) {
+        var detail =
+          data.error === "model_missing"
+            ? "Model missing: set WASTE_MODEL_PATH in settings.py (see waste_detection service)."
+            : data.error_detail || data.error || "Detection failed";
+        showAlert("err", detail);
+        document.getElementById("ws-kpi-severity").textContent = "—";
+        document.getElementById("ws-reco").textContent = "";
+        return;
+      }
+
+      lastPayload.detections = data.detections || [];
+      lastPayload.count = data.count || 0;
+      lastPayload.max_confidence = data.max_confidence || 0;
+      lastPayload.annotated_image_url = data.annotated_image_url || "";
+      lastPayload.source_image_url = data.source_image_url || "";
+      lastPayload.severity = data.severity || "";
+      lastPayload.recommended_action = data.recommended_action || "";
+      lastPayload.sensitive_area_boost = !!data.sensitive_area_boost;
+
+      document.getElementById("ws-kpi-count").textContent = String(lastPayload.count);
+      document.getElementById("ws-kpi-conf").textContent = pctDisplay(lastPayload.max_confidence);
+
+      var sevEl = document.getElementById("ws-kpi-severity");
+      sevEl.textContent = lastPayload.severity || "—";
+      sevEl.className = "val " + severityClass(lastPayload.severity);
+
+      document.getElementById("ws-kpi-sensitive").textContent = lastPayload.sensitive_area_boost ? "Yes (+1 level)" : "No";
+
+      document.getElementById("ws-reco").textContent = lastPayload.recommended_action || "—";
+
+      if (lastPayload.count > 0) {
+        showAlert("ok", "Waste detected.");
+      } else {
+        showAlert("warn", "No waste detected above threshold.");
+      }
+
+      if (lastPayload.annotated_image_url) {
+        annoImg.src = absMedia(lastPayload.annotated_image_url);
+        annoImg.style.display = "block";
+        annoPh.style.display = "none";
+      }
+
+      if (!lastPayload.detections.length) {
+        list.innerHTML = '<li class="ws-ph">No bounding boxes above threshold.</li>';
+      } else {
+        lastPayload.detections.forEach(function (d) {
+          var li = document.createElement("li");
+          var pct = d.confidence <= 1 ? (d.confidence * 100).toFixed(1) : d.confidence;
+          li.innerHTML =
+            '<span class="tag">' + (d.label || "?") + "</span><span>" +
+            pct + "% · [" + (d.box || []).join(", ") + "]</span>";
+          list.appendChild(li);
+        });
+      }
+
+      refreshAutoReport();
+      updateIncidentMapFromInputs();
+    } catch (e) {
+      showAlert("err", "Detection error — " + e);
+    } finally {
+      btn.disabled = false;
+      setLoading("ws-spin-detect", false);
+    }
+  });
+
+  document.getElementById("ws-save-report").addEventListener("click", async function () {
+    hideAlert();
+    var btn = document.getElementById("ws-save-report");
+    btn.disabled = true;
+    setLoading("ws-spin-save", true);
+    try {
+      var body = {
+        city: (document.getElementById("ws-city").value || "").trim(),
+        address: (document.getElementById("ws-address").value || "").trim(),
+        latitude: document.getElementById("ws-lat").value,
+        longitude: document.getElementById("ws-lng").value,
+        notes: (document.getElementById("ws-notes").value || "").trim(),
+        detections: lastPayload.detections,
+        count: lastPayload.count,
+        max_confidence: lastPayload.max_confidence,
+        severity: lastPayload.severity,
+        recommended_action: lastPayload.recommended_action,
+        annotated_image_url: lastPayload.annotated_image_url,
+        source_image_url: lastPayload.source_image_url,
+        sensitive_area_boost: lastPayload.sensitive_area_boost
+      };
+      var res = await fetch(REPORTS_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body)
+      });
+      var data = await res.json().catch(function () { return {}; });
+      if (!res.ok || !data.success) {
+        showAlert("err", data.message || "Could not save report.");
+        return;
+      }
+      lastReportId = data.report && data.report.id;
+      lastReportSnapshot = data.report;
+      showAlert("ok", "Report saved #" + lastReportId + ".");
+      refreshAutoReport();
+      await loadStatistics();
+      await loadReportsTable();
+    } catch (e) {
+      showAlert("err", "Save failed — " + e);
+    } finally {
+      btn.disabled = false;
+      setLoading("ws-spin-save", false);
+    }
+  });
+
+  document.getElementById("ws-send-sms").addEventListener("click", async function () {
+    var locLine = locationLine();
+    if (!locLine || locLine === "Unknown location") {
+      showAlert("warn", "Fill city and/or address for the alert location.");
+      showSmsPopup(false, "Localisation manquante", "Ajoute City et/ou Address avant d'envoyer le SMS.");
+      return;
+    }
+    var btn = document.getElementById("ws-send-sms");
+    btn.disabled = true;
+    setLoading("ws-spin-sms", true);
+    hideAlert();
+    try {
+      var payload = {
+        location: locLine,
+        count: lastPayload.count,
+        confidence: lastPayload.max_confidence,
+        severity: lastPayload.severity,
+        recommended_action: lastPayload.recommended_action,
+        notes: (document.getElementById("ws-notes").value || "").trim()
+      };
+      if (lastReportId) payload.report_id = lastReportId;
+      var res = await fetch(SMS_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      var data = await res.json().catch(function () { return {}; });
+      if (data.success) {
+        var okText = "SMS envoye avec succes.";
+        if (data.mode === "mock") okText = "SMS non envoye en reel: mode simulation (mock).";
+        if (data.message) okText += "\n" + data.message;
+        showAlert("ok", "SMS queued — " + (data.message || "") + " (" + (data.mode || "") + ")");
+        showSmsPopup(true, data.mode === "mock" ? "SMS simulation" : "SMS envoye", okText);
+      } else {
+        showAlert("err", data.message || "SMS failed");
+        showSmsPopup(false, "Echec envoi SMS", data.message || "SMS failed");
+      }
+      await loadStatistics();
+      await loadReportsTable();
+      if (lastReportSnapshot) {
+        lastReportSnapshot.sms_status = data.success ? "sent_or_mock" : "failed";
+      }
+      refreshAutoReport();
+    } catch (e) {
+      showAlert("err", "SMS error — " + e);
+      showSmsPopup(false, "Erreur SMS", String(e));
+    } finally {
+      btn.disabled = false;
+      setLoading("ws-spin-sms", false);
+    }
+  });
+
+  document.getElementById("ws-notes").addEventListener("input", refreshAutoReport);
+
+  loadStatistics();
+  loadReportsTable();
+  window.addEventListener("load", function () {
+    updateIncidentMapFromInputs();
+    if (incidentMap) setTimeout(function () { incidentMap.invalidateSize(); }, 200);
+  });
+})();
+</script>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  function pad(n) { return (n < 10 ? "0" : "") + n; }
+  function tickClock() {
+    var el = document.getElementById("fhClock");
+    if (!el) return;
+    var d = new Date();
+    el.textContent = pad(d.getHours()) + ":" + pad(d.getMinutes()) + ":" + pad(d.getSeconds());
+  }
+  setInterval(tickClock, 1000);
+  tickClock();
+})();
+</script>
+{% endblock %}

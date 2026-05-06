@@ -1,0 +1,112 @@
+{# Digital identity card — Fusion Hub (matched faces only). Expects `face` with match, profile, URLs. #}
+{% with m=face.match %}
+<section class="fh-digital-id-card" aria-label="Digital identity card">
+  <div class="fh-did-pattern" aria-hidden="true"></div>
+  <header class="fh-did-header">
+    <div class="fh-did-titles">
+      <span class="fh-did-kicker">DIGITAL IDENTITY CARD</span>
+      <span class="fh-did-subkicker">AI VERIFIED PROFILE</span>
+    </div>
+    <div class="fh-did-badges">
+      <span class="fh-did-verified">
+        <span class="fh-did-verified-dot" aria-hidden="true"></span>
+        VERIFIED
+      </span>
+    </div>
+  </header>
+
+  <div class="fh-did-body">
+    <div class="fh-did-photo-col">
+      <div class="fh-did-photo-frame">
+        {% if face.reference_image_url %}
+          <img
+            class="fh-did-photo"
+            src="{{ face.reference_image_url }}"
+            alt="Registry reference photo"
+            width="96"
+            height="96"
+            loading="lazy"
+          />
+        {% else %}
+          <div class="fh-did-photo fh-did-photo--placeholder" role="img" aria-label="No reference image">—</div>
+        {% endif %}
+      </div>
+      <div class="fh-did-chip" aria-hidden="true" title="Secure element">
+        <span class="fh-did-chip-gold"></span>
+        <span class="fh-did-chip-lines"></span>
+      </div>
+    </div>
+
+    <div class="fh-did-main">
+      <h3 class="fh-did-name">{{ face.card_display_name|default:face.full_name|default:m.display_name }}</h3>
+      <dl class="fh-did-dl">
+        <div class="fh-did-row">
+          <dt>Unique ID</dt>
+          <dd><code class="fh-did-code">{{ m.person_code|default:face.identity_code }}</code></dd>
+        </div>
+        {% if m.category or face.category %}
+          <div class="fh-did-row">
+            <dt>Category</dt>
+            <dd>{{ m.category|default:face.category }}</dd>
+          </div>
+        {% endif %}
+        <div class="fh-did-row fh-did-row--metrics">
+          <div>
+            <dt>Match confidence</dt>
+            <dd>{% if face.match_confidence %}{{ face.match_confidence|floatformat:1 }}{% else %}{{ m.confidence_pct }}{% endif %}%</dd>
+          </div>
+          <div>
+            <dt>Cosine distance</dt>
+            <dd>{% if face.distance is not None %}{{ face.distance }}{% else %}{{ m.distance }}{% endif %}</dd>
+          </div>
+        </div>
+      </dl>
+
+      {% if face.profile and face.profile_extended %}
+        <div class="fh-did-profile">
+          <span class="fh-did-profile-label">Extended registry profile</span>
+          <span class="fh-did-profile-hint">Linked by <code>identity_code</code> = <code>{{ m.person_code }}</code></span>
+          <ul class="fh-did-profile-grid">
+            {% if face.profile.age is not None %}
+              <li><span class="fh-did-lbl">Age</span><span class="fh-did-val">{{ face.profile.age }}</span></li>
+            {% endif %}
+            {% if face.profile.role %}
+              <li><span class="fh-did-lbl">Role</span><span class="fh-did-val">{{ face.profile.role }}</span></li>
+            {% endif %}
+            {% if face.profile.risk_level %}
+              <li><span class="fh-did-lbl">Risk</span><span class="fh-did-val">{{ face.profile.risk_level }}</span></li>
+            {% endif %}
+            {% if face.profile.last_seen %}
+              <li><span class="fh-did-lbl">Last seen</span><span class="fh-did-val fh-did-val--sm">{{ face.profile.last_seen }}</span></li>
+            {% endif %}
+          </ul>
+          {% if face.profile.notes %}
+            <p class="fh-did-notes"><span class="fh-did-lbl">Notes</span>{{ face.profile.notes }}</p>
+          {% endif %}
+          {% if face.profile.extra_info_display %}
+            <pre class="fh-did-extra">{{ face.profile.extra_info_display }}</pre>
+          {% endif %}
+        </div>
+      {% else %}
+        <p class="fh-did-no-profile">{{ face.no_extended_profile_message|default:"No extended profile found" }}</p>
+        {% if face.admin_add_facepersonprofile_url %}
+          <a class="fh-did-admin-link" href="{{ face.admin_add_facepersonprofile_url }}" target="_blank" rel="noopener noreferrer">
+            Add extended profile in Django admin
+          </a>
+        {% endif %}
+      {% endif %}
+    </div>
+
+    <div class="fh-did-side">
+      <div class="fh-did-qr" aria-hidden="true" title="Credential checksum placeholder"></div>
+      <div class="fh-did-barcode" aria-hidden="true">
+        <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+      </div>
+    </div>
+  </div>
+
+  <footer class="fh-did-footer">
+    <span class="fh-did-footer-id">REF #{{ m.reference_id }} · IDENTITY #{{ m.identity_id }}</span>
+  </footer>
+</section>
+{% endwith %}

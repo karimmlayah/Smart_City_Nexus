@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block title %}Supprimer {{ source.name }}{% endblock %}
+{% block body_class %}cockpit page-form{% endblock %}
+
+{% block content %}
+<a href="{% url 'monitoring:dashboard' %}" class="back-link">← Retour</a>
+<h1 class="form-page-title">Supprimer la source ?</h1>
+<p class="muted">{{ source.name }} ({{ source.get_source_type_display }})</p>
+<form method="post" class="glass" style="padding:1.25rem 1.5rem; margin-top:1rem;">
+  {% csrf_token %}
+  <button type="submit" class="btn danger">Confirmer la suppression</button>
+  <a href="{% url 'monitoring:dashboard' %}" class="btn">Annuler</a>
+</form>
+{% endblock %}

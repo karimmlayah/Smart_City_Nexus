@@ -1,0 +1,36 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Smart City — Surveillance{% endblock %}</title>
+  <link rel="stylesheet" href="{% static 'monitoring/app.css' %}">
+  {% block extra_head %}{% endblock %}
+</head>
+<body class="{% block body_class %}cockpit{% endblock %}">
+  <aside class="rail" aria-label="Navigation principale">
+    <a href="{% url 'monitoring:surveillance_dashboard' %}" class="rail-link {% if request.resolver_match.url_name == 'surveillance_dashboard' or request.resolver_match.url_name == 'home' %}rail-link-active{% endif %}" title="Surveillance / Fusion">▣</a>
+    <a href="{% url 'monitoring:fire_camera_detect' %}" class="rail-link {% if request.resolver_match.url_name == 'fire_camera_detect' %}rail-link-active{% endif %}" title="Détection feu / fumée (ONNX)">🔥</a>
+    <a href="{% url 'monitoring:camera_settings' %}" class="rail-link {% if request.resolver_match.url_name == 'camera_settings' or request.resolver_match.url_name == 'fire_camera_settings' %}rail-link-active{% endif %}" title="Réglages caméra ESP32">📷</a>
+    <a href="{% url 'monitoring:road_damage_test' %}" class="rail-link {% if request.resolver_match.url_name == 'road_damage_test' %}rail-link-active{% endif %}" title="Road damage AI">🛣</a>
+    <a href="{% url 'monitoring:waste_street_detection' %}" class="rail-link {% if request.resolver_match.url_name == 'waste_street_detection' %}rail-link-active{% endif %}" title="Waste street detection">♻</a>
+    <a href="{% url 'monitoring:uav_dashboard' %}" class="rail-link {% if request.resolver_match.url_name == 'uav_dashboard' %}rail-link-active{% endif %}" title="Dashboard UAV">🛰</a>
+    <a href="{% url 'monitoring:traffic_nexus_dashboard' %}" class="rail-link {% if request.resolver_match.url_name == 'traffic_nexus_dashboard' %}rail-link-active{% endif %}" title="Traffic Nexus">🚦</a>
+    <a href="{% url 'monitoring:ai_dashboard' %}" class="rail-link {% if request.resolver_match.url_name == 'ai_dashboard' %}rail-link-active{% endif %}" title="AI Dashboard">📊</a>
+    <a href="{% url 'monitoring:traffic_violation' %}" class="rail-link {% if request.resolver_match.url_name == 'traffic_violation' or request.resolver_match.url_name == 'traffic_violation_analyze' or request.resolver_match.url_name == 'violation_dashboard' %}rail-link-active{% endif %}" title="Violations feu rouge">🛑</a>
+    <a href="/admin/" class="rail-link" title="Admin">⚙</a>
+  </aside>
+  <div class="app-shell">
+    {% if messages %}
+      <ul class="messages messages-top">
+        {% for m in messages %}
+          <li class="msg msg-{{ m.tags }}">{{ m }}</li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+    {% block content %}{% endblock %}
+  </div>
+  {% block extra_js %}{% endblock %}
+</body>
+</html>

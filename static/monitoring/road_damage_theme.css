@@ -1,0 +1,132 @@
+/**
+ * Road damage dashboard — align with Fusion / Surveillance command center (dark glass).
+ * Scoped: body.fusion-hub-sc.road-damage-sc
+ */
+
+body.fusion-hub-sc.road-damage-sc {
+  --rd-bg: #03040a;
+  --rd-card: rgba(17, 24, 39, 0.82);
+  --rd-card-border: rgba(255, 255, 255, 0.1);
+  --rd-accent: #38bdf8;
+  --rd-text: #f1f5f9;
+  --rd-muted: #94a3b8;
+  --rd-crit: #ef4444;
+  --rd-ok: #22c55e;
+  --rd-warn: #f97316;
+  /* Override inline :root vars used inside .ai-dash */
+  --navy: #03040a;
+  --card: rgba(17, 24, 39, 0.82);
+  --accent: #38bdf8;
+  --text: #f1f5f9;
+  --muted: #94a3b8;
+  --crit: #ef4444;
+  --ok: #22c55e;
+  --warn: #f97316;
+}
+
+body.fusion-hub-sc.road-damage-sc .ai-dash {
+  background: transparent;
+  color: var(--rd-text);
+  padding: 1rem 1rem 2.5rem 1rem;
+  margin: 0;
+  font-family: "Inter", "Segoe UI", system-ui, sans-serif;
+}
+
+body.fusion-hub-sc.road-damage-sc .ai-hero h1 {
+  color: #f8fafc;
+  letter-spacing: 0.02em;
+}
+
+body.fusion-hub-sc.road-damage-sc .ai-hero p {
+  color: var(--rd-muted);
+}
+
+body.fusion-hub-sc.road-damage-sc .ai-hero a.btn-ghost-xl {
+  border-color: rgba(56, 189, 248, 0.35) !important;
+  color: #e0f2fe !important;
+  border-radius: 12px;
+}
+
+body.fusion-hub-sc.road-damage-sc .kpi-card,
+body.fusion-hub-sc.road-damage-sc .map-wrap,
+body.fusion-hub-sc.road-damage-sc .prior-card,
+body.fusion-hub-sc.road-damage-sc .report-card {
+  background: var(--rd-card);
+  border: 1px solid var(--rd-card-border);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+body.fusion-hub-sc.road-damage-sc .kpi-card {
+  border-radius: 14px;
+}
+
+body.fusion-hub-sc.road-damage-sc .map-wrap {
+  border-radius: 16px;
+  border-color: rgba(56, 189, 248, 0.15);
+}
+
+body.fusion-hub-sc.road-damage-sc .section-title span {
+  background: linear-gradient(180deg, #38bdf8, #0ea5e9);
+}
+
+body.fusion-hub-sc.road-damage-sc .map-legend {
+  border-top-color: rgba(255, 255, 255, 0.08);
+  color: var(--rd-muted);
+}
+
+body.fusion-hub-sc.road-damage-sc .report-card:hover {
+  border-color: rgba(56, 189, 248, 0.28);
+}
+
+body.fusion-hub-sc.road-damage-sc .btn-ai-detail {
+  background: linear-gradient(135deg, #0ea5e9, #38bdf8);
+  border-radius: 10px;
+}
+
+body.fusion-hub-sc.road-damage-sc .badge-new {
+  background: rgba(56, 189, 248, 0.12);
+  color: #bae6fd;
+  border-color: rgba(56, 189, 248, 0.35);
+}
+
+body.fusion-hub-sc.road-damage-sc .model-line {
+  color: #cbd5e1;
+}
+
+body.fusion-hub-sc.road-damage-sc .reco-block {
+  background: rgba(3, 4, 10, 0.45);
+  color: #e2e8f0;
+}
+
+body.fusion-hub-sc.road-damage-sc .owner-pill {
+  background: rgba(56, 189, 248, 0.08);
+  border-color: rgba(56, 189, 248, 0.25);
+}
+
+body.fusion-hub-sc.road-damage-sc details.yolo-lab {
+  background: rgba(12, 14, 22, 0.65);
+  border-color: rgba(56, 189, 248, 0.2);
+}
+
+body.fusion-hub-sc.road-damage-sc details.yolo-lab > summary {
+  color: var(--rd-accent);
+}
+
+body.fusion-hub-sc.road-damage-sc .score-bar > div {
+  background: linear-gradient(90deg, #38bdf8, #22d3ee);
+}
+
+/* ——— Map & heatmap : plus de hauteur ——— */
+body.fusion-hub-sc.road-damage-sc #citizen-map {
+  height: min(74vh, 900px);
+  min-height: 560px;
+}
+
+@media (max-width: 768px) {
+  body.fusion-hub-sc.road-damage-sc #citizen-map {
+    height: min(62vh, 640px);
+    min-height: 420px;
+  }
+}

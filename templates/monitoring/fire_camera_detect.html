@@ -1,0 +1,354 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Smart City · Détection feu / fumée{% endblock %}
+{% block body_class %}cockpit fusion-hub-sc road-damage-sc fc-camera-page{% endblock %}
+{% block extra_head %}
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'monitoring/fusion_hub_dashboard.css' %}">
+  <link rel="stylesheet" href="{% static 'monitoring/fusion_hub_smartcity.css' %}">
+  <link rel="stylesheet" href="{% static 'monitoring/road_damage_theme.css' %}">
+  <link rel="stylesheet" href="{% static 'monitoring/fire-camera-settings.css' %}">
+{% endblock %}
+{% block content %}
+<div class="fh-root fh-camera-shell">
+  <header class="fh-nav fh-glass" aria-label="Primary">
+    <div class="fh-nav-brand fh-brand-cluster">
+      <span class="fh-brand-orb" aria-hidden="true"></span>
+      <div class="fh-brand-text">
+        <h1 class="fh-nav-logo">Smart City Platform</h1>
+        <p class="fh-nav-tag">Fire Detection · ONNX / Twilio</p>
+      </div>
+    </div>
+    <div class="fh-nav-meta">
+      <span class="fh-nav-loc" title="Module">ESP32 · Flux &amp; inférence</span>
+      <span class="fh-clock" id="fhClock" aria-live="polite">--:--:--</span>
+      <span class="fh-icon-chip" title="Notifications">🔔</span>
+      <span class="fh-nav-user" title="Operator" aria-hidden="true"></span>
+    </div>
+  </header>
+
+  <div class="fh-camera-settings-body fc-detect-wrap">
+    <header class="fh-glass fc-detect-hero">
+      <h2 class="fc-detect-title">Détection feu / fumée (ONNX + Twilio)</h2>
+      <p class="fc-detect-lead">
+        Django télécharge <code>http://{% if esp_ip %}{{ esp_ip|escape }}{% else %}&lt;IP&gt;{% endif %}/capture</code>, exécute <strong>best.onnx</strong> (YOLO),
+        et déclenche <strong>Twilio</strong> lorsque la détection feu/fumée reste stable pendant le délai réglé (par défaut <strong>2&nbsp;s</strong>).
+      </p>
+      <ul class="fc-detect-list">
+        <li><strong>IP caméra</strong> : <a href="{% url 'monitoring:camera_settings' %}">Réglages caméra</a>, ou <code>DRONE_HOST</code> dans <code>.env</code>.</li>
+        <li><strong>Modèle</strong> : <code>{{ model_path|escape }}</code>
+          {% if model_ok %}<span class="fc-ok"> — fichier présent.</span>
+          {% else %}<strong class="fc-bad"> — fichier absent.</strong> Copiez <code>best.onnx</code> dans <code>models/best.onnx</code> à la racine du projet, ou définissez <code>FIRE_ONNX_MODEL</code> dans <code>.env</code>.{% endif %}
+        </li>
+        <li><strong>ONNX Runtime</strong> : {% if onnx_ok %}<span class="fc-ok">installé.</span>{% else %}<strong class="fc-bad">manquant</strong> — <code>pip install onnxruntime</code>.{% endif %}</li>
+      </ul>
+      <div class="fc-detect-ip" style="margin-top:0.75rem;">
+        <p style="margin:0 0 0.35rem;">IP utilisée : <code>{{ esp_ip|escape }}</code></p>
+        <form method="post" style="display:flex;flex-wrap:wrap;gap:0.55rem;align-items:center;">
+          {% csrf_token %}
+          <label for="esp_ip" style="font-size:0.82rem;white-space:nowrap;">IP ESP32-CAM utilisée</label>
+          <input id="esp_ip" name="esp_ip" type="text" value="{{ esp_ip|escape }}" placeholder="ex: 192.168.0.148" autocomplete="off" style="min-width:14rem;padding:0.45rem 0.55rem;border-radius:10px;border:1px solid rgba(255,255,255,0.12);background:rgba(0,0,0,0.35);color:#e2e8f0;" />
+          <button type="submit" class="jarvis-btn jarvis-btn-ghost" style="padding:0.35rem 0.65rem;font-size:0.8rem;white-space:nowrap;">Appliquer IP</button>
+        </form>
+      </div>
+      <p class="fc-detect-actions">
+        <a href="{% url 'monitoring:camera_settings' %}" class="jarvis-btn jarvis-btn-primary" style="text-decoration:none;display:inline-flex;">📷 Réglages caméra</a>
+        <a href="{% url 'monitoring:surveillance_dashboard' %}" class="jarvis-btn jarvis-btn-ghost" style="text-decoration:none;display:inline-flex;margin-left:0.35rem;">Surveillance</a>
+      </p>
+    </header>
+
+    {% if not has_ip %}
+    <div class="fh-glass fc-detect-panel">
+      <p style="margin:0;"><strong>Aucune IP ESP configurée.</strong></p>
+      <p style="margin:0.5rem 0 0;">
+        Ouvrez <a href="{% url 'monitoring:camera_settings' %}">Réglages caméra</a>, enregistrez l’IP, puis rechargez cette page.
+        {% if drone_host_set %}Vérifiez <code>DRONE_HOST</code> dans <code>.env</code>.{% endif %}
+      </p>
+    </div>
+    {% else %}
+
+    {% if not analysis_ready %}
+    <div class="fh-glass fc-detect-panel fc-detect-warn">
+      <p style="margin:0;"><strong>Analyse ONNX indisponible.</strong></p>
+      <p style="margin:0.45rem 0 0;">Sans <code>best.onnx</code>, le flux vidéo peut quand même s’afficher à gauche. Placez le modèle dans <code>models/best.onnx</code> puis rechargez la page.</p>
+    </div>
+    {% endif %}
+
+    <div class="fh-glass fc-detect-panel fc-detect-toolbar" {% if not analysis_ready %}style="opacity:0.65;pointer-events:none;"{% endif %}>
+      <label><input type="checkbox" id="fcTwilio" {% if not analysis_ready %}disabled{% endif %} /> Appel Twilio si alerte</label>
+      <label>Conf <input type="number" id="fcConf" value="0.65" min="0.05" max="0.95" step="0.05" style="width:4rem;" {% if not analysis_ready %}disabled{% endif %} /></label>
+      <label>IoU <input type="number" id="fcIou" value="0.45" min="0.1" max="0.95" step="0.05" style="width:4rem;" {% if not analysis_ready %}disabled{% endif %} /></label>
+      <label>Alerte après (s) <input type="number" id="fcAlert" value="2" min="0.5" max="15" step="0.5" style="width:4rem;" {% if not analysis_ready %}disabled{% endif %} /></label>
+      <label>Reset grâce (s) <input type="number" id="fcGrace" value="0.8" min="0.2" max="5" step="0.1" style="width:4rem;" {% if not analysis_ready %}disabled{% endif %} /></label>
+      <button type="button" class="jarvis-btn jarvis-btn-ghost" id="fcReset" {% if not analysis_ready %}disabled{% endif %}>Reset compteur feu</button>
+    </div>
+
+    <div class="fh-glass fc-detect-panel fc-detect-toolbar" style="margin-top:0.65rem;border-style:dashed;">
+      <button type="button" class="jarvis-btn jarvis-btn-primary" id="fcTwilioTest" {% if not twilio_ready %}disabled title="Configurez TWILIO_* dans .env"{% endif %}>Test appel Twilio</button>
+      {% if not twilio_ready %}<span class="fc-detect-muted">Variables Twilio manquantes — voir section ci‑dessous.</span>{% endif %}
+    </div>
+
+    <div class="fc-detect-grid">
+      <div class="fh-glass fc-detect-panel">
+        <h3 class="fc-detect-subtitle">Flux ESP (via proxy Django)</h3>
+        {% if esp_host and esp_stream_src %}
+        <p class="fc-detect-muted" style="margin:0 0 0.5rem;font-size:0.8rem;">Si l’image reste vide : vérifiez que la caméra répond sur le port <strong>81</strong> ou <strong>80</strong> (<code>/stream</code>).</p>
+        <img id="fcStreamImg" src="{{ esp_stream_src|escape }}" alt="Flux MJPEG ESP32-CAM" class="fc-detect-stream" />
+        <p id="fcStreamErr" class="fc-detect-muted" style="margin:0.35rem 0 0;display:none;"></p>
+        {% else %}
+        <p class="fc-detect-muted">Flux indisponible.</p>
+        {% endif %}
+      </div>
+      <div class="fh-glass fc-detect-panel fc-detect-onnx-col">
+        <h3 class="fc-detect-subtitle">Analyse ONNX (serveur) · XAI</h3>
+        <p class="fc-detect-muted" style="margin:0 0 0.5rem;font-size:0.8rem;">Image annotée (cadres = sortie NMS) + explication textuelle des boîtes et du risque feu/fumée.</p>
+        <img id="fcOut" alt="Inférence YOLO annotée" class="fc-detect-out" {% if not analysis_ready %}style="min-height:200px;background:#0f172a;"{% endif %} />
+        <p id="fcStatus" class="fc-detect-status">
+          {% if analysis_ready %}En attente du premier cliché… (~650&nbsp;ms entre deux analyses){% else %}Ajoutez <code>models/best.onnx</code> pour lancer l’analyse.{% endif %}
+        </p>
+        <div id="fcXaiBlock" class="fc-xai-block" {% if not analysis_ready %}style="opacity:0.5;pointer-events:none;"{% endif %}>
+          <h4>Explicabilité (XAI)</h4>
+          <p id="fcXaiSummary" class="fc-xai-summary">—</p>
+          <div class="fc-xai-table-wrap">
+            <table class="fc-xai-table" aria-label="Détections ONNX">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Classe</th>
+                  <th>Conf.</th>
+                  <th>Risque feu</th>
+                  <th>Boîte (px)</th>
+                </tr>
+              </thead>
+              <tbody id="fcXaiTbody">
+                <tr><td colspan="5" class="fc-xai-empty">En attente d’inférence…</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <details class="fh-glass fc-detect-panel fc-detect-details">
+      <summary>Variables Twilio</summary>
+      <ul class="fc-detect-twilio-list">
+        {% for name, ok, preview in twilio_rows %}
+        <li><code>{{ name }}</code> — {% if ok %}OK{% else %}manquant{% endif %} — {{ preview|escape }}</li>
+        {% endfor %}
+      </ul>
+    </details>
+    {% endif %}
+  </div>
+</div>
+
+<div id="fcModal" class="fc-modal-overlay" hidden role="dialog" aria-modal="true" aria-labelledby="fcModalTitle">
+  <div class="fc-modal-card fc-modal-card--info" id="fcModalCard">
+    <div class="fc-modal-head">
+      <h4 id="fcModalTitle" class="fc-modal-title">Notification</h4>
+      <button type="button" class="fc-modal-close" id="fcModalClose" aria-label="Fermer">×</button>
+    </div>
+    <div id="fcModalBody" class="fc-modal-body"></div>
+  </div>
+</div>
+
+<script>
+(function() {
+  function tickClock() {
+    var el = document.getElementById("fhClock");
+    if (!el) return;
+    var d = new Date();
+    el.textContent = d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+  }
+  tickClock();
+  setInterval(tickClock, 1000);
+})();
+</script>
+
+{% if has_ip %}
+<script>
+(function() {
+  const analysisReady = {{ analysis_ready|yesno:"true,false" }};
+  const analyzeUrl = "{{ analyze_url|escapejs }}";
+  const twilioTestUrl = "{{ twilio_test_url|escapejs }}";
+  function getCookie(name) {
+    const v = document.cookie.match('(^|;) ?' + name + '=([^;]*)(;|$)');
+    return v ? decodeURIComponent(v[2]) : null;
+  }
+  const csrftoken = getCookie('csrftoken');
+  const img = document.getElementById('fcOut');
+  const st = document.getElementById('fcStatus');
+  const fcModal = document.getElementById('fcModal');
+  const fcModalCard = document.getElementById('fcModalCard');
+  const fcModalTitle = document.getElementById('fcModalTitle');
+  const fcModalBody = document.getElementById('fcModalBody');
+  const fcModalClose = document.getElementById('fcModalClose');
+  const fcXaiSummary = document.getElementById('fcXaiSummary');
+  const fcXaiTbody = document.getElementById('fcXaiTbody');
+  const streamImg = document.getElementById('fcStreamImg');
+  const streamErr = document.getElementById('fcStreamErr');
+
+  if (streamImg && streamErr) {
+    streamImg.addEventListener('error', function() {
+      streamErr.style.display = 'block';
+      streamErr.textContent = 'Flux injoignable (502 / timeout). Vérifiez l’IP, le Wi‑Fi et que le MJPEG tourne sur :81/stream ou /stream (port 80).';
+    });
+    streamImg.addEventListener('load', function() {
+      streamErr.style.display = 'none';
+    });
+  }
+
+  async function postJson(url, body) {
+    const r = await fetch(url, {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': csrftoken || '',
+      },
+      body: JSON.stringify(body || {}),
+    });
+    return r.json();
+  }
+
+  function modalVariantClass(v) {
+    var m = (v || 'info').toLowerCase();
+    if (m === 'success' || m === 'danger' || m === 'warning' || m === 'info') return 'fc-modal-card--' + m;
+    return 'fc-modal-card--info';
+  }
+
+  function openFcModal(title, bodyText, variant) {
+    if (!fcModal || !fcModalTitle || !fcModalBody || !fcModalCard) return;
+    fcModalTitle.textContent = title || 'Notification';
+    fcModalBody.textContent = bodyText || '';
+    fcModalCard.className = 'fc-modal-card ' + modalVariantClass(variant);
+    fcModal.hidden = false;
+    document.body.style.overflow = 'hidden';
+    fcModalClose.focus();
+  }
+
+  function closeFcModal() {
+    if (!fcModal) return;
+    fcModal.hidden = true;
+    document.body.style.overflow = '';
+  }
+
+  if (fcModal) {
+    fcModalClose.addEventListener('click', closeFcModal);
+    fcModal.addEventListener('click', function(e) {
+      if (e.target === fcModal) closeFcModal();
+    });
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape' && fcModal && !fcModal.hidden) closeFcModal();
+    });
+  }
+
+  function renderXai(xai) {
+    if (!fcXaiSummary || !fcXaiTbody) return;
+    if (!xai) {
+      fcXaiSummary.textContent = '—';
+      return;
+    }
+    fcXaiSummary.textContent = xai.summary_fr || '—';
+    fcXaiTbody.textContent = '';
+    var list = xai.detections || [];
+    if (list.length === 0) {
+      var tr0 = document.createElement('tr');
+      var td0 = document.createElement('td');
+      td0.colSpan = 5;
+      td0.className = 'fc-xai-empty';
+      td0.textContent = 'Aucune boîte au-dessus du seuil sur cette frame.';
+      tr0.appendChild(td0);
+      fcXaiTbody.appendChild(tr0);
+      return;
+    }
+    list.forEach(function(d, i) {
+      var tr = document.createElement('tr');
+      function td(txt) {
+        var c = document.createElement('td');
+        c.textContent = txt;
+        tr.appendChild(c);
+      }
+      td(String(i + 1));
+      td(d.class_name != null ? String(d.class_name) : '—');
+      td(d.confidence != null ? String(d.confidence) : '—');
+      var tdFire = document.createElement('td');
+      var span = document.createElement('span');
+      span.className = 'fc-xai-badge ' + (d.is_fire_related ? 'fc-xai-badge--yes' : 'fc-xai-badge--no');
+      span.textContent = d.is_fire_related ? 'Oui' : 'Non';
+      tdFire.appendChild(span);
+      tr.appendChild(tdFire);
+      var bx = d.box;
+      td(Array.isArray(bx) ? bx.map(function(n) { return Math.round(n); }).join(', ') : '—');
+      fcXaiTbody.appendChild(tr);
+    });
+  }
+
+  var btnTest = document.getElementById('fcTwilioTest');
+  if (btnTest && !btnTest.disabled) {
+    btnTest.addEventListener('click', async function() {
+      if (st) st.textContent = 'Test Twilio en cours…';
+      try {
+        const data = await postJson(twilioTestUrl, {});
+        if (st) {
+          st.textContent = data.ok ? ('Test Twilio : OK') : ('Test Twilio : échec');
+        }
+        openFcModal(data.modal_title || 'Test Twilio', data.modal_body || data.message || '', data.modal_variant || 'info');
+      } catch (e) {
+        if (st) st.textContent = 'Réseau : ' + e;
+        openFcModal('Erreur réseau', String(e), 'danger');
+      }
+    });
+  }
+
+  async function tick() {
+    if (!analysisReady || !img) return;
+    const body = {
+      twilio: document.getElementById('fcTwilio').checked,
+      conf: parseFloat(document.getElementById('fcConf').value) || 0.65,
+      iou: parseFloat(document.getElementById('fcIou').value) || 0.45,
+      alert_after: parseFloat(document.getElementById('fcAlert').value) || 2,
+      grace: parseFloat(document.getElementById('fcGrace').value) || 0.8,
+    };
+    try {
+      const data = await postJson(analyzeUrl, body);
+      if (data.reset) { st.textContent = 'Compteur réinitialisé.'; return; }
+      if (!data.ok) {
+        st.textContent = data.message || data.error || 'Erreur inconnue';
+        return;
+      }
+      img.src = 'data:image/jpeg;base64,' + data.jpeg_b64;
+      renderXai(data.xai);
+      let line = data.status || '';
+      if (typeof data.risk_seconds === 'number' && data.has_fire) {
+        line += ' · stable ' + data.risk_seconds + ' s / ' + body.alert_after + ' s';
+      }
+      if (data.twilio_called) line += ' · Twilio : appel lancé';
+      if (data.twilio_error) line += ' · ' + data.twilio_error;
+      st.textContent = line;
+      if (data.twilio_popup && (data.twilio_popup_l1 || data.twilio_popup_l2)) {
+        openFcModal(
+          data.twilio_popup_l1 || 'Twilio',
+          (data.twilio_popup_l2 || '').trim(),
+          data.twilio_modal_kind || 'info'
+        );
+      }
+    } catch (e) {
+      st.textContent = 'Réseau: ' + e;
+    }
+  }
+
+  if (analysisReady) {
+    document.getElementById('fcReset').addEventListener('click', async function() {
+      await postJson(analyzeUrl, { reset: true });
+      st.textContent = 'Compteur réinitialisé.';
+      closeFcModal();
+    });
+    setInterval(tick, 650);
+    tick();
+  }
+})();
+</script>
+{% endif %}
+{% endblock %}

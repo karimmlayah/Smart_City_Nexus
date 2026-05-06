@@ -1,0 +1,1359 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block body_class %}cockpit fusion-hub-sc road-damage-sc{% endblock %}
+
+{% block title %}Analyse IA — Signalement #{{ rec.pk }}{% endblock %}
+
+{% block extra_head %}
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'monitoring/fusion_hub_dashboard.css' %}">
+  <link rel="stylesheet" href="{% static 'monitoring/fusion_hub_smartcity.css' %}">
+  <link rel="stylesheet" href="{% static 'monitoring/road_damage_theme.css' %}">
+{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
+<style>
+  :root {
+    --navy: #041e42;
+    --card: #082B5F;
+    --accent: #2F80ED;
+    --text: #e8f0ff;
+    --muted: #8ca0c4;
+  }
+  .reclamation-ai-dash { background: var(--navy); min-height: 100vh; color: var(--text); padding: 20px 20px 48px 24px; margin: -8px 0 0 0; }
+  .rec-model-panel {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px;
+    padding: 10px 14px; border-radius: 14px; background: rgba(0,0,0,0.22); border: 1px solid rgba(47,128,237,0.28);
+  }
+  @media (min-width: 1200px) {
+    .rec-model-panel { flex-wrap: nowrap; }
+  }
+  .rec-model-inline {
+    display: inline-flex; align-items: center; gap: 8px; flex-wrap: nowrap;
+    white-space: nowrap;
+  }
+  .rec-model-inline > .rec-pill-label {
+    font-size: 0.65rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted);
+  }
+  .model-readonly {
+    padding: 6px 10px; border-radius: 10px; border: 1px dashed rgba(255,255,255,0.22);
+    background: rgba(0,0,0,0.35); color: var(--text); font-size: 0.8rem; font-weight: 600;
+  }
+  .rec-model-sep {
+    width: 1px; height: 28px; background: rgba(255,255,255,0.12); flex-shrink: 0;
+  }
+  @media (max-width: 640px) {
+    .rec-model-sep { display: none; }
+  }
+  .ai-top { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 20px; }
+  .ai-top h1 { font-size: 1.4rem; font-weight: 800; margin: 0; }
+  .ai-actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  .ai-actions a, .ai-actions button {
+    display: inline-flex; align-items: center; justify-content: center; padding: 10px 16px; border-radius: 10px;
+    font-weight: 700; font-size: 0.9rem; text-decoration: none !important; border: 1px solid rgba(47,128,237,0.4);
+    background: rgba(47,128,237,0.15); color: #9ecbff !important; cursor: pointer;
+  }
+  .ai-actions .primary { background: linear-gradient(135deg, #2F80ED, #2563c9); color: #fff !important; border: none; }
+  .ai-actions a:hover, .ai-actions button:hover { filter: brightness(1.06); }
+  .ai-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  @media (max-width: 960px) { .ai-grid { grid-template-columns: 1fr; } }
+  .ai-card { background: var(--card); border-radius: 16px; border: 1px solid rgba(255,255,255,0.08); padding: 18px; }
+  .ai-card h2 { font-size: 1rem; font-weight: 800; margin: 0 0 12px; display: flex; align-items: center; gap: 8px; }
+  .ai-card h2 span { width: 4px; height: 18px; background: var(--accent); border-radius: 2px; }
+  .media-stage { border-radius: 14px; overflow: hidden; background: #000; text-align: center; max-height: 420px; }
+  .media-stage img, .media-stage video { max-width: 100%; max-height: 400px; vertical-align: middle; }
+  .prio-badge { display: inline-block; padding: 6px 14px; border-radius: 999px; font-weight: 800; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.06em; }
+  .prio-critical, .prio-high { background: rgba(229,57,53,0.28); color: #ffcdd2; border: 1px solid rgba(229,57,53,0.55); }
+  .prio-medium { background: rgba(251,140,0,0.22); color: #ffe0b2; border: 1px solid rgba(251,140,0,0.45); }
+  .prio-low { background: rgba(67,160,71,0.22); color: #c8e6c9; border: 1px solid rgba(67,160,71,0.45); }
+  .score-row { display: flex; justify-content: space-between; font-size: 0.88rem; margin: 6px 0; color: var(--muted); }
+  .bar { height: 10px; border-radius: 999px; background: rgba(0,0,0,0.35); overflow: hidden; margin-top: 4px; }
+  .bar > div { height: 100%; background: linear-gradient(90deg, #2F80ED, #64b5f6); border-radius: 999px; }
+  .groq-card { border: 1px solid rgba(47,128,237,0.35); border-radius: 14px; padding: 16px; background: rgba(0,0,0,0.2); margin-top: 12px; }
+  .groq-card h3 { margin: 0 0 10px; font-size: 1.05rem; color: #fff; }
+  .groq-meta { font-size: 0.82rem; color: var(--muted); margin-bottom: 12px; }
+  .groq-actions ul { margin: 8px 0 0 18px; line-height: 1.55; }
+  #mini-map { height: 220px; border-radius: 12px; margin-top: 12px; z-index: 1; }
+  .warn-banner { background: rgba(251,140,0,0.15); border: 1px solid rgba(251,140,0,0.4); color: #ffe0b2; padding: 12px 14px; border-radius: 12px; margin-bottom: 14px; font-size: 0.88rem; }
+  .frame-strip { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; margin-top: 10px; }
+  .frame-strip img { width: 100%; border-radius: 8px; border: 1px solid rgba(255,255,255,0.12); }
+  .muted { color: var(--muted); font-size: 0.85rem; }
+  code { background: rgba(0,0,0,0.35); padding: 2px 6px; border-radius: 6px; font-size: 0.82rem; }
+  .model-picker { display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .model-picker label { font-size: 0.82rem; font-weight: 700; color: var(--muted); }
+  .model-picker select {
+    min-width: 140px; max-width: min(360px, 52vw); padding: 8px 10px; border-radius: 10px; border: 1px solid rgba(47,128,237,0.45);
+    background: rgba(0,0,0,0.35); color: var(--text); font-weight: 600; font-size: 0.85rem;
+  }
+  .model-picker input[type="number"] {
+    width: 88px; padding: 8px 10px; border-radius: 10px; border: 1px solid rgba(47,128,237,0.45);
+    background: rgba(0,0,0,0.35); color: var(--text); font-weight: 600; font-size: 0.85rem;
+  }
+  .model-picker button[type="submit"] {
+    padding: 8px 14px; border-radius: 10px; border: 1px solid rgba(47,128,237,0.5);
+    background: rgba(47,128,237,0.25); color: #9ecbff !important; font-weight: 700; cursor: pointer;
+  }
+  .copilot-panel { border: 1px solid rgba(47,128,237,0.45); border-radius: 16px; padding: 0; margin-top: 14px; overflow: hidden; background: rgba(0,0,0,0.28); }
+  .copilot-header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; padding: 14px 16px; background: linear-gradient(135deg, rgba(15,40,80,0.9), rgba(8,35,70,0.75)); border-bottom: 1px solid rgba(47,128,237,0.3); }
+  .copilot-header h3 { margin: 0; font-size: 1.1rem; font-weight: 800; color: #fff; }
+  .source-pill { font-size: 0.72rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; padding: 4px 10px; border-radius: 8px; background: rgba(47,128,237,0.35); color: #9ecbff; border: 1px solid rgba(47,128,237,0.5); }
+  .copilot-kpi { display: flex; flex-wrap: wrap; gap: 8px; padding: 12px 16px; }
+  .risk-pill, .urg-pill, .cost-pill { display: inline-flex; align-items: center; padding: 6px 12px; border-radius: 999px; font-size: 0.78rem; font-weight: 800; }
+  .risk-pill.risk-critical { background: rgba(211,47,47,0.35); color: #ffcdd2; border: 1px solid rgba(229,57,53,0.55); }
+  .risk-pill.risk-high { background: rgba(239,108,0,0.3); color: #ffe0b2; border: 1px solid rgba(251,140,0,0.5); }
+  .risk-pill.risk-medium { background: rgba(25,118,210,0.3); color: #bbdefb; border: 1px solid rgba(33,150,243,0.5); }
+  .risk-pill.risk-low { background: rgba(46,125,50,0.3); color: #c8e6c9; border: 1px solid rgba(67,160,71,0.5); }
+  .urg-pill { background: rgba(0,0,0,0.35); color: #e3f2fd; border: 1px solid rgba(255,255,255,0.12); }
+  .cost-pill { background: rgba(255,193,7,0.15); color: #ffecb3; border: 1px solid rgba(255,193,7,0.4); }
+  .copilot-body { padding: 0 16px 16px; }
+  .copilot-block { margin-top: 12px; padding: 12px; border-radius: 12px; background: rgba(0,0,0,0.2); font-size: 0.9rem; line-height: 1.55; }
+  .copilot-block h4 { margin: 0 0 8px; font-size: 0.85rem; font-weight: 800; color: #9ecbff; text-transform: uppercase; letter-spacing: 0.06em; }
+  .phase-card { border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 12px; margin-top: 10px; background: rgba(0,0,0,0.15); }
+  .phase-card h5 { margin: 0 0 6px; font-size: 0.9rem; color: #fff; }
+  .phase-meta { font-size: 0.75rem; color: var(--muted); margin-bottom: 8px; }
+  .tag-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .tag { font-size: 0.72rem; padding: 3px 8px; border-radius: 6px; background: rgba(47,128,237,0.2); color: #b3d4fc; }
+  .msg-citoyen { border-left: 4px solid #ef5350; }
+  .msg-muni { border-left: 4px solid #42a5f5; }
+  .xai-explain-section .xai-toolbar {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; margin-bottom: 14px;
+    padding: 12px 14px; border-radius: 12px; background: rgba(0,0,0,0.22); border: 1px solid rgba(47,128,237,0.25);
+  }
+  .xai-badge {
+    display: inline-flex; align-items: center; padding: 6px 12px; border-radius: 999px;
+    font-weight: 800; font-size: 0.78rem; letter-spacing: 0.04em; text-transform: uppercase;
+  }
+  .xai-badge--reliable { background: rgba(46,125,50,0.35); color: #c8e6c9; border: 1px solid rgba(67,160,71,0.55); }
+  .xai-badge--indicative { background: rgba(251,140,0,0.28); color: #ffe0b2; border: 1px solid rgba(251,140,0,0.5); }
+  .xai-badge--unavailable { background: rgba(97,97,97,0.35); color: #e0e0e0; border: 1px solid rgba(189,189,189,0.4); }
+  .xai-compare {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 18px; align-items: start;
+  }
+  @media (max-width: 960px) { .xai-compare { grid-template-columns: 1fr; } }
+  .xai-compare .panel-title { font-size: 0.82rem; font-weight: 700; color: var(--muted); margin: 0 0 8px; }
+  .xai-visual-wrap { border-radius: 14px; overflow: hidden; background: #000; text-align: center; max-height: 420px; }
+  .xai-visual-wrap img { max-width: 100%; max-height: 400px; vertical-align: middle; }
+  .xai-legend { font-size: 0.82rem; color: var(--muted); margin-top: 10px; font-style: italic; }
+  .xai-warn-strip {
+    padding: 10px 12px; border-radius: 10px; margin-bottom: 12px; font-size: 0.86rem; line-height: 1.45;
+    background: rgba(251,140,0,0.12); border: 1px solid rgba(251,140,0,0.35); color: #ffe0b2;
+  }
+  .xai-toggle-label { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; font-weight: 600; font-size: 0.88rem; }
+  .xai-toggle-label input { width: 18px; height: 18px; accent-color: var(--accent); }
+  .xai-skip-msg { padding: 16px; border-radius: 12px; background: rgba(0,0,0,0.25); color: var(--muted); line-height: 1.55; }
+  .live-drone-banner {
+    display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px;
+    padding: 14px 18px; margin-bottom: 18px; border-radius: 14px;
+    background: linear-gradient(135deg, rgba(46,125,50,0.22), rgba(13,71,161,0.25));
+    border: 1px solid rgba(67,160,71,0.45); color: #c8e6c9; font-size: 0.9rem; line-height: 1.45;
+  }
+  .live-drone-banner strong { color: #e8f5e9; font-weight: 800; }
+  .live-drone-banner .live-meta { font-size: 0.82rem; color: #a5d6a7; }
+  .live-drone-banner a {
+    display: inline-flex; align-items: center; padding: 8px 14px; border-radius: 10px;
+    font-weight: 700; font-size: 0.82rem; text-decoration: none !important;
+    background: rgba(0,0,0,0.35); color: #b3e5fc !important; border: 1px solid rgba(100,181,246,0.45);
+  }
+  .live-drone-banner a:hover { filter: brightness(1.08); }
+  .esp-stack-label { font-size: 0.78rem; font-weight: 700; color: var(--muted); margin: 0 0 6px; }
+  .esp-stack-label + .media-stage { margin-bottom: 0; }
+  /* Classification + segmentation : centré, deux panneaux équilibrés */
+  .yolo-dual-stage {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: flex-start;
+    gap: clamp(14px, 3vw, 28px);
+    margin-top: 12px;
+    padding: clamp(14px, 2.5vw, 22px) clamp(12px, 2vw, 20px);
+    border-radius: 14px;
+    background: linear-gradient(165deg, rgba(18, 22, 28, 0.92), rgba(6, 8, 12, 0.98));
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  }
+  .yolo-dual-panel {
+    flex: 1 1 260px;
+    max-width: min(520px, 100%);
+    text-align: center;
+  }
+  @media (max-width: 720px) {
+    .yolo-dual-panel { max-width: 100%; flex-basis: 100%; }
+  }
+  .yolo-dual-caption {
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.55);
+    margin: 0 0 10px;
+  }
+  .yolo-dual-img-wrap {
+    border-radius: 12px;
+    overflow: hidden;
+    background: #000;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.5);
+    margin: 0 auto;
+    max-width: 100%;
+  }
+  .yolo-dual-img-wrap img {
+    display: block;
+    margin: 0 auto;
+    width: auto;
+    max-width: 100%;
+    max-height: 420px;
+    height: auto;
+    vertical-align: middle;
+  }
+  .esp-capture-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 18px;
+    border-radius: 10px;
+    font-weight: 800;
+    font-size: 0.88rem;
+    cursor: pointer;
+    border: 1px solid rgba(67, 160, 71, 0.55);
+    background: linear-gradient(135deg, rgba(46, 125, 50, 0.4), rgba(13, 71, 161, 0.32));
+    color: #e8f5e9;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+  }
+  .esp-capture-btn:hover:not(:disabled) {
+    filter: brightness(1.07);
+  }
+  .esp-capture-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    filter: grayscale(0.25);
+  }
+  .esp-raw-capture-stage {
+    margin-top: 12px;
+    margin-left: auto;
+    margin-right: auto;
+    max-width: min(920px, 100%);
+    padding: 14px 14px 16px;
+    border-radius: 14px;
+    text-align: center;
+    background: linear-gradient(165deg, rgba(28, 42, 58, 0.55), rgba(8, 10, 14, 0.92));
+    border: 1px solid rgba(100, 181, 246, 0.28);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  }
+  .esp-raw-capture-stage img {
+    display: block;
+    margin: 0 auto;
+    max-width: 100%;
+    max-height: min(52vh, 520px);
+    width: auto;
+    height: auto;
+    border-radius: 11px;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    box-shadow: 0 10px 32px rgba(0, 0, 0, 0.45);
+  }
+</style>
+
+<div class="fh-root">
+  <header class="fh-nav fh-glass" aria-label="Primary">
+    <div class="fh-nav-brand fh-brand-cluster">
+      <span class="fh-brand-orb" aria-hidden="true"></span>
+      <div class="fh-brand-text">
+        <h1 class="fh-nav-logo">Smart City Platform</h1>
+        <p class="fh-nav-tag">Analyse IA · Signalement #{{ rec.pk }}</p>
+      </div>
+    </div>
+    <div class="fh-nav-meta">
+      <span class="fh-nav-loc" title="Contexte">{{ rec.get_category_display }}</span>
+      <span class="fh-clock" id="fhClock" aria-live="polite">--:--:--</span>
+      <span class="fh-icon-chip" title="Notifications">🔔</span>
+      <span class="fh-nav-user" title="Operator" aria-hidden="true"></span>
+    </div>
+  </header>
+
+<div class="reclamation-ai-dash">
+  {% if is_live_mode %}
+  <div class="live-drone-banner" role="status" aria-live="polite">
+    <div>
+      <strong>Mode drone ESP32-CAM · temps réel</strong>
+      <span class="live-meta">
+        — La carte principale utilise le flux MJPEG proxy et <code>/capture</code> comme preuve visuelle (pas le média téléversé sur le signalement).
+        Réactualisation automatique du panneau : <strong id="live-refresh-hint">{{ refresh_sec }}</strong>&nbsp;s
+        (scores, image YOLO annotée et copilot alimentés par <code>POST …/ai/esp-analyze/</code> avec le même modèle que cette page).
+      </span>
+    </div>
+    <div style="display:flex; flex-wrap:wrap; align-items:center; gap:10px;">
+      <a href="?{{ vision_filter_query }}">Quitter le mode live</a>
+    </div>
+  </div>
+  {% endif %}
+  <div class="ai-top">
+    <div>
+      <h1>Réclamation #{{ rec.pk }} — Analyse IA</h1>
+      <p class="muted" style="margin:6px 0 0;">{{ rec.get_category_display }} · {{ rec.created_at|date:"d/m/Y H:i" }}</p>
+    </div>
+    <div class="ai-actions" style="flex:1; min-width:280px; flex-direction:column; align-items:stretch; gap:12px;">
+      <div style="display:flex; flex-wrap:wrap; gap:10px; align-items:center;">
+        <a href="{{ dashboard_url }}">← Road Command Center</a>
+        <a href="?download=json&amp;{{ vision_filter_query }}">Télécharger rapport JSON</a>
+        <a href="?download=pdf&amp;{{ vision_filter_query }}">Télécharger rapport PDF</a>
+        <form method="post" style="margin:0; display:inline;">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="reanalyze">
+          <input type="hidden" name="model_key" value="{{ selected_model_key }}">
+          <input type="hidden" name="conf" value="{{ conf_threshold }}">
+          {% if is_live_mode %}
+          <input type="hidden" name="live_mode_carry" value="1">
+          {% if request.GET.esp == "1" %}<input type="hidden" name="esp_mode_carry" value="1">{% endif %}
+          <input type="hidden" name="refresh_sec_carry" value="{{ refresh_sec }}">
+          {% endif %}
+          <button type="submit" class="primary">Ré-analyser</button>
+        </form>
+      </div>
+      <form method="get" class="rec-model-panel" style="margin:0;" aria-label="Modèles vision">
+        {% if is_live_mode %}
+          {% if request.GET.live == "1" %}<input type="hidden" name="live" value="1">{% endif %}
+          {% if request.GET.esp == "1" %}<input type="hidden" name="esp" value="1">{% endif %}
+          <input type="hidden" name="refresh_sec" value="{{ refresh_sec }}">
+        {% endif %}
+        <div class="rec-model-inline model-picker" style="margin:0;">
+          <span class="rec-pill-label">Classification</span>
+          <label for="id-vision-model" class="muted" style="font-size:0.78rem;">Choix</label>
+          <select id="id-vision-model" name="model" title="Modèle classification (détection)">
+            {% for m in vision_models %}
+              <option value="{{ m.key }}" {% if m.key == selected_model_key %}selected{% endif %} {% if not m.exists %}disabled{% endif %}>
+                {{ m.label }}{% if not m.exists %} (absent){% endif %}
+              </option>
+            {% empty %}
+              <option value="">—</option>
+            {% endfor %}
+          </select>
+        </div>
+        <span class="rec-model-sep" aria-hidden="true"></span>
+        <div class="rec-model-inline">
+          <span class="rec-pill-label">Segmentation</span>
+          <span class="model-readonly"
+                title="{{ segmentation_info.path|default:'' }}{% if segmentation_info.hint %} · {{ segmentation_info.hint }}{% endif %}">
+            <strong>{{ segmentation_info.label|default:"best (2).pt" }}</strong>
+          </span>
+        </div>
+        <span class="rec-model-sep" aria-hidden="true"></span>
+        <div class="rec-model-inline model-picker" style="margin:0;">
+          <label for="id-yolo-conf">Seuil conf.</label>
+          <input id="id-yolo-conf" type="number" name="conf" min="0.01" max="1" step="0.05"
+                 value="{{ conf_threshold }}" title="Inférence : garder les détections ≥ ce score (ex. 0.40)">
+          <button type="submit">Appliquer</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  {% if vision.stub and not is_live_mode %}
+    <div class="warn-banner">
+      Analyse YOLO indisponible ({{ vision.error|default:"stub" }}) — affichage des agents scoring + recommandations locales uniquement.
+    </div>
+  {% endif %}
+
+  <div class="ai-grid">
+    <div class="ai-card">
+      {% if is_live_mode %}
+      <h2><span></span> Caméra ESP32-CAM — vérification drone en temps réel</h2>
+      <p class="muted" style="margin:0 0 14px; font-size:0.82rem;">
+        Signalement <strong>#{{ rec.pk }}</strong> : contexte citoyen (catégorie, texte, GPS, voisinage) conservé —
+        les images ci‑dessous sont issues de la caméra (voir <code>{% url 'monitoring:camera_settings' %}</code>).
+      </p>
+      <p style="margin:0 0 10px; font-size:0.86rem;">
+        <strong>IP utilisée</strong> :
+        {% if esp_ip %}<code id="esp-ip-display">{{ esp_ip }}</code>{% else %}<span id="esp-ip-display" class="muted">non configurée</span>{% endif %}
+        · <a href="{{ esp_settings_url }}" style="font-weight:700;color:#9ecbff;">Modifier IP caméra</a>
+      </p>
+      {% if esp_ip %}
+      <p class="esp-stack-label">Flux MJPEG (proxy Django)</p>
+      <p class="muted" style="margin:-4px 0 10px;font-size:0.78rem;word-break:break-all;">
+        Flux MJPEG&nbsp;: <code id="esp-stream-url-text">{{ esp_stream_src }}</code>
+      </p>
+      <div class="media-stage">
+        <img id="espStream" src="{{ esp_stream_src|escape }}" alt="Flux ESP32-CAM" referrerpolicy="no-referrer" />
+      </div>
+      <p id="espStreamErr" class="muted" style="display:none; margin-top:8px; color:#ffcc80;"></p>
+      {% else %}
+      <div class="warn-banner" style="margin:0 0 12px;">
+        Aucune IP ESP : enregistrez‑la dans <a href="{% url 'monitoring:camera_settings' %}" style="color:#b3e5fc;">Réglages caméra</a>
+        ou <code>DRONE_HOST</code> dans <code>.env</code>.
+      </div>
+      {% endif %}
+      {% if esp_ip %}
+      <div class="esp-manual-capture-row" style="margin-top:14px;display:flex;flex-wrap:wrap;align-items:center;gap:12px;">
+        <button type="button" id="esp-capture-analyze-btn" class="esp-capture-btn">
+          Capturer et analyser maintenant
+        </button>
+        <span class="muted" style="font-size:0.78rem;max-width:440px;line-height:1.45;">
+          Télécharge un JPEG via <code>/capture</code> sur l’ESP32-CAM : tu le vois ci‑dessous en grand, puis les <strong>deux modèles</strong> (classification + segmentation) sur <strong>exactement cette image</strong>.
+        </span>
+      </div>
+      {% endif %}
+      <p class="esp-stack-label" style="margin-top:16px;">Image brute — cliché ESP32 (<code>/capture</code>)</p>
+      <p class="muted" style="margin:-2px 0 8px;font-size:0.78rem;line-height:1.45;">
+        C’est la photo réelle utilisée pour l’inférence (pas le flux MJPEG). Les analyses YOLO utilisent ce fichier pixel pour pixel.
+      </p>
+      <div class="esp-raw-capture-stage">
+        <img id="espCaptureRaw" alt="Cliché brut ESP32-CAM /capture" decoding="async" style="display:none;" />
+        <p id="esp-raw-placeholder" class="muted" style="margin:0;padding:12px 8px;font-size:0.82rem;line-height:1.5;">
+          En attente du premier cliché <code>/capture</code>…
+        </p>
+      </div>
+      <p class="esp-stack-label" style="margin-top:18px;">Sorties YOLO — même cliché · <strong>classification</strong> + <strong>segmentation</strong> (<strong>{{ segmentation_info.label|default:"best (2).pt" }}</strong>)</p>
+      <div class="yolo-dual-stage" style="margin-top:8px;">
+        <div class="yolo-dual-panel">
+          <p class="yolo-dual-caption">Classification</p>
+          <div class="yolo-dual-img-wrap">
+            <img id="espAnnotatedCls" alt="YOLO classification ESP32" decoding="async" style="display:none;" />
+          </div>
+        </div>
+        <div class="yolo-dual-panel">
+          <p class="yolo-dual-caption">Segmentation</p>
+          <div class="yolo-dual-img-wrap">
+            <img id="espAnnotatedSeg" alt="YOLO segmentation ESP32" decoding="async" style="display:none;" />
+          </div>
+        </div>
+      </div>
+      <p id="esp-annot-placeholder" class="muted" style="margin-top:10px;line-height:1.5;font-size:0.84rem;">
+        Annotés YOLO&nbsp;: en attente de la première réponse <code>esp-analyse</code>…
+      </p>
+      <div id="espStatus" class="muted" style="margin-top:10px; line-height:1.55;">Connexion analyse ESP…</div>
+      <p id="live-last-analyzed" class="muted" style="margin-top:6px;font-size:0.8rem;">Dernière analyse&nbsp;: —</p>
+      <hr style="border:0; border-top:1px solid rgba(255,255,255,0.1); margin:18px 0;">
+      <p style="margin:0 0 6px; font-size:0.72rem; font-weight:800; text-transform:uppercase; letter-spacing:0.06em; color:var(--muted);">Contexte signalement</p>
+      <p style="line-height:1.55;">{{ rec.description|default:"(aucune description)" }}</p>
+      <p class="muted" style="margin-top:10px;">{{ rec.get_category_display }} · GPS : {{ rec.latitude|floatformat:6 }}, {{ rec.longitude|floatformat:6 }}</p>
+      {% else %}
+      <h2><span></span> Signalement original</h2>
+      <div class="media-stage">
+        {% if rec.media %}
+          {% if rec.media_type == "image" %}
+            <img src="{{ rec.media.url }}" alt="Média signalement">
+          {% else %}
+            <video src="{{ rec.media.url }}" controls playsinline preload="metadata"></video>
+          {% endif %}
+        {% else %}
+          <p class="muted" style="padding:32px;">Pas de fichier média</p>
+        {% endif %}
+      </div>
+      <p style="margin-top:14px; line-height:1.55;">{{ rec.description|default:"(aucune description)" }}</p>
+      <p class="muted">GPS : {{ rec.latitude|floatformat:6 }}, {{ rec.longitude|floatformat:6 }}</p>
+      {% endif %}
+    </div>
+
+    <div class="ai-card" id="live-ai-scorecard">
+      {% if is_live_mode %}
+      <h2><span></span> Scores multi-agents &amp; priorité <span class="muted" style="font-size:0.72rem;font-weight:700;">· flux ESP temps réel</span></h2>
+      <p style="margin:0 0 10px;font-size:0.8rem;line-height:1.45;color:var(--muted);">
+        Ces valeurs ne sont pas l’analyse initiale du signalement&nbsp;: elles viennent uniquement du JSON
+        <code>POST {{ esp_analyze_url }}</code> —
+        inference YOLO <strong>{{ selected_model_key }}</strong> · seuil <strong>{{ conf_threshold }}</strong>.
+        {% if live_model_from_cam_db or live_conf_from_cam_db %}
+        <span style="display:block;margin-top:6px;">
+          Défaut chargé depuis la base (réglages caméra)&nbsp;: modèle&nbsp;{% if live_model_from_cam_db %}oui{% else %}non{% endif %} · seuil&nbsp;{% if live_conf_from_cam_db %}oui{% else %}non{% endif %}
+          (<a href="{{ esp_settings_url }}">modifier</a>).
+        </span>
+        {% endif %}
+      </p>
+      <p>
+        <span id="live-prio-badge" class="prio-badge prio-medium">—</span>
+        <span class="muted" style="margin-left:10px;">Copilot · <span id="live-inline-copilot-src">en attente de l’analyse live…</span></span>
+      </p>
+      <div style="margin-top:14px;">
+        <div class="score-row"><span>AI score</span><strong id="live-score-ai">—</strong></div>
+        <div class="bar"><div id="live-score-ai-bar" style="width:0;"></div></div>
+      </div>
+      <div class="score-row" style="margin-top:10px;"><span>Severity</span><strong id="live-score-severity">—</strong></div>
+      <div class="score-row"><span>Location</span><strong id="live-score-location">—</strong></div>
+      <div class="score-row"><span>Confidence</span><strong id="live-score-confidence">—</strong></div>
+      <p class="muted" style="margin-top:8px; font-size:0.8rem;">
+        Détecté&nbsp;: <span id="live-vision-hint">—</span> · max&nbsp;conf <strong id="live-max-conf">—</strong> · boîtes <strong id="live-nbox">—</strong>
+      </p>
+
+      <div id="live-model-block" style="margin-top:12px; padding:10px 12px; border-radius:12px; background:rgba(0,0,0,0.22); font-size:0.88rem; line-height:1.5;">
+        <strong>Modèle</strong>&nbsp;: en attente du premier cliché ESP (<code>/capture</code>)…
+      </div>
+      <p id="live-no-damage-row" style="margin-top:10px;display:none;"></p>
+
+      <div class="copilot-panel">
+        <div class="copilot-header">
+          <h3>Municipality AI Copilot</h3>
+          <span class="source-pill" id="live-copilot-pill">—</span>
+        </div>
+        <div class="copilot-kpi">
+          <span class="risk-pill risk-medium" id="live-risk-pill">Risque · —</span>
+          <span class="urg-pill" id="live-urg-pill">Urgence · —</span>
+          <span class="cost-pill" id="live-cost-pill">Budget estimatif · —</span>
+        </div>
+        <div class="copilot-body">
+          <div class="copilot-block">
+            <h4>Résumé exécutif</h4>
+            <p style="margin:0;" id="live-exec-summary">—</p>
+          </div>
+          <div class="copilot-block">
+            <h4>Motif de priorité</h4>
+            <p style="margin:0;" id="live-priority-reason">—</p>
+          </div>
+          <div id="live-damage-block" class="copilot-block muted"></div>
+
+          <h4 style="margin:14px 0 8px; font-size:0.85rem; color:#9ecbff; text-transform:uppercase; letter-spacing:0.06em;">Plan d’intervention</h4>
+          <div id="live-phase-wrap"><p class="muted" style="margin:0;">En attente de l’analyse ESP…</p></div>
+
+          <div id="live-resource-wrap" class="copilot-block" style="margin-top:14px;">
+            <h4>Ressources</h4>
+            <p style="margin:0;"><strong>Équipes</strong> : <span id="live-rp-teams">—</span></p>
+            <p style="margin:8px 0 0;"><strong>Effectifs estimés</strong> : <span id="live-rp-workers">—</span></p>
+            <div class="tag-list" id="live-rp-equip"></div>
+            <div class="tag-list" id="live-rp-mats" style="margin-top:6px;"></div>
+          </div>
+
+          <div class="copilot-block msg-citoyen">
+            <h4>Message citoyens</h4>
+            <p style="margin:0;" id="live-citizen-msg">—</p>
+          </div>
+          <div class="copilot-block msg-muni">
+            <h4>Message municipalité</h4>
+            <p style="margin:0;" id="live-muni-msg">—</p>
+          </div>
+          <div class="copilot-block">
+            <h4>Suivi</h4>
+            <p style="margin:0;" id="live-follow-up">—</p>
+          </div>
+        </div>
+      </div>
+      {% else %}
+      <h2><span></span> Scores multi-agents &amp; priorité</h2>
+      <p>
+        <span id="live-prio-badge" class="prio-badge prio-{{ pipeline.priority_tone }}">{{ pipeline.final_priority }}</span>
+        <span class="muted" style="margin-left:10px;">Copilot · <span id="live-inline-copilot-src">{{ copilot_plan.source }}</span></span>
+      </p>
+      <div style="margin-top:14px;">
+        <div class="score-row"><span>AI score</span><strong id="live-score-ai">{{ pipeline.ai_score }}</strong></div>
+        <div class="bar"><div id="live-score-ai-bar" style="width: {{ pipeline.ai_score }}%;"></div></div>
+      </div>
+      <div class="score-row" style="margin-top:10px;"><span>Severity</span><strong id="live-score-severity">{{ pipeline.severity_score }}</strong></div>
+      <div class="score-row"><span>Location</span><strong id="live-score-location">{{ pipeline.location_score }}</strong></div>
+      <div class="score-row"><span>Confidence</span><strong id="live-score-confidence">{{ pipeline.confidence_score }}%</strong></div>
+      <p class="muted" style="margin-top:8px; font-size:0.8rem;"><span id="live-vision-hint">{{ vision.labels|join:", "|default:"—" }}</span> · max&nbsp;conf <strong id="live-max-conf">{{ vision.max_confidence|default:"—" }}</strong> · boîtes <strong id="live-nbox">{{ vision.detection_box_count|default:0 }}</strong></p>
+
+      <div id="live-model-block" style="margin-top:12px; padding:10px 12px; border-radius:12px; background:rgba(0,0,0,0.22); font-size:0.88rem; line-height:1.5;">
+        <strong>Modèle</strong> :
+        {% if pipeline.yolo_used %}
+          détecté : <code id="live-model-label" style="font-size:0.85rem;">{{ pipeline.model_detection_label }}</code>
+          · confiance <strong id="live-model-confidence">{{ pipeline.confidence_score }}%</strong>
+          · verdict <strong id="live-model-verdict">{{ pipeline.vision_verdict|default:"—" }}</strong>
+        {% else %}
+          <span id="live-model-warning" style="color:#ffb74d;">⚠️ Modèle non utilisé — estimation par règles (conf. max 60 %).</span>
+        {% endif %}
+      </div>
+      {% if pipeline.yolo_used and pipeline.model_detection_label == 'none' %}
+      <p id="live-no-damage-row" style="margin-top:10px;">
+        <span class="prio-badge" style="background:#616161;color:#eceff1;border:1px solid rgba(255,255,255,0.2);text-transform:none;letter-spacing:0.04em;">No damage detected</span>
+      </p>
+      {% else %}
+      <p id="live-no-damage-row" style="margin-top:10px;display:none;"></p>
+      {% endif %}
+
+      <div class="copilot-panel">
+        <div class="copilot-header">
+          <h3>Municipality AI Copilot</h3>
+          <span class="source-pill" id="live-copilot-pill">{{ copilot_plan.source }}</span>
+        </div>
+        <div class="copilot-kpi">
+          <span class="risk-pill risk-{{ copilot_plan.risk_level|lower }}" id="live-risk-pill">Risque · {{ copilot_plan.risk_level }}</span>
+          <span class="urg-pill" id="live-urg-pill">Urgence · {{ copilot_plan.urgency }}</span>
+          <span class="cost-pill" id="live-cost-pill">Budget estimatif · {{ copilot_plan.total_estimated_cost_tnd }} TND</span>
+        </div>
+        <div class="copilot-body">
+          <div class="copilot-block">
+            <h4>Résumé exécutif</h4>
+            <p style="margin:0;" id="live-exec-summary">{{ copilot_plan.executive_summary }}</p>
+          </div>
+          <div class="copilot-block">
+            <h4>Motif de priorité</h4>
+            <p style="margin:0;" id="live-priority-reason">{{ copilot_plan.priority_reason }}</p>
+          </div>
+          <div id="live-damage-block" class="copilot-block{% if not copilot_plan.damage_assessment %} muted{% endif %}">
+            {% if copilot_plan.damage_assessment %}
+            {% with da=copilot_plan.damage_assessment %}
+            <h4>Évaluation des dégâts</h4>
+            <p style="margin:0;">
+              <strong>Type</strong> : <span id="live-da-type">{{ da.estimated_damage_type }}</span> ·
+              <strong>Taille</strong> : <span id="live-da-size">{{ da.estimated_size }}</span> ·
+              <strong>Confiance</strong> : <span id="live-da-confidence">{{ da.confidence }}</span> %
+            </p>
+            <p class="muted" style="margin:8px 0 0;" id="live-da-visual">{{ da.visual_evidence }}</p>
+            {% endwith %}
+            {% endif %}
+          </div>
+
+          <h4 style="margin:14px 0 8px; font-size:0.85rem; color:#9ecbff; text-transform:uppercase; letter-spacing:0.06em;">Plan d’intervention</h4>
+          <div id="live-phase-wrap">
+          {% for ph in copilot_plan.intervention_plan %}
+          <div class="phase-card">
+            <h5>{{ ph.phase }}</h5>
+            <div class="phase-meta">{{ ph.deadline }} · {{ ph.responsible_team }} · ~{{ ph.estimated_cost_tnd }} TND</div>
+            <ul style="margin:0; padding-left:18px;">
+              {% for a in ph.actions %}<li>{{ a }}</li>{% endfor %}
+            </ul>
+            <div class="tag-list">
+              {% for m in ph.materials %}<span class="tag">{{ m }}</span>{% endfor %}
+            </div>
+          </div>
+          {% empty %}
+          <p class="muted">Aucune phase générée.</p>
+          {% endfor %}
+          </div>
+
+          <div id="live-resource-wrap" class="copilot-block" style="margin-top:14px;">
+          {% with rp=copilot_plan.resource_plan %}
+            <h4>Ressources</h4>
+            <p style="margin:0;"><strong>Équipes</strong> : <span id="live-rp-teams">{% for t in rp.teams_needed %}{{ t }}{% if not forloop.last %}, {% endif %}{% empty %}—{% endfor %}</span></p>
+            <p style="margin:8px 0 0;"><strong>Effectifs estimés</strong> : <span id="live-rp-workers">{{ rp.workers_estimate }}</span></p>
+            <div class="tag-list" id="live-rp-equip">
+              {% for e in rp.equipment %}<span class="tag">{{ e }}</span>{% endfor %}
+            </div>
+            <div class="tag-list" id="live-rp-mats" style="margin-top:6px;">
+              {% for m in rp.materials %}<span class="tag">{{ m }}</span>{% endfor %}
+            </div>
+          {% endwith %}
+          </div>
+
+          <div class="copilot-block msg-citoyen">
+            <h4>Message citoyens</h4>
+            <p style="margin:0;" id="live-citizen-msg">{{ copilot_plan.citizen_message }}</p>
+          </div>
+          <div class="copilot-block msg-muni">
+            <h4>Message municipalité</h4>
+            <p style="margin:0;" id="live-muni-msg">{{ copilot_plan.municipality_message }}</p>
+          </div>
+          <div class="copilot-block">
+            <h4>Suivi</h4>
+            {% with fu=copilot_plan.follow_up %}
+            <p style="margin:0;" id="live-follow-up">
+              {{ fu.suggested_status }} —
+              inspection complémentaire : {% if fu.needs_second_inspection %}oui{% else %}non{% endif %} —
+              contrôle recommandé après {{ fu.verification_after_days }} jour(s).
+            </p>
+            {% endwith %}
+          </div>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  {% if not is_live_mode %}
+  <div class="ai-card" style="margin-top:18px;">
+    <h2><span></span> YOLO — détection (classification)</h2>
+    {% if vision.media_type == "video" and vision.frame_results %}
+      <p class="muted">Modèle : <code>{{ vision.model_path_used|default:"—" }}</code>
+        {% if vision.model_key_requested %}· clé <code>{{ vision.model_key_requested }}</code>{% endif %}
+        {% if vision.model_fallback and vision.model_key_resolved %}→ <code>{{ vision.model_key_resolved }}</code> (repli){% endif %}
+        · seuil <code>{{ conf_threshold }}</code> · {{ vision.detection_box_count|default:0 }} boîtes — aperçus frames (1/s, max 8)</p>
+      <div class="frame-strip">
+        {% for fr in vision.frame_results %}
+          {% if fr.annotated_thumb_url %}
+            <div>
+              <img src="{{ fr.annotated_thumb_url }}" alt="frame {{ fr.frame_index }}">
+              <div class="muted" style="font-size:0.72rem;">t={{ fr.time_sec }}s · {{ fr.labels|join:", " }}</div>
+            </div>
+          {% endif %}
+        {% empty %}
+          <p class="muted">Aucune frame annotée.</p>
+        {% endfor %}
+      </div>
+    {% elif vision.ok and vision.annotated_image_url %}
+      <p class="muted">Modèle : <code>{{ vision.model_path_used|default:"—" }}</code>
+        {% if vision.model_key_requested %}· clé <code>{{ vision.model_key_requested }}</code>{% endif %}
+        {% if vision.model_fallback and vision.model_key_resolved %}→ <code>{{ vision.model_key_resolved }}</code> (repli){% endif %}
+        · seuil <code>{{ conf_threshold }}</code> · {{ vision.detection_box_count|default:0 }} boîtes — vue <strong>classification</strong> à gauche, <strong>segmentation</strong> à côté si le fichier modèle est présent
+      </p>
+      <div class="yolo-dual-stage">
+        <div class="yolo-dual-panel">
+          <p class="yolo-dual-caption">Classification</p>
+          <div class="yolo-dual-img-wrap">
+            <img src="{{ vision.annotated_image_url }}" alt="Annoté YOLO classification">
+          </div>
+        </div>
+        {% if vision.annotated_segmentation_image_url %}
+        <div class="yolo-dual-panel">
+          <p class="yolo-dual-caption">Segmentation · {{ segmentation_info.label|default:"best (2).pt" }}</p>
+          <div class="yolo-dual-img-wrap">
+            <img src="{{ vision.annotated_segmentation_image_url }}" alt="Annoté YOLO segmentation">
+          </div>
+        </div>
+        {% endif %}
+      </div>
+    {% else %}
+      <p class="muted">Pas d’annotation disponible (stub ou erreur).</p>
+    {% endif %}
+    <p style="margin-top:12px;" class="muted">Labels : {% for l in vision.labels %}<code>{{ l }}</code> {% empty %}—{% endfor %} · max conf {{ vision.max_confidence }}</p>
+    {% if vision.boxes %}
+      <details style="margin-top:10px;">
+        <summary class="muted">Boîtes détectées</summary>
+        <ul style="font-size:0.82rem; margin-top:8px;">
+          {% for b in vision.boxes %}
+            <li>{{ b.label }} ({{ b.confidence }}) — {{ b.xyxy }}</li>
+          {% endfor %}
+        </ul>
+      </details>
+    {% endif %}
+  </div>
+
+  <div class="ai-card xai-explain-section" style="margin-top:18px;">
+    <h2><span></span> Explainabilité IA</h2>
+
+    <div class="xai-toolbar">
+      <span class="xai-badge xai-badge--{{ xai_result.xai_quality_badge|default:'unavailable' }}">
+        {{ xai_result.xai_quality_label_fr|default:"Indisponible" }}
+      </span>
+      <span class="muted">Confiance détection (max) : <strong>{{ xai_result.model_confidence_pct|default:"—" }}%</strong></span>
+      <span class="muted">Libellé : <strong>{{ xai_result.detection_label_fr|default:pipeline.model_detection_label }}</strong></span>
+      {% if rec.media_type == "image" and xai_result.overlay_url and vision.annotated_image_url %}
+        <label class="xai-toggle-label">
+          <input type="checkbox" id="xai-toggle" checked aria-label="Afficher ou masquer la carte XAI">
+          Afficher la carte XAI
+        </label>
+      {% endif %}
+      {% if xai_result.cached %}
+        <span class="muted" title="Résultat mis en cache pour cette image">Cache XAI ✓</span>
+      {% endif %}
+    </div>
+
+    {% if xai_result.visual_overlay_only %}
+      <div class="xai-warn-strip">
+        {{ xai_result.fallback_label|default:"Superposition visuelle (pas une explication du modèle)" }}
+      </div>
+    {% endif %}
+
+    {% if rec.media_type != "image" %}
+      <p class="xai-skip-msg">{{ xai_result.explanation }}</p>
+    {% else %}
+      <div class="xai-compare">
+        <div>
+          <p class="panel-title">Image originale</p>
+          <div class="xai-visual-wrap">
+            {% if rec.media %}
+              <img src="{{ rec.media.url }}" alt="Image originale">
+            {% else %}
+              <p class="muted" style="padding:24px;">Pas d’image</p>
+            {% endif %}
+          </div>
+        </div>
+        <div>
+          <p class="panel-title">Vue YOLO + carte XAI (occlusion)</p>
+          {% if xai_result.overlay_url %}
+            <div class="xai-visual-wrap" id="xai-right-stack">
+              <img src="{{ xai_result.overlay_url }}" alt="Superposition XAI" id="img-xai-overlay" class="xai-layer-xai">
+              {% if vision.annotated_image_url %}
+                <img src="{{ vision.annotated_image_url }}" alt="Annoté YOLO sans heatmap" id="img-xai-yolo-only" class="xai-layer-yolo" style="display:none;">
+              {% endif %}
+            </div>
+            <p class="xai-legend">{{ xai_result.legend_fr|default:"Zones chaudes = forte influence sur la décision du modèle." }}</p>
+          {% else %}
+            <div class="xai-skip-msg">
+              <strong>XAI indisponible en raison d’une faible confiance du modèle ou de conditions non remplies.</strong><br>
+              {% firstof xai_result.skip_reason_fr xai_result.explanation "—" %}
+            </div>
+            {% if vision.annotated_image_url %}
+              <div class="xai-visual-wrap" style="margin-top:12px;">
+                <img src="{{ vision.annotated_image_url }}" alt="Vue YOLO">
+              </div>
+            {% endif %}
+          {% endif %}
+        </div>
+      </div>
+      <p style="margin-top:16px; line-height:1.6; font-size:0.95rem;">{{ xai_result.explanation }}</p>
+      <p class="muted" style="margin-top:10px; font-size:0.82rem;">Grad-CAM : non disponible dans ce build (YOLO sans gradients exposés).</p>
+    {% endif %}
+  </div>
+
+  {% endif %}
+
+  {% if is_live_mode %}
+  <div class="ai-card" style="margin-top:18px;">
+    <h2><span></span> XAI temps réel (flux ESP)</h2>
+    <p id="live-xai-excerpt" style="margin:0; line-height:1.55; color:var(--muted);">—</p>
+  </div>
+  {% endif %}
+
+  <div class="ai-card" style="margin-top:18px;">
+    <h2><span></span> Carte — position signalement</h2>
+    <div id="mini-map"></div>
+  </div>
+
+  {{ mini_map|json_script:"mini-map-data" }}
+</div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<script>
+(function () {
+  function pad(n) {
+    return (n < 10 ? "0" : "") + n;
+  }
+  function tickClock() {
+    var el = document.getElementById("fhClock");
+    if (!el) return;
+    var d = new Date();
+    el.textContent =
+      pad(d.getHours()) + ":" + pad(d.getMinutes()) + ":" + pad(d.getSeconds());
+  }
+  setInterval(tickClock, 1000);
+  tickClock();
+})();
+(function () {
+  var el = document.getElementById("mini-map-data");
+  if (!el || !window.L) return;
+  var d = JSON.parse(el.textContent);
+  var map = L.map("mini-map").setView([d.lat, d.lng], d.zoom || 15);
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    attribution: "&copy; OpenStreetMap",
+    maxZoom: 19
+  }).addTo(map);
+  var col = d.color || "#2F80ED";
+  var icon = L.divIcon({
+    className: "mini-m",
+    html: '<div style="width:18px;height:18px;border-radius:50%;background:' + col + ';border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.4);"></div>',
+    iconSize: [20, 20],
+    iconAnchor: [10, 10]
+  });
+  L.marker([d.lat, d.lng], { icon: icon }).addTo(map).bindPopup("Signalement #" + (d.id || ""));
+})();
+
+(function () {
+  var cb = document.getElementById("xai-toggle");
+  var ov = document.getElementById("img-xai-overlay");
+  var yo = document.getElementById("img-xai-yolo-only");
+  if (!cb || !ov || !yo) return;
+  function sync() {
+    var on = cb.checked;
+    ov.style.display = on ? "inline" : "none";
+    yo.style.display = on ? "none" : "inline";
+  }
+  cb.addEventListener("change", sync);
+  sync();
+})();
+{% if is_live_mode %}
+(function () {
+  var analyzeUrl = "{{ esp_analyze_url|escapejs }}";
+  var pollMs = {{ refresh_sec }} * 1000;
+  var refreshSecShown = {{ refresh_sec }};
+  var modelKey = "{{ selected_model_key|escapejs }}";
+  var conf = {{ conf_threshold }};
+  var espAnalyzeBusy = false;
+  var espAnalyzeQueuedManual = false;
+  var ESP_ANALYZE_FETCH_MS = 180000;
+
+  function getCookie(name) {
+    var v = document.cookie.match("(^|;) ?" + name + "=([^;]*)(;|$)");
+    return v ? decodeURIComponent(v[2]) : null;
+  }
+  var csrftoken = getCookie("csrftoken");
+
+  function setText(id, txt) {
+    var n = document.getElementById(id);
+    if (n) n.textContent = txt == null ? "" : String(txt);
+  }
+
+  function esc(s) {
+    var d = document.createElement("div");
+    d.textContent = s == null ? "" : s;
+    return d.innerHTML;
+  }
+
+  function revokeEspImgBlob(el) {
+    if (!el || !el.dataset) return;
+    var u = el.dataset.espBlobUrl;
+    if (u) {
+      try {
+        URL.revokeObjectURL(u);
+      } catch (_r) {}
+      delete el.dataset.espBlobUrl;
+    }
+  }
+
+  function espAbsMediaUrl(u) {
+    if (!u || typeof u !== "string") return "";
+    if (/^https?:\/\//i.test(u)) return u;
+    if (u.charAt(0) === "/") return u;
+    return "/" + u.replace(/^\/+/, "");
+  }
+
+  function setEspImgFromJpegB64(el, b64) {
+    if (!el || !b64) return false;
+    try {
+      revokeEspImgBlob(el);
+      var bin = atob(b64);
+      var len = bin.length;
+      var bytes = new Uint8Array(len);
+      for (var i = 0; i < len; i++) bytes[i] = bin.charCodeAt(i);
+      var blob = new Blob([bytes], { type: "image/jpeg" });
+      var url = URL.createObjectURL(blob);
+      el.dataset.espBlobUrl = url;
+      el.src = url;
+      el.style.display = "block";
+      return true;
+    } catch (_err) {
+      revokeEspImgBlob(el);
+      el.src = "data:image/jpeg;base64," + b64;
+      el.style.display = "block";
+      return true;
+    }
+  }
+
+  function prioBadgeClass(tone) {
+    var t = (tone || "medium").toLowerCase();
+    if (t === "critical" || t === "high") return "prio-badge prio-" + t;
+    if (t === "low") return "prio-badge prio-low";
+    return "prio-badge prio-medium";
+  }
+
+  function riskPillClass(lvl) {
+    var raw = String(lvl || "medium").toLowerCase().replace(/\s+/g, "");
+    if (raw.indexOf("critical") >= 0) return "risk-pill risk-critical";
+    if (raw.indexOf("high") >= 0) return "risk-pill risk-high";
+    if (raw.indexOf("low") >= 0) return "risk-pill risk-low";
+    return "risk-pill risk-medium";
+  }
+
+  function renderPhases(phases) {
+    if (!phases || !phases.length)
+      return '<p class="muted">Aucune phase générée.</p>';
+    return phases
+      .map(function (ph) {
+        var acts = (ph.actions || [])
+          .map(function (a) {
+            return "<li>" + esc(a) + "</li>";
+          })
+          .join("");
+        var mats = (ph.materials || [])
+          .map(function (m) {
+            return '<span class="tag">' + esc(m) + "</span>";
+          })
+          .join("");
+        return (
+          '<div class="phase-card"><h5>' +
+          esc(ph.phase) +
+          "</h5><div class=\"phase-meta\">" +
+          esc(ph.deadline) +
+          " · " +
+          esc(ph.responsible_team) +
+          " · ~" +
+          esc(ph.estimated_cost_tnd) +
+          ' TND</div><ul style="margin:0; padding-left:18px;">' +
+          acts +
+          '</ul><div class="tag-list">' +
+          mats +
+          "</div></div>"
+        );
+      })
+      .join("");
+  }
+
+  function syncModelBlock(pipe) {
+    var el = document.getElementById("live-model-block");
+    if (!el || !pipe) return;
+    if (pipe.yolo_used) {
+      el.innerHTML =
+        "<strong>Modèle</strong> : détecté : <code id=\"live-model-label\" style=\"font-size:0.85rem;\">" +
+        esc(pipe.model_detection_label) +
+        "</code> · confiance <strong id=\"live-model-confidence\">" +
+        esc(pipe.confidence_score) +
+        "%</strong> · verdict <strong id=\"live-model-verdict\">" +
+        esc(pipe.vision_verdict || "—") +
+        "</strong>";
+    } else {
+      el.innerHTML =
+        '<strong>Modèle</strong> : <span id="live-model-warning" style="color:#ffb74d;">⚠️ Modèle non utilisé — estimation par règles (conf. max 60 %).</span>';
+    }
+  }
+
+  function syncDamageBlock(cp) {
+    var el = document.getElementById("live-damage-block");
+    if (!el) return;
+    var da = cp && cp.damage_assessment;
+    if (!da || typeof da !== "object") {
+      el.className = "copilot-block muted";
+      el.innerHTML = "";
+      return;
+    }
+    el.className = "copilot-block";
+    el.innerHTML =
+      '<h4>Évaluation des dégâts</h4><p style="margin:0;"><strong>Type</strong> : <span id="live-da-type">' +
+      esc(da.estimated_damage_type) +
+      '</span> · <strong>Taille</strong> : <span id="live-da-size">' +
+      esc(da.estimated_size) +
+      '</span> · <strong>Confiance</strong> : <span id="live-da-confidence">' +
+      esc(da.confidence) +
+      '</span> %</p><p class="muted" style="margin:8px 0 0;" id="live-da-visual">' +
+      esc(da.visual_evidence) +
+      "</p>";
+  }
+
+  function syncResources(rp) {
+    rp = rp || {};
+    var teams = (rp.teams_needed || []).join(", ") || "—";
+    setText("live-rp-teams", teams);
+    setText("live-rp-workers", rp.workers_estimate != null ? String(rp.workers_estimate) : "—");
+    var eqEl = document.getElementById("live-rp-equip");
+    if (eqEl) {
+      eqEl.innerHTML = (rp.equipment || [])
+        .map(function (e) {
+          return '<span class="tag">' + esc(e) + "</span>";
+        })
+        .join("");
+    }
+    var mEl = document.getElementById("live-rp-mats");
+    if (mEl) {
+      mEl.innerHTML = (rp.materials || [])
+        .map(function (m) {
+          return '<span class="tag">' + esc(m) + "</span>";
+        })
+        .join("");
+    }
+  }
+
+  async function analyzeESPFrame(opts) {
+    opts = opts || {};
+    var manual = !!opts.manual;
+    if (espAnalyzeBusy) {
+      if (manual) {
+        espAnalyzeQueuedManual = true;
+        var stQ = document.getElementById("espStatus");
+        if (stQ)
+          stQ.textContent =
+            "Analyse en cours — votre capture sera lancée juste après.";
+      }
+      return;
+    }
+    espAnalyzeBusy = true;
+    var capBtn = document.getElementById("esp-capture-analyze-btn");
+    if (capBtn) capBtn.disabled = true;
+
+    var imgCls = document.getElementById("espAnnotatedCls");
+    var imgSeg = document.getElementById("espAnnotatedSeg");
+    var st = document.getElementById("espStatus");
+    var hint = document.getElementById("live-refresh-hint");
+    if (hint) hint.textContent = String(refreshSecShown);
+    if (st)
+      st.textContent = manual
+        ? "Capture ESP + analyse en cours…"
+        : "Analyse du cliché ESP…";
+
+    var abortCtl = new AbortController();
+    var abortTimer = window.setTimeout(function () {
+      abortCtl.abort();
+    }, ESP_ANALYZE_FETCH_MS);
+
+    try {
+      var r = await fetch(analyzeUrl, {
+        method: "POST",
+        credentials: "same-origin",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRFToken": csrftoken || ""
+        },
+        body: JSON.stringify({
+          model_key: modelKey,
+          conf: conf,
+          rules_only: true,
+          full_xai: false,
+          manual_trigger: manual
+        }),
+        signal: abortCtl.signal
+      });
+      var rawBody = "";
+      try {
+        rawBody = await r.clone().text();
+      } catch (eTxt) {}
+      var data = {};
+      try {
+        data = JSON.parse(rawBody || "{}");
+      } catch (_pe) {
+        if (st) {
+          st.textContent =
+            "Réponse invalide HTTP " +
+            r.status +
+            " — " +
+            (rawBody || "").slice(0, 280);
+        }
+        var aphInv = document.getElementById("esp-annot-placeholder");
+        if (aphInv) aphInv.style.display = "block";
+        return;
+      }
+      if (!r.ok || !data.ok) {
+        var errLine =
+          (data && (data.message || data.error)) || rawBody.slice(0, 400);
+        if (st)
+          st.textContent =
+            "Erreur HTTP " + r.status + " · " + (errLine || "réponse invalide");
+        var aph = document.getElementById("esp-annot-placeholder");
+        if (aph) aph.style.display = "block";
+        return;
+      }
+
+      var b64Cls =
+        data.annotated_image_base64 ||
+        data.jpeg_b64 ||
+        "";
+      var b64Seg = data.annotated_segmentation_base64 || "";
+      var annUrlCls =
+        typeof data.annotated_image_url === "string"
+          ? data.annotated_image_url
+          : data.vision &&
+            typeof data.vision.annotated_image_url === "string"
+            ? data.vision.annotated_image_url
+            : "";
+      var annUrlSeg =
+        typeof data.annotated_segmentation_image_url === "string"
+          ? data.annotated_segmentation_image_url
+          : data.vision &&
+            typeof data.vision.annotated_segmentation_image_url === "string"
+            ? data.vision.annotated_segmentation_image_url
+            : "";
+      function showEspImg(el, b64, url) {
+        if (!el) return false;
+        if (url) {
+          revokeEspImgBlob(el);
+          el.src = espAbsMediaUrl(url);
+          el.style.display = "block";
+          return true;
+        }
+        if (b64) return setEspImgFromJpegB64(el, b64);
+        revokeEspImgBlob(el);
+        el.style.display = "none";
+        try {
+          el.removeAttribute("src");
+        } catch (_e) {}
+        return false;
+      }
+      var rawUrl =
+        (typeof data.capture_raw_image_url === "string" && data.capture_raw_image_url) ||
+        "";
+      var rawB64 =
+        (typeof data.capture_raw_base64 === "string" && data.capture_raw_base64) ||
+        (data.vision &&
+          typeof data.vision.capture_raw_base64 === "string" &&
+          data.vision.capture_raw_base64) ||
+        "";
+      var imgRaw = document.getElementById("espCaptureRaw");
+      var rawPh = document.getElementById("esp-raw-placeholder");
+      if (imgRaw) {
+        if (rawUrl) {
+          revokeEspImgBlob(imgRaw);
+          imgRaw.src = espAbsMediaUrl(rawUrl);
+          imgRaw.style.display = "block";
+          if (rawPh) rawPh.style.display = "none";
+        } else if (rawB64 && setEspImgFromJpegB64(imgRaw, rawB64)) {
+          if (rawPh) rawPh.style.display = "none";
+        }
+      }
+
+      var annotPh = document.getElementById("esp-annot-placeholder");
+      var okCls = showEspImg(imgCls, b64Cls, annUrlCls);
+      var okSeg = showEspImg(imgSeg, b64Seg, annUrlSeg);
+      if (annotPh) annotPh.style.display = okCls || okSeg ? "none" : "block";
+
+      var pipe = data.pipeline || {};
+      var vis = data.vision || {};
+      var xai = data.xai || {};
+      var cp = data.copilot || {};
+
+      var prioEl = document.getElementById("live-prio-badge");
+      if (prioEl) {
+        prioEl.textContent = pipe.final_priority || "—";
+        prioEl.className = prioBadgeClass(pipe.priority_tone);
+      }
+      setText("live-inline-copilot-src", cp.source || "—");
+      setText("live-score-ai", pipe.ai_score != null ? pipe.ai_score : "—");
+      var bar = document.getElementById("live-score-ai-bar");
+      if (bar) bar.style.width = Math.min(100, Math.max(0, parseFloat(pipe.ai_score) || 0)) + "%";
+      setText("live-score-severity", pipe.severity_score != null ? pipe.severity_score : "—");
+      setText("live-score-location", pipe.location_score != null ? pipe.location_score : "—");
+      setText("live-score-confidence", pipe.confidence_score != null ? pipe.confidence_score + "%" : "—");
+
+      var labStr = Array.isArray(vis.labels) ? vis.labels.join(", ") : "";
+      var detLbl =
+        pipe.model_detection_label != null &&
+        String(pipe.model_detection_label).trim() !== ""
+          ? String(pipe.model_detection_label)
+          : "";
+      setText(
+        "live-vision-hint",
+        detLbl ? detLbl + (labStr ? " · " + labStr : "") : labStr || "—"
+      );
+      setText("live-max-conf", vis.max_confidence != null ? vis.max_confidence : "—");
+      setText("live-nbox", vis.detection_box_count != null ? vis.detection_box_count : "0");
+
+      syncModelBlock(pipe);
+
+      var nod = document.getElementById("live-no-damage-row");
+      if (nod) {
+        var showNd =
+          pipe.yolo_used && String(pipe.model_detection_label || "") === "none";
+        nod.innerHTML =
+          '<span class="prio-badge" style="background:#616161;color:#eceff1;border:1px solid rgba(255,255,255,0.2);text-transform:none;letter-spacing:0.04em;">No damage detected</span>';
+        nod.style.display = showNd ? "block" : "none";
+      }
+
+      setText("live-copilot-pill", cp.source || "—");
+
+      var riskEl = document.getElementById("live-risk-pill");
+      if (riskEl) {
+        riskEl.textContent =
+          "Risque · " + (cp.risk_level != null ? cp.risk_level : "—");
+        riskEl.className = cp.risk_level
+          ? riskPillClass(cp.risk_level)
+          : "risk-pill risk-medium";
+      }
+      var urgEl = document.getElementById("live-urg-pill");
+      if (urgEl)
+        urgEl.textContent =
+          "Urgence · " +
+          (cp.urgency != null && cp.urgency !== "" ? cp.urgency : "—");
+      var costEl = document.getElementById("live-cost-pill");
+      if (costEl)
+        costEl.textContent =
+          "Budget estimatif · " +
+          (cp.total_estimated_cost_tnd != null
+            ? cp.total_estimated_cost_tnd + " TND"
+            : "—");
+
+      setText(
+        "live-exec-summary",
+        cp.executive_summary != null &&
+          String(cp.executive_summary).trim() !== ""
+          ? cp.executive_summary
+          : "—"
+      );
+      setText(
+        "live-priority-reason",
+        cp.priority_reason != null &&
+          String(cp.priority_reason).trim() !== ""
+          ? cp.priority_reason
+          : "—"
+      );
+
+      syncDamageBlock(cp);
+
+      var phWrap = document.getElementById("live-phase-wrap");
+      if (phWrap)
+        phWrap.innerHTML = renderPhases(cp.intervention_plan || []);
+
+      syncResources(cp.resource_plan);
+
+      setText(
+        "live-citizen-msg",
+        cp.citizen_message != null &&
+          String(cp.citizen_message).trim() !== ""
+          ? cp.citizen_message
+          : "—"
+      );
+      setText(
+        "live-muni-msg",
+        cp.municipality_message != null &&
+          String(cp.municipality_message).trim() !== ""
+          ? cp.municipality_message
+          : "—"
+      );
+
+      var fuEl = document.getElementById("live-follow-up");
+      if (fuEl) {
+        if (cp.follow_up && typeof cp.follow_up === "object") {
+          var fu = cp.follow_up;
+          fuEl.textContent =
+            (fu.suggested_status || "") +
+            " — inspection complémentaire : " +
+            (fu.needs_second_inspection ? "oui" : "non") +
+            " — contrôle recommandé après " +
+            String(fu.verification_after_days != null ? fu.verification_after_days : "?") +
+            " jour(s).";
+        } else {
+          fuEl.textContent = "—";
+        }
+      }
+
+      var xsum = document.getElementById("live-xai-excerpt");
+      if (xsum) xsum.textContent = (xai.explanation || "").slice(0, 1200);
+
+      var tsEl = document.getElementById("live-last-analyzed");
+      if (tsEl)
+        tsEl.textContent =
+          "Dernière analyse : " +
+          new Date().toLocaleTimeString("fr-FR", {
+            hour: "2-digit",
+            minute: "2-digit",
+            second: "2-digit",
+            hour12: false
+          });
+
+      if (st) {
+        st.textContent =
+          "OK · ESP " +
+          (data.esp_host || "—") +
+          " · max conf " +
+          (vis.max_confidence != null ? vis.max_confidence : "—") +
+          (manual ? " · déclenché à la demande" : "") +
+          " · prochain cycle auto ~" +
+          refreshSecShown +
+          " s";
+      }
+    } catch (e) {
+      if (e && e.name === "AbortError") {
+        if (st)
+          st.textContent =
+            "Délai dépassé (" +
+            Math.round(ESP_ANALYZE_FETCH_MS / 1000) +
+            " s). Vérifie l’ESP (/capture) ou allège les modèles, puis réessaie.";
+      } else if (st) st.textContent = "Erreur réseau : " + e;
+      var aph2 = document.getElementById("esp-annot-placeholder");
+      if (aph2) aph2.style.display = "block";
+    } finally {
+      window.clearTimeout(abortTimer);
+      espAnalyzeBusy = false;
+      if (capBtn) capBtn.disabled = false;
+      if (espAnalyzeQueuedManual) {
+        espAnalyzeQueuedManual = false;
+        analyzeESPFrame({ manual: true });
+      }
+    }
+  }
+
+  analyzeESPFrame();
+  setInterval(function () {
+    analyzeESPFrame();
+  }, pollMs);
+
+  var espCapBtn = document.getElementById("esp-capture-analyze-btn");
+  if (espCapBtn) {
+    espCapBtn.addEventListener("click", function () {
+      analyzeESPFrame({ manual: true });
+    });
+  }
+
+  var stream = document.getElementById("espStream");
+  var streamErr = document.getElementById("espStreamErr");
+  if (stream && streamErr) {
+    stream.addEventListener("error", function () {
+      streamErr.style.display = "block";
+      streamErr.textContent =
+        "Impossible de charger le flux ESP32-CAM. Vérifie l’IP caméra dans Réglages caméra.";
+    });
+    stream.addEventListener("load", function () {
+      streamErr.style.display = "none";
+    });
+  }
+})();
+{% endif %}
+</script>
+{% endblock %}

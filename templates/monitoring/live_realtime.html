@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Vidéo temps réel — Smart City{% endblock %}
+
+{% block content %}
+<div class="live-rt-wrap">
+  <header class="live-rt-header glass">
+    <div class="cockpit-brand">
+      <span class="cockpit-logo">◎</span>
+      <div>
+        <h1 class="cockpit-title">Flux temps réel</h1>
+        <p class="cockpit-sub">Chaque image passe par <strong>{{ yolo_model_name }}</strong> (YOLO + suivi)</p>
+      </div>
+    </div>
+    <div class="live-rt-header-actions">
+      <a href="{% url 'monitoring:dashboard' %}{% if active_source %}?source={{ active_source.pk }}{% endif %}" class="btn-ghost-xl">Tableau de bord</a>
+    </div>
+  </header>
+
+  <div class="live-rt-body">
+    <aside class="glass live-rt-sources">
+      <h2 class="panel-title">Source</h2>
+      <ul class="source-pills">
+        {% for s in sources %}
+          <li>
+            <a
+              href="{% url 'monitoring:live_realtime' %}?source={{ s.pk }}"
+              class="source-pill {% if active_source and active_source.pk == s.pk %}is-active{% endif %}"
+            >
+              <span class="source-pill-name">{{ s.name }}</span>
+              <span class="source-pill-meta">{{ s.get_source_type_display }}{% if not s.is_active %} · off{% endif %}</span>
+            </a>
+          </li>
+        {% empty %}
+          <li class="muted small">Aucune source — ajoutez une vidéo ou une webcam.</li>
+        {% endfor %}
+      </ul>
+      <a href="{% url 'monitoring:source_create' %}" class="btn-neon-block">+ Ajouter une vidéo</a>
+    </aside>
+
+    <div class="live-rt-main">
+      <div class="video-stage glass" id="mainStage">
+        <div class="video-corners" aria-hidden="true"></div>
+        <div class="video-stage-inner">
+          {% if active_source and active_source.is_active %}
+            <div
+              id="live-detection-stats"
+              class="live-stats glass"
+              data-stats-url="{% url 'monitoring:stream_stats' active_source.pk %}"
+              role="status"
+            >
+              <span class="live-stat"><strong id="stat-persons">—</strong> personnes</span>
+              <span class="live-stat"><strong id="stat-bags">—</strong> sacs / valises</span>
+              <span id="stat-theft" class="live-theft" hidden>Piste vol — à vérifier</span>
+              <span id="stat-lowlight" class="live-lowlight muted small" hidden>Pièce sombre — contraste renforcé</span>
+              <span id="stat-stale" class="live-stale muted small" hidden>Hors flux</span>
+            </div>
+            <img
+              src="{% url 'monitoring:video_stream' active_source.pk %}"
+              alt="Flux vidéo détection temps réel"
+              class="video-feed"
+            >
+          {% elif active_source %}
+            <div class="stage-empty">
+              <p class="stage-empty-title">Source inactive</p>
+              <p class="muted">Activez « {{ active_source.name }} » pour appliquer le modèle sur le flux.</p>
+              <a href="{% url 'monitoring:source_edit' active_source.pk %}" class="btn-neon-xl">Activer ou modifier</a>
+            </div>
+          {% else %}
+            <div class="stage-empty">
+              <p class="stage-empty-kicker">Choisissez une source</p>
+              <p class="muted small">Webcam, RTSP ou fichier — la sortie affichée est toujours annotée par le modèle.</p>
+              <a href="{% url 'monitoring:source_create' %}" class="btn-neon-xl">Ajouter une vidéo</a>
+            </div>
+          {% endif %}
+        </div>
+        <div class="stage-toolbar">
+          <button type="button" class="stage-icon-btn" id="btnFullscreen" title="Plein écran">⛶</button>
+          <span class="stage-hint-toolbar">{% if active_source and active_source.is_active %}best.pt → chaque frame{% else %}En attente{% endif %}</span>
+        </div>
+      </div>
+
+      <footer class="stat-strip glass live-rt-strip">
+        <div class="stat-card">
+          <span class="stat-label">Modèle (sortie)</span>
+          <strong class="stat-value small neon-text">{{ yolo_model_name }}</strong>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Mode</span>
+          <strong class="stat-value small">Tracking + alertes</strong>
+        </div>
+      </footer>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  var stage = document.getElementById("mainStage");
+  var btn = document.getElementById("btnFullscreen");
+  if (stage && btn) {
+    btn.addEventListener("click", function () {
+      if (!document.fullscreenElement) stage.requestFullscreen().catch(function () {});
+      else document.exitFullscreen();
+    });
+  }
+  var box = document.getElementById("live-detection-stats");
+  if (!box) return;
+  var url = box.getAttribute("data-stats-url");
+  var elP = document.getElementById("stat-persons");
+  var elB = document.getElementById("stat-bags");
+  var elT = document.getElementById("stat-theft");
+  var elS = document.getElementById("stat-stale");
+  var elL = document.getElementById("stat-lowlight");
+  function tick() {
+    fetch(url, { cache: "no-store", credentials: "same-origin" })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (elP) elP.textContent = d.persons != null ? d.persons : "—";
+        if (elB) elB.textContent = d.bags != null ? d.bags : "—";
+        if (elT) {
+          elT.hidden = !d.theft_hint;
+          if (d.theft_hint) box.classList.add("live-stats-alert");
+          else box.classList.remove("live-stats-alert");
+        }
+        if (elS) elS.hidden = !d.stale;
+        if (elL) elL.hidden = !d.low_light_enhance;
+      })
+      .catch(function () {
+        if (elS) elS.hidden = false;
+      });
+  }
+  tick();
+  setInterval(tick, 500);
+})();
+</script>
+{% endblock %}

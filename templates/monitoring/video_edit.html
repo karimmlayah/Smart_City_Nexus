@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block title %}Modifier — {{ source.name }}{% endblock %}
+{% block body_class %}cockpit page-form{% endblock %}
+
+{% block content %}
+<a href="{% url 'monitoring:dashboard' %}?source={{ source.pk }}" class="back-link">← Retour au flux</a>
+<div class="upload-hero glass">
+  <h1 class="upload-title">Modifier</h1>
+  <p class="upload-sub muted">{{ source.name }}</p>
+  <form method="post" class="upload-form" enctype="multipart/form-data">
+    {% csrf_token %}
+    {% if form.non_field_errors %}
+      <ul class="errors">{{ form.non_field_errors }}</ul>
+    {% endif %}
+    {% for field in form %}
+      <div class="field">
+        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+        {{ field }}
+        {% if field.help_text %}<small class="help">{{ field.help_text }}</small>{% endif %}
+        {{ field.errors }}
+      </div>
+    {% endfor %}
+    <button type="submit" class="btn-neon-block upload-submit">Enregistrer</button>
+    <a href="{% url 'monitoring:source_delete' source.pk %}" class="btn-ghost-block" style="margin-top:0.5rem;">Supprimer cette vidéo</a>
+  </form>
+</div>
+{% endblock %}

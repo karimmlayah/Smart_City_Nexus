@@ -1,0 +1,38 @@
+# Custom ByteTrack Configuration for Traffic Violation Detection
+# Optimized for handling occlusions and maintaining consistent IDs
+
+# Tracker type
+tracker_type: bytetrack
+
+# Track activation threshold - lower means tracks activate easier
+track_thresh: 0.3
+
+# High confidence detection threshold
+track_high_thresh: 0.3
+
+# Low confidence detection threshold for re-identification
+track_low_thresh: 0.05
+
+# New track creation threshold - higher prevents duplicate IDs
+new_track_thresh: 0.6
+
+# Number of frames to keep lost tracks in memory (for re-identification)
+track_buffer: 90
+
+# Matching threshold for associating detections with tracks
+match_thresh: 0.7
+
+# IOU threshold for matching - lower allows more flexible matching
+iou_thresh: 0.3
+
+# Frame rate (used for track buffer calculations)
+frame_rate: 30
+
+# Minimum number of frames a track must be active before being confirmed
+min_hits: 3
+
+# Maximum number of frames a track can be lost before being deleted
+max_age: 90
+
+# Use appearance features for matching (if available)
+with_reid: false

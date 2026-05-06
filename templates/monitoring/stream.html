@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Flux — {{ source.name }}{% endblock %}
+
+{% block content %}
+<h1>{{ source.name }}</h1>
+<p class="muted">{{ source.get_source_type_display }} · Seuil foule : {{ source.crowd_threshold }} personnes</p>
+<div class="stream-wrap">
+  {% if source.is_active %}
+  <img
+    src="{% url 'monitoring:video_stream' source.pk %}"
+    alt="Flux vidéo"
+    class="stream-img"
+    width="960"
+  >
+  {% else %}
+  <p class="stream-off">Source inactive — activez-la dans « Modifier » pour lancer la détection.</p>
+  {% endif %}
+</div>
+<p class="hint">La détection utilise le poids configuré dans Django (<code>YOLO_MODEL_PATH</code>).</p>
+<p><a href="{% url 'monitoring:dashboard' %}">← Retour</a></p>
+{% endblock %}

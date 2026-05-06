@@ -1,0 +1,218 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Surveillance foule — Smart City{% endblock %}
+
+{% block content %}
+<div class="cockpit-grid">
+  <aside class="glass panel-left">
+    <h2 class="panel-title">Sources</h2>
+    <a href="{% url 'monitoring:source_create' %}" class="btn-neon-block">+ Ajouter une vidéo</a>
+    <ul class="source-pills">
+      {% for s in sources %}
+        <li>
+          <a
+            href="{% url 'monitoring:dashboard' %}?source={{ s.pk }}"
+            class="source-pill {% if active_source and active_source.pk == s.pk %}is-active{% endif %}"
+          >
+            <span class="source-pill-name">{{ s.name }}</span>
+            <span class="source-pill-meta">{{ s.get_source_type_display }}{% if not s.is_active %} · off{% endif %}</span>
+          </a>
+          <div class="source-pill-actions">
+            <a href="{% url 'monitoring:source_edit' s.pk %}">Modifier</a>
+          </div>
+        </li>
+      {% empty %}
+        <li class="muted small">Aucune source encore.</li>
+      {% endfor %}
+    </ul>
+  </aside>
+
+  <div class="cockpit-center">
+    <header class="cockpit-header glass">
+      <div class="cockpit-brand">
+        <span class="cockpit-logo">SC</span>
+        <div>
+          <h1 class="cockpit-title">Crowd Monitoring</h1>
+          <p class="cockpit-sub">Détection YOLO · temps réel</p>
+        </div>
+      </div>
+      <div class="cockpit-header-right">
+        {% if active_source %}
+          <span class="pill-live {% if active_source.is_active %}on{% endif %}">
+            {% if active_source.is_active %}LIVE{% else %}OFF{% endif %}
+          </span>
+          <span class="header-src-name">{{ active_source.name }}</span>
+        {% endif %}
+      </div>
+    </header>
+
+    <div class="video-stage glass" id="mainStage">
+      <div class="video-corners" aria-hidden="true"></div>
+      <div class="video-stage-inner">
+        {% if active_source and active_source.is_active %}
+          <div
+            id="live-detection-stats"
+            class="live-stats glass"
+            data-stats-url="{% url 'monitoring:stream_stats' active_source.pk %}"
+            role="status"
+          >
+            <span class="live-stat"><strong id="stat-persons">—</strong> personnes</span>
+            <span class="live-stat"><strong id="stat-bags">—</strong> sacs / valises</span>
+            <span id="stat-theft" class="live-theft" hidden>Piste vol — à vérifier</span>
+            <span id="stat-lowlight" class="live-lowlight muted small" hidden>Pièce sombre — contraste renforcé</span>
+            <span id="stat-stale" class="live-stale muted small" hidden>Hors flux</span>
+          </div>
+          <img
+            src="{% url 'monitoring:video_stream' active_source.pk %}"
+            alt="Flux vidéo détection"
+            class="video-feed"
+          >
+        {% elif active_source %}
+          <div class="stage-empty">
+            <p class="stage-empty-title">Source inactive</p>
+            <p class="muted">Activez « {{ active_source.name }} » pour lancer la détection.</p>
+            <a href="{% url 'monitoring:source_edit' active_source.pk %}" class="btn-neon-xl">Activer ou modifier</a>
+            <a href="{% url 'monitoring:source_create' %}" class="btn-ghost-xl">Ajouter une autre vidéo</a>
+          </div>
+        {% else %}
+          <div class="stage-empty">
+            <p class="stage-empty-kicker">Aucune vidéo chargée</p>
+            <a href="{% url 'monitoring:source_create' %}" class="btn-neon-xl">Ajouter une vidéo</a>
+            <p class="stage-empty-hint">MP4 depuis votre PC · détection personnes & alertes foule</p>
+            {% if sources %}
+              <p class="muted small">Ou choisissez une source à gauche.</p>
+            {% endif %}
+          </div>
+        {% endif %}
+      </div>
+      <div class="stage-toolbar">
+        <button type="button" class="stage-icon-btn" id="btnFullscreen" title="Plein écran">⛶</button>
+        <span class="stage-hint-toolbar">{% if active_source %}Détection en direct{% else %}En attente vidéo{% endif %}</span>
+      </div>
+    </div>
+
+    <footer class="stat-strip glass">
+      <div class="stat-card">
+        <span class="stat-label">Sources actives</span>
+        <strong class="stat-value neon-text">{{ active_count }}</strong>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label">Alertes (total)</span>
+        <strong class="stat-value">{{ total_alerts }}</strong>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label">Modèle</span>
+        <strong class="stat-value small">{{ yolo_model_name }}</strong>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label">Statut</span>
+        <strong class="stat-value small neon-text">OK</strong>
+      </div>
+    </footer>
+  </div>
+
+  <aside class="glass panel-right">
+    <div class="profile-row">
+      <div class="avatar">OP</div>
+      <div>
+        <div class="profile-name">Opérateur</div>
+        <div class="profile-mail muted small">smartcity@local</div>
+      </div>
+    </div>
+    <div class="tabs">
+      <span class="tab is-on">Vue d’ensemble</span>
+      <span class="tab">Alertes</span>
+    </div>
+    <section class="widget">
+      <h3 class="widget-title">Répartition alertes</h3>
+      <div class="donut-wrap">
+        <div class="donut" style="background: {{ donut_gradient }};">
+          <div class="donut-hole">
+            <span class="donut-pct">{% if total_alerts %}{{ total_alerts }}{% else %}0{% endif %}</span>
+            <span class="donut-sub">total</span>
+          </div>
+        </div>
+        <ul class="donut-legend">
+          <li><i class="lg lg-neon"></i> Foule {{ alert_totals.crowd|default:0 }}</li>
+          <li><i class="lg lg-blue"></i> Mouv. rapide {{ alert_totals.fast_movement|default:0 }}</li>
+          <li><i class="lg lg-orange"></i> Regroup. {{ alert_totals.high_overlap|default:0 }}</li>
+          <li><i class="lg lg-magenta"></i> Piste vol {{ alert_totals.theft_suspicious|default:0 }}</li>
+          <li><i class="lg lg-danger"></i> Combat {{ alert_totals.fight|default:0 }}</li>
+          <li><i class="lg lg-weapon"></i> Armes {{ alert_totals.weapon|default:0 }}</li>
+        </ul>
+      </div>
+    </section>
+    <section class="widget">
+      <h3 class="widget-title">Tendance (indicatif)</h3>
+      <div class="bar-chart">
+        {% for h in trend_bars %}
+          <div class="bar" style="height: {{ h }}%;"></div>
+        {% endfor %}
+      </div>
+      <div class="bar-labels muted small">J F M A M J</div>
+    </section>
+    <section class="widget widget-scroll">
+      <h3 class="widget-title">Dernières alertes</h3>
+      {% if alerts %}
+        <ul class="permit-list">
+          {% for a in alerts %}
+            <li class="permit-row">
+              <div>
+                <div class="permit-title">{{ a.get_alert_type_display }}</div>
+                <div class="permit-sub muted small">{{ a.source.name }} · {{ a.created_at|date:"d/m H:i" }}</div>
+              </div>
+              <span class="status-pill status-{{ a.alert_type }}">{{ a.person_count|default:"—" }}</span>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="muted small">Aucune alerte enregistrée.</p>
+      {% endif %}
+    </section>
+  </aside>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  var stage = document.getElementById("mainStage");
+  var btn = document.getElementById("btnFullscreen");
+  if (stage && btn) {
+    btn.addEventListener("click", function () {
+      if (!document.fullscreenElement) stage.requestFullscreen().catch(function () {});
+      else document.exitFullscreen();
+    });
+  }
+  var box = document.getElementById("live-detection-stats");
+  if (!box) return;
+  var url = box.getAttribute("data-stats-url");
+  var elP = document.getElementById("stat-persons");
+  var elB = document.getElementById("stat-bags");
+  var elT = document.getElementById("stat-theft");
+  var elS = document.getElementById("stat-stale");
+  var elL = document.getElementById("stat-lowlight");
+  function tick() {
+    fetch(url, { cache: "no-store", credentials: "same-origin" })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (elP) elP.textContent = d.persons != null ? d.persons : "—";
+        if (elB) elB.textContent = d.bags != null ? d.bags : "—";
+        if (elT) {
+          elT.hidden = !d.theft_hint;
+          if (d.theft_hint) box.classList.add("live-stats-alert");
+          else box.classList.remove("live-stats-alert");
+        }
+        if (elS) elS.hidden = !d.stale;
+        if (elL) elL.hidden = !d.low_light_enhance;
+      })
+      .catch(function () {
+        if (elS) elS.hidden = false;
+      });
+  }
+  tick();
+  setInterval(tick, 500);
+})();
+</script>
+{% endblock %}
