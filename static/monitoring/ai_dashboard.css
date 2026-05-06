@@ -3,17 +3,19 @@
  * Accent: magenta → violet gradient (pairs with existing cyan Fusion rail active state).
  */
 
+/* Smart City semantic backdrop: cyan (services) · indigo (infra) · amber (mobility) */
 body.ai-dashboard-sc.fusion-hub-sc .app-shell {
   background: #03040a;
   background-image:
-    radial-gradient(ellipse 80% 50% at 50% -10%, rgba(168, 85, 247, 0.18), transparent 55%),
-    radial-gradient(ellipse 60% 40% at 100% 50%, rgba(236, 72, 153, 0.08), transparent 45%);
+    radial-gradient(ellipse 85% 55% at 50% -12%, rgba(14, 165, 233, 0.16), transparent 58%),
+    radial-gradient(ellipse 55% 45% at 100% 30%, rgba(99, 102, 241, 0.1), transparent 50%),
+    radial-gradient(ellipse 50% 40% at 0% 70%, rgba(245, 158, 11, 0.07), transparent 48%);
 }
 
 .ai-dash-root {
-  --ad-accent-a: #e879f9;
-  --ad-accent-b: #a855f7;
-  --ad-accent-c: #38bdf8;
+  --ad-accent-a: #0ea5e9;
+  --ad-accent-b: #6366f1;
+  --ad-accent-c: #f59e0b;
   --ad-glass: rgba(17, 24, 39, 0.82);
   --ad-border: rgba(255, 255, 255, 0.08);
   --ad-text: #f1f5f9;
@@ -43,14 +45,14 @@ body.ai-dashboard-sc.fusion-hub-sc .app-shell {
   font-size: clamp(1.35rem, 2.4vw, 1.75rem);
   font-weight: 800;
   letter-spacing: -0.03em;
-  background: linear-gradient(105deg, #f0abfc 0%, #e879f9 35%, #a855f7 65%, #38bdf8 100%);
+  background: linear-gradient(105deg, #22d3ee 0%, #0ea5e9 28%, #6366f1 62%, #f59e0b 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
 }
 
 .ai-dash-root[data-ai-theme="light"] .ai-dash-hero-title {
-  background: linear-gradient(105deg, #a21caf 0%, #7c3aed 50%, #0369a1 100%);
+  background: linear-gradient(105deg, #0284c7 0%, #4f46e5 50%, #d97706 100%);
   -webkit-background-clip: text;
   background-clip: text;
 }
@@ -94,7 +96,7 @@ body.ai-dashboard-sc.fusion-hub-sc .app-shell {
 .ai-dash-toolbar input[type="text"] {
   padding: 0.45rem 0.65rem;
   border-radius: 10px;
-  border: 1px solid rgba(168, 85, 247, 0.35);
+  border: 1px solid rgba(14, 165, 233, 0.38);
   background: rgba(3, 4, 10, 0.65);
   color: var(--ad-text);
   font-size: 0.82rem;
@@ -139,7 +141,7 @@ body.ai-dashboard-sc.fusion-hub-sc .app-shell {
 .ai-btn--primary {
   border: none;
   background: linear-gradient(135deg, var(--ad-accent-a), var(--ad-accent-b));
-  color: #0b0118;
+  color: #f8fafc;
 }
 
 .ai-btn--ghost {
@@ -157,7 +159,7 @@ body.ai-dashboard-sc.fusion-hub-sc .app-shell {
 }
 
 .ai-toggle input {
-  accent-color: #c026d3;
+  accent-color: #0ea5e9;
 }
 
 /* KPI grid */
@@ -185,15 +187,15 @@ body.ai-dashboard-sc.fusion-hub-sc .app-shell {
   position: absolute;
   inset: 0;
   opacity: 0;
-  background: linear-gradient(135deg, rgba(232, 121, 249, 0.08), rgba(56, 189, 248, 0.06));
+  background: linear-gradient(135deg, rgba(14, 165, 233, 0.09), rgba(99, 102, 241, 0.06));
   transition: opacity 0.2s ease;
   pointer-events: none;
 }
 
 .ai-kpi-card:hover {
   transform: translateY(-3px);
-  border-color: rgba(232, 121, 249, 0.35);
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(232, 121, 249, 0.12);
+  border-color: rgba(14, 165, 233, 0.38);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(14, 165, 233, 0.15);
 }
 
 .ai-kpi-card:hover::before {
@@ -226,6 +228,50 @@ body.ai-dashboard-sc.fusion-hub-sc .app-shell {
   color: var(--ad-text);
   margin-top: 0.2rem;
   font-variant-numeric: tabular-nums;
+}
+
+.ai-kpi-hint {
+  margin-top: 0.35rem;
+  font-size: 0.65rem;
+  font-weight: 500;
+  line-height: 1.35;
+  color: var(--ad-muted);
+  opacity: 0.92;
+}
+
+/* Domain accent strip — KPI card (semantic Smart City) */
+.ai-kpi-card {
+  border-left: 3px solid rgba(148, 163, 184, 0.35);
+}
+
+.ai-kpi-card[data-kpi-key="total_models"],
+.ai-kpi-card.ai-kpi-card--domain-total_models {
+  border-left-color: #64748b;
+}
+
+.ai-kpi-card[data-kpi-key="total_requests"],
+.ai-kpi-card.ai-kpi-card--domain-total_requests {
+  border-left-color: #0ea5e9;
+}
+
+.ai-kpi-card[data-kpi-key="success_rate"],
+.ai-kpi-card.ai-kpi-card--domain-success_rate {
+  border-left-color: #22c55e;
+}
+
+.ai-kpi-card[data-kpi-key="avg_response_ms"],
+.ai-kpi-card.ai-kpi-card--domain-avg_response_ms {
+  border-left-color: #a855f7;
+}
+
+.ai-kpi-card[data-kpi-key="online_services"],
+.ai-kpi-card.ai-kpi-card--domain-online_services {
+  border-left-color: #10b981;
+}
+
+.ai-kpi-card[data-kpi-key="offline_services"],
+.ai-kpi-card.ai-kpi-card--domain-offline_services {
+  border-left-color: #f59e0b;
 }
 
 .ai-kpi-trend {
@@ -354,7 +400,7 @@ body.ai-dashboard-sc.fusion-hub-sc .app-shell {
 }
 
 .ai-table thead th:hover {
-  color: var(--ad-accent-a);
+  color: #0ea5e9;
 }
 
 .ai-table tbody td {
@@ -373,7 +419,52 @@ body.ai-dashboard-sc.fusion-hub-sc .app-shell {
 }
 
 .ai-table tbody tr:hover {
-  background: rgba(232, 121, 249, 0.06);
+  background: rgba(14, 165, 233, 0.06);
+}
+
+/* Registry — domain marker (matches chart semantic_palette) */
+.ai-domain-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 0.45rem;
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+
+.ai-domain-dot--safety {
+  background: #06b6d4;
+  box-shadow: 0 0 8px rgba(6, 182, 212, 0.45);
+}
+
+.ai-domain-dot--infra {
+  background: #6366f1;
+  box-shadow: 0 0 8px rgba(99, 102, 241, 0.4);
+}
+
+.ai-domain-dot--environment {
+  background: #10b981;
+}
+
+.ai-domain-dot--aerial {
+  background: #3b82f6;
+}
+
+.ai-domain-dot--traffic {
+  background: #f59e0b;
+}
+
+.ai-domain-dot--cloud_api {
+  background: #a855f7;
+}
+
+.ai-domain-dot--biometric {
+  background: #f472b6;
+}
+
+.ai-domain-dot--vision {
+  background: #38bdf8;
 }
 
 .ai-badge {
@@ -470,7 +561,7 @@ body.ai-dashboard-sc.fusion-hub-sc .app-shell {
   background: linear-gradient(
     90deg,
     rgba(148, 163, 184, 0.12) 0%,
-    rgba(232, 121, 249, 0.15) 50%,
+    rgba(14, 165, 233, 0.14) 50%,
     rgba(148, 163, 184, 0.12) 100%
   );
   background-size: 200% 100%;

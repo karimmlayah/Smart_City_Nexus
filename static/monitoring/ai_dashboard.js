@@ -1,10 +1,11 @@
 /**
- * AI Dashboard — loads summary JSON, renders KPIs, Chart.js charts, sortable table, activity feed.
+ * AI Dashboard — JSON-driven KPIs, Chart.js, table, activity (Smart City semantic colors).
  */
 (function () {
   "use strict";
 
   var charts = { line: null, bar: null, pie: null };
+  var datesInitialized = false;
 
   function $(sel, root) {
     return (root || document).querySelector(sel);
@@ -14,15 +15,22 @@
     return typeof n === "number" ? n.toLocaleString(undefined, { maximumFractionDigits: 0 }) : "—";
   }
 
-  function formatMoney(n) {
-    if (typeof n !== "number") return "—";
-    return (
-      "$" +
-      n.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })
-    );
+  function formatKpiValue(kpis, card) {
+    if (!kpis || !card || !card.kpi) return "—";
+    var v = kpis[card.kpi];
+    if (v == null || typeof v === "undefined") return "—";
+    var f = card.format || "int";
+    if (f === "pct") return (typeof v === "number" ? v.toFixed(2) : v) + "%";
+    if (f === "ms") return formatInt(v) + " ms";
+    return formatInt(v);
   }
 
-  function trendHtml(key, trends) {
+  function trendHtmlCard(card, trends) {
+    var key = card.trend_key;
+    var tg = card.trend_good || "up";
+    if (tg === "neutral") {
+      return '<span class="ai-kpi-trend ai-kpi-trend--muted">steady baseline</span>';
+    }
     var t = trends && trends[key];
     if (!t || typeof t.delta_pct !== "number") {
       return '<span class="ai-kpi-trend ai-kpi-trend--muted">—</span>';
@@ -30,7 +38,7 @@
     var up = !!t.up;
     var arrow = up ? "↑" : "↓";
     var good =
-      key === "avg_response_ms" ? !up : key === "success_rate" ? up : up;
+      tg === "up" ? up : tg === "down" ? !up : up;
     var cls = good ? "ai-kpi-trend--up" : "ai-kpi-trend--down";
     var sign = t.delta_pct >= 0 ? "+" : "";
     return (
@@ -51,7 +59,15 @@
       light: light,
       tick: light ? "#64748b" : "#94a3b8",
       grid: light ? "rgba(15,23,42,0.08)" : "rgba(255,255,255,0.06)",
+      tooltipBorder: light ? "rgba(14, 165, 233, 0.35)" : "rgba(14, 165, 233, 0.45)",
     };
+  }
+
+  function paletteFillForDomain(domain, semantic_palette) {
+    var pal = semantic_palette || {};
+    var d = domain && pal[domain] ? domain : "vision";
+    var row = pal[d] || pal.vision || {};
+    return row.fill || "rgba(56, 189, 248, 0.78)";
   }
 
   function destroyCharts() {
@@ -71,17 +87,12 @@
     var line = ch.requests_over_time || { labels: [], values: [] };
     var bar = ch.usage_per_model || { labels: [], values: [] };
     var pie = ch.distribution || [];
-
-    var barPalette = [
-      "rgba(232, 121, 249, 0.75)",
-      "rgba(168, 85, 247, 0.75)",
-      "rgba(56, 189, 248, 0.75)",
-      "rgba(244, 114, 182, 0.75)",
-      "rgba(129, 140, 248, 0.75)",
-      "rgba(34, 211, 238, 0.75)",
-      "rgba(251, 191, 36, 0.72)",
-      "rgba(248, 113, 113, 0.72)",
-    ];
+    var sem = data.semantic_palette || {};
+    var ct = data.chart_theme || {};
+    var lineTheme = ct.requests_line || {};
+    var lineBorder = lineTheme.borderColor || "rgba(14, 165, 233, 0.92)";
+    var lineFill = lineTheme.backgroundColor || "rgba(14, 165, 233, 0.12)";
+    var barDomains = bar.domains || [];
 
     var lineCtx = $("#aiChartLine");
     if (lineCtx) {
@@ -91,15 +102,15 @@
           labels: line.labels,
           datasets: [
             {
-              label: "Requests",
+              label: lineTheme.label || "Throughput",
               data: line.values,
               fill: true,
               tension: 0.35,
               borderWidth: 2,
               pointRadius: 0,
               pointHoverRadius: 4,
-              borderColor: "rgba(232, 121, 249, 0.95)",
-              backgroundColor: "rgba(168, 85, 247, 0.12)",
+              borderColor: lineBorder,
+              backgroundColor: lineFill,
             },
           ],
         },
@@ -113,7 +124,7 @@
               backgroundColor: pal.light ? "rgba(255,255,255,0.96)" : "rgba(15,23,42,0.94)",
               titleColor: pal.light ? "#0f172a" : "#f1f5f9",
               bodyColor: pal.light ? "#334155" : "#cbd5e1",
-              borderColor: "rgba(168, 85, 247, 0.35)",
+              borderColor: pal.tooltipBorder,
               borderWidth: 1,
             },
           },
@@ -134,18 +145,19 @@
 
     var barCtx = $("#aiChartBar");
     if (barCtx) {
+      var vals = bar.values || [];
       charts.bar = new Chart(barCtx, {
         type: "bar",
         data: {
           labels: bar.labels,
           datasets: [
             {
-              label: "Requests",
-              data: bar.values,
+              label: "Load index",
+              data: vals,
               borderRadius: 8,
               borderSkipped: false,
-              backgroundColor: bar.values.map(function (_, i) {
-                return barPalette[i % barPalette.length];
+              backgroundColor: vals.map(function (_, i) {
+                return paletteFillForDomain(barDomains[i] || "vision", sem);
               }),
             },
           ],
@@ -159,7 +171,7 @@
               backgroundColor: pal.light ? "rgba(255,255,255,0.96)" : "rgba(15,23,42,0.94)",
               titleColor: pal.light ? "#0f172a" : "#f1f5f9",
               bodyColor: pal.light ? "#334155" : "#cbd5e1",
-              borderColor: "rgba(168, 85, 247, 0.35)",
+              borderColor: pal.tooltipBorder,
               borderWidth: 1,
             },
           },
@@ -180,16 +192,6 @@
 
     var pieCtx = $("#aiChartPie");
     if (pieCtx && pie.length) {
-      var colors = [
-        "rgba(232, 121, 249, 0.85)",
-        "rgba(168, 85, 247, 0.85)",
-        "rgba(56, 189, 248, 0.85)",
-        "rgba(244, 114, 182, 0.85)",
-        "rgba(129, 140, 248, 0.85)",
-        "rgba(34, 211, 238, 0.85)",
-        "rgba(251, 191, 36, 0.85)",
-        "rgba(248, 113, 113, 0.85)",
-      ];
       charts.pie = new Chart(pieCtx, {
         type: "pie",
         data: {
@@ -201,8 +203,8 @@
               data: pie.map(function (p) {
                 return p.value;
               }),
-              backgroundColor: pie.map(function (_, i) {
-                return colors[i % colors.length];
+              backgroundColor: pie.map(function (p) {
+                return paletteFillForDomain(p.domain || "vision", sem);
               }),
               borderWidth: 2,
               borderColor: pal.light ? "#fff" : "rgba(15,23,42,0.85)",
@@ -225,7 +227,7 @@
               backgroundColor: pal.light ? "rgba(255,255,255,0.96)" : "rgba(15,23,42,0.94)",
               titleColor: pal.light ? "#0f172a" : "#f1f5f9",
               bodyColor: pal.light ? "#334155" : "#cbd5e1",
-              borderColor: "rgba(168, 85, 247, 0.35)",
+              borderColor: pal.tooltipBorder,
               borderWidth: 1,
             },
           },
@@ -234,71 +236,94 @@
     }
   }
 
+  function fallbackKpiCards() {
+    return [
+      {
+        kpi: "total_models",
+        label: "Registered endpoints",
+        hint: "",
+        icon: "◎",
+        format: "int",
+        trend_key: "total_models",
+        trend_good: "neutral",
+      },
+      {
+        kpi: "total_requests",
+        label: "Inference load index",
+        hint: "",
+        icon: "📡",
+        format: "int",
+        trend_key: "total_requests",
+        trend_good: "up",
+      },
+      {
+        kpi: "success_rate",
+        label: "Fleet reliability",
+        hint: "",
+        icon: "✓",
+        format: "pct",
+        trend_key: "success_rate",
+        trend_good: "up",
+      },
+      {
+        kpi: "avg_response_ms",
+        label: "Latency index",
+        hint: "",
+        icon: "⏱",
+        format: "ms",
+        trend_key: "avg_response_ms",
+        trend_good: "down",
+      },
+      {
+        kpi: "online_services",
+        label: "Online services",
+        hint: "",
+        icon: "●",
+        format: "int",
+        trend_key: "online_services",
+        trend_good: "up",
+      },
+      {
+        kpi: "offline_services",
+        label: "Needs attention",
+        hint: "",
+        icon: "⚠",
+        format: "int",
+        trend_key: "offline_services",
+        trend_good: "down",
+      },
+    ];
+  }
+
   function renderKpis(root, data) {
     var kpis = data.kpis || {};
     var trends = data.kpi_trends || {};
-    var cards = [
-      {
-        icon: "🧠",
-        label: "Total models used",
-        key: "total_models",
-        val: formatInt(kpis.total_models),
-        trendKey: "total_models",
-      },
-      {
-        icon: "📡",
-        label: "Total requests",
-        key: "total_requests",
-        val: formatInt(kpis.total_requests),
-        trendKey: "total_requests",
-      },
-      {
-        icon: "✅",
-        label: "Success rate",
-        key: "success_rate",
-        val: (kpis.success_rate != null ? kpis.success_rate.toFixed(2) : "—") + "%",
-        trendKey: "success_rate",
-      },
-      {
-        icon: "⏱",
-        label: "Avg response time",
-        key: "avg_response_ms",
-        val: formatInt(kpis.avg_response_ms) + " ms",
-        trendKey: "avg_response_ms",
-      },
-      {
-        icon: "👥",
-        label: "Active users",
-        key: "active_users",
-        val: formatInt(kpis.active_users),
-        trendKey: "active_users",
-      },
-      {
-        icon: "💰",
-        label: "Revenue (est.)",
-        key: "revenue_usd",
-        val: formatMoney(kpis.revenue_usd),
-        trendKey: "revenue_usd",
-      },
-    ];
+    var cards = data.kpi_cards && data.kpi_cards.length ? data.kpi_cards : fallbackKpiCards();
 
     var html = cards
       .map(function (c) {
+        var dom = String(c.kpi || "").replace(/[^a-z0-9_-]/gi, "") || "metric";
+        var hint = c.hint
+          ? '<div class="ai-kpi-hint">' + escapeHtml(c.hint) + "</div>"
+          : "";
         return (
-          '<article class="ai-kpi-card" data-kpi-key="' +
-          c.key +
+          '<article class="ai-kpi-card ai-kpi-card--domain-' +
+          escapeHtml(dom) +
+          '" data-kpi-key="' +
+          escapeHtml(c.kpi) +
           '">' +
           '<div class="ai-kpi-card-inner">' +
           '<div class="ai-kpi-icon" aria-hidden="true">' +
-          c.icon +
+          (c.icon || "◆") +
           "</div>" +
           '<div class="ai-kpi-label">' +
-          c.label +
+          escapeHtml(c.label || c.kpi) +
           "</div>" +
           '<div class="ai-kpi-value">' +
-          c.val +
+          formatKpiValue(kpis, c) +
           "</div>" +
-          trendHtml(c.trendKey, trends) +
+          hint +
+          trendHtmlCard(c, trends) +
           "</div></article>"
         );
       })
@@ -328,20 +353,27 @@
     return va < vb ? -dir : va > vb ? dir : 0;
   }
 
-  function renderTable(models) {
+  function renderTable(models, ui) {
     var tbody = $("#aiModelTableBody");
     if (!tbody) return;
+    var st = (ui && ui.status_labels) || { active: "Online", down: "Offline" };
     var rows = (models || []).slice().sort(function (a, b) {
       return compareModels(a, b, sortState.key);
     });
     tbody.innerHTML = rows
       .map(function (m) {
         var ok = m.status === "active";
+        var dom = String(m.domain || "vision").replace(/[^a-z0-9_-]/gi, "") || "vision";
+        var label = ok ? st.active : st.down;
         return (
           "<tr data-model-id=\"" +
           String(m.id).replace(/"/g, "&quot;") +
           '">' +
-          "<td><strong>" +
+          "<td><span class=\"ai-domain-dot ai-domain-dot--" +
+          escapeHtml(dom) +
+          '" title="' +
+          escapeHtml(dom) +
+          '" aria-hidden="true"></span><strong>' +
           escapeHtml(m.name) +
           "</strong></td>" +
           "<td>" +
@@ -365,7 +397,7 @@
           '" style="' +
           (ok ? "" : "background:#ef4444;box-shadow:none") +
           '"></span>' +
-          (ok ? "Active" : "Down") +
+          escapeHtml(label) +
           "</span></td></tr>"
         );
       })
@@ -397,9 +429,12 @@
         sortState.key = key;
         sortState.dir = key === "name" || key === "provider" ? 1 : -1;
       }
-      renderTable(modelsRef.current);
+      renderTable(modelsRef.current, uiRef.current);
     });
   }
+
+  var uiRef = { current: null };
+  var modelsRef = { current: [] };
 
   function renderFeed(items) {
     var el = $("#aiActivityFeed");
@@ -427,13 +462,15 @@
       .join("");
   }
 
-  function fillModelFilter(data) {
+  function fillModelFilter(data, ui) {
     var sel = $("#aiFilterModel");
     if (!sel) return;
     var cur = sel.value;
     var models = data.filter_options || data.models || [];
+    var allLabel =
+      (ui && ui.toolbar && ui.toolbar.model_all) || "All endpoints";
     var opts =
-      '<option value="all">All models</option>' +
+      '<option value="all">' + escapeHtml(allLabel) + "</option>" +
       models
         .map(function (m) {
           return (
@@ -451,11 +488,80 @@
     }
   }
 
+  function applyUi(ui) {
+    if (!ui) return;
+    uiRef.current = ui;
+    var tb = ui.toolbar || {};
+    var el;
+
+    el = $("#aiNavTag");
+    if (el && ui.nav_tag) el.textContent = ui.nav_tag;
+    el = $("#aiHeroTitle");
+    if (el && ui.hero_title) el.textContent = ui.hero_title;
+    el = $("#aiHeroSub");
+    if (el && ui.hero_subtitle) el.textContent = ui.hero_subtitle;
+
+    el = $("#aiLblModel");
+    if (el && tb.model_label) el.textContent = tb.model_label;
+    el = $("#aiLblFrom");
+    if (el && tb.from_label) el.textContent = tb.from_label;
+    el = $("#aiLblTo");
+    if (el && tb.to_label) el.textContent = tb.to_label;
+    el = $("#aiLblTheme");
+    if (el && tb.theme) el.textContent = tb.theme;
+    el = $("#aiLblRefresh");
+    if (el && tb.refresh) el.textContent = tb.refresh;
+    el = $("#aiLblAutoRefresh");
+    if (el && tb.auto_refresh != null) {
+      el.textContent = "Auto-refresh (" + tb.auto_refresh + "s)";
+    }
+
+    var pan = ui.panels || {};
+    function setPanel(prefix, p) {
+      if (!p) return;
+      var k = $(prefix + "Kicker");
+      var t = $(prefix + "Title");
+      if (k && p.kicker) k.textContent = p.kicker;
+      if (t && p.title) t.textContent = p.title;
+    }
+    setPanel("#aiPanelLine", pan.line);
+    setPanel("#aiPanelBar", pan.bar);
+    setPanel("#aiPanelPie", pan.pie);
+    setPanel("#aiPanelTable", pan.table);
+    setPanel("#aiPanelFeed", pan.feed);
+
+    var th = ui.table_headers || {};
+    var map = [
+      ["aiThName", th.name],
+      ["aiThProvider", th.provider],
+      ["aiThRequests", th.requests],
+      ["aiThLatency", th.avg_ms],
+      ["aiThErr", th.error_rate],
+      ["aiThStatus", th.status],
+    ];
+    map.forEach(function (pair) {
+      var node = $("#" + pair[0]);
+      if (node && pair[1]) node.textContent = pair[1];
+    });
+  }
+
+  function applyFilterDates(data) {
+    var f = data.filters || {};
+    if (datesInitialized) return;
+    var dff = f.default_date_from;
+    var dtt = f.default_date_to;
+    var i1 = $("#aiDateFrom");
+    var i2 = $("#aiDateTo");
+    if (i1 && dff) i1.value = String(dff).slice(0, 10);
+    if (i2 && dtt) i2.value = String(dtt).slice(0, 10);
+    datesInitialized = true;
+  }
+
   function buildQuery(root) {
     var params = new URLSearchParams();
     var m = $("#aiFilterModel");
-    var df = $('input[name="date_from"]');
-    var dt = $('input[name="date_to"]');
+    var df = $("#aiDateFrom");
+    var dt = $("#aiDateTo");
     if (m && m.value && m.value !== "all") params.set("model", m.value);
     if (df && df.value) params.set("date_from", df.value);
     if (dt && dt.value) params.set("date_to", dt.value);
@@ -482,19 +588,20 @@
     }
   }
 
-  var modelsRef = { current: [] };
-
   function applyDashboard(root, apiUrl, data) {
     modelsRef.current = data.models || [];
-    fillModelFilter(data);
+    applyUi(data.ui);
+    applyFilterDates(data);
+    fillModelFilter(data, data.ui);
     renderKpis(root, data);
-    renderTable(modelsRef.current);
+    renderTable(modelsRef.current, data.ui);
     wireTableSortOnce();
     renderFeed(data.activity);
     buildCharts(root, data);
     var hint = $("#aiGeneratedAt");
+    var gl = (data.ui && data.ui.generated_label) || "Updated";
     if (hint && data.generated_at) {
-      hint.textContent = "Updated · " + data.generated_at;
+      hint.textContent = gl + " · " + data.generated_at;
     }
   }
 
@@ -559,33 +666,40 @@
       $("#aiFilterModel").addEventListener("change", function () {
         fetchSummary(root, apiUrl);
       });
-    $('input[name="date_from"]') &&
-      $('input[name="date_from"]').addEventListener("change", function () {
+    $("#aiDateFrom") &&
+      $("#aiDateFrom").addEventListener("change", function () {
         fetchSummary(root, apiUrl);
       });
-    $('input[name="date_to"]') &&
-      $('input[name="date_to"]').addEventListener("change", function () {
+    $("#aiDateTo") &&
+      $("#aiDateTo").addEventListener("change", function () {
         fetchSummary(root, apiUrl);
       });
 
     var auto = $("#aiAutoRefresh");
-    var refreshMs = 45000;
     var timer = null;
+    function refreshIntervalMs() {
+      var sec = 45;
+      try {
+        var u = uiRef.current && uiRef.current.toolbar && uiRef.current.toolbar.auto_refresh;
+        if (u != null) sec = parseInt(u, 10) || 45;
+      } catch (e1) {}
+      return Math.max(15000, sec * 1000);
+    }
     function armTimer() {
       if (timer) clearInterval(timer);
       timer = null;
       if (auto && auto.checked) {
         timer = setInterval(function () {
           fetchSummary(root, apiUrl);
-        }, refreshMs);
+        }, refreshIntervalMs());
       }
     }
     if (auto) {
       auto.addEventListener("change", armTimer);
-      armTimer();
     }
 
     fetchSummary(root, apiUrl);
+    if (auto) armTimer();
   }
 
   if (document.readyState === "loading") {
