@@ -7,7 +7,7 @@
 {% block extra_head %}
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{% static 'monitoring/fusion_hub_dashboard.css' %}">
   <link rel="stylesheet" href="{% static 'monitoring/fusion_hub_smartcity.css' %}">
   <link rel="stylesheet" href="{% static 'monitoring/road_damage_theme.css' %}">
@@ -20,31 +20,72 @@
   id="aiDashRoot"
   data-ai-theme="dark"
   data-api-url="{% url 'monitoring:ai_dashboard_api_summary' %}"
+  data-chat-url="{% url 'monitoring:ai_dashboard_chatbot' %}"
 >
-  <header class="fh-nav fh-glass" aria-label="Primary">
+  {% csrf_token %}
+  <header class="fh-nav fh-glass ai-dash-header" aria-label="Primary">
     <div class="fh-nav-brand fh-brand-cluster">
+      <span class="ai-hud-pill" title="Synthèse IA"><span class="ai-hud-pill-glyph" aria-hidden="true">✦</span> AI-generated</span>
       <span class="fh-brand-orb" aria-hidden="true"></span>
       <div class="fh-brand-text">
         <h1 class="fh-nav-logo">Smart City Platform</h1>
         <p class="fh-nav-tag" id="aiNavTag">AI analytics · observability</p>
       </div>
     </div>
-    <div class="fh-nav-meta">
+    <div class="fh-nav-meta fh-nav-meta--with-theme">
       <span class="fh-nav-loc" title="Module">Observability · AI APIs</span>
       <span class="fh-clock" id="fhClock" aria-live="polite">--:--:--</span>
+      <button
+        type="button"
+        class="ai-nav-theme-btn"
+        id="aiBtnTheme"
+        title="Basculer clair / sombre"
+      >
+        <span class="ai-theme-icon-stack" aria-hidden="true">
+          <svg class="ai-theme-svg ai-theme-svg--sun" width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="2"/>
+            <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+          <svg class="ai-theme-svg ai-theme-svg--moon" width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </span>
+        <span id="aiLblTheme" class="ai-sr-only">Thème</span>
+      </button>
       <span class="fh-icon-chip" title="Notifications">🔔</span>
       <span class="fh-nav-user" title="Operator" aria-hidden="true"></span>
     </div>
   </header>
 
   <div class="ai-dash ai-dash--analytics">
-    <div style="display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:1rem;margin:0 0 1rem;">
-      <div>
-        <h2 class="ai-dash-hero-title" id="aiHeroTitle">AI Command Center</h2>
-        <p class="ai-dash-sub" id="aiHeroSub">Live fleet health · Smart City Platform</p>
-        <p class="ai-meta-hint" id="aiGeneratedAt"></p>
+    <section class="ai-globe-hero" aria-label="Vue globale Smart City">
+      <div class="ai-globe-hero__glow" aria-hidden="true"></div>
+      <div class="ai-globe-hero__grid" aria-hidden="true"></div>
+      <div class="ai-globe-hero__inner">
+        <div class="ai-globe-hero__copy">
+          <p class="ai-globe-hero__eyebrow">Observability mondiale</p>
+          <h2 class="ai-dash-hero-title" id="aiHeroTitle">AI Command Center</h2>
+          <p class="ai-dash-sub" id="aiHeroSub">Live fleet health · Smart City Platform</p>
+          <p class="ai-meta-hint" id="aiGeneratedAt"></p>
+          <ul class="ai-globe-hero__chips" aria-label="Indicateurs rapides">
+            <li><span class="ai-globe-chip">Live mesh</span></li>
+            <li><span class="ai-globe-chip">Multi-domain AI</span></li>
+            <li><span class="ai-globe-chip">Edge → cloud</span></li>
+          </ul>
+        </div>
+        <div class="ai-globe-hero__stage-wrap">
+          <div class="ai-globe-hero__stage" id="aiGlobeMount">
+            <canvas id="aiGlobeCanvas" width="600" height="600" aria-hidden="true"></canvas>
+            <div class="ai-globe-hero__orbit" aria-hidden="true"></div>
+            <div class="ai-globe-hero__ring ai-globe-hero__ring--a" aria-hidden="true"></div>
+            <div class="ai-globe-hero__ring ai-globe-hero__ring--b" aria-hidden="true"></div>
+            <div class="ai-globe-hero__corner ai-globe-hero__corner--tl" aria-hidden="true"></div>
+            <div class="ai-globe-hero__corner ai-globe-hero__corner--br" aria-hidden="true"></div>
+          </div>
+          <p class="ai-globe-hero__caption">Orbite synthétique · souris ou tactile</p>
+        </div>
       </div>
-    </div>
+    </section>
 
     <div class="ai-dash-toolbar fh-glass" role="toolbar" aria-label="Filters">
       <label class="ai-field">
@@ -66,11 +107,20 @@
           <input type="checkbox" id="aiAutoRefresh" checked>
           <span id="aiLblAutoRefresh">Auto-refresh (45s)</span>
         </label>
-        <button type="button" class="ai-btn ai-btn--ghost" id="aiBtnTheme" title="Toggle light/dark">
-          <span id="aiLblTheme">Theme</span>
+        <span class="ai-toolbar-sep" aria-hidden="true"></span>
+        <button
+          type="button"
+          class="ai-btn ai-btn--toolbar"
+          id="aiBtnFullscreen"
+          aria-pressed="false"
+          title="Mode plein écran"
+        >
+          <span class="ai-btn__ico" aria-hidden="true">⛶</span>
+          <span id="aiLblFullscreen">Plein écran</span>
         </button>
         <button type="button" class="ai-btn ai-btn--primary" id="aiBtnRefresh">
-          <span id="aiLblRefresh">Refresh</span>
+          <span class="ai-btn__ico" aria-hidden="true">↻</span>
+          <span id="aiLblRefresh">Actualiser</span>
         </button>
       </div>
     </div>
@@ -152,6 +202,103 @@
       </aside>
     </div>
   </div>
+
+  <div class="ai-chatbot-dock" id="aiChatbot">
+    <div class="ai-chatbot-dock__backdrop" id="aiChatbotBackdrop" aria-hidden="true"></div>
+    <div class="ai-chatbot-dock__stack">
+      <div
+        class="ai-chatbot-dock__panel"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="aiChatbotTitle"
+        id="aiChatbotPanel"
+        aria-hidden="true"
+      >
+        <header class="ai-chatbot-dock__head">
+          <div class="ai-chatbot-dock__head-row">
+            <span class="ai-chatbot-dock__head-icon" aria-hidden="true">
+              <svg class="ai-chatbot-dock__head-icon-svg" width="44" height="44" viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                  <linearGradient id="aiChatDockHeadGrad" x1="8" y1="4" x2="36" y2="40" gradientUnits="userSpaceOnUse">
+                    <stop stop-color="#22d3ee"/>
+                    <stop offset="1" stop-color="#3b82f6"/>
+                  </linearGradient>
+                </defs>
+                <rect x="4" y="4" width="36" height="36" rx="12" stroke="url(#aiChatDockHeadGrad)" stroke-width="1.25" fill="rgba(15,23,42,0.5)"/>
+                <path d="M14 18h16M14 24h10M22 30h8" stroke="url(#aiChatDockHeadGrad)" stroke-width="1.5" stroke-linecap="round"/>
+                <circle cx="30" cy="14" r="3" fill="#22d3ee" opacity="0.9"/>
+              </svg>
+            </span>
+            <div class="ai-chatbot-dock__head-text">
+              <span class="ai-chatbot-dock__brand">Smart City</span>
+              <h2 class="ai-chatbot-dock__title" id="aiChatbotTitle">Assistant IA</h2>
+              <p class="ai-chatbot-dock__sub">Propulsé par OpenAI · AI Command Center</p>
+            </div>
+          </div>
+        </header>
+        <div class="ai-chatbot-dock__messages-shell">
+          <div
+            id="aiChatbotMessages"
+            class="ai-chatbot-dock__messages"
+            aria-live="polite"
+            aria-label="Fil de conversation"
+          ></div>
+        </div>
+        <p class="ai-chatbot-dock__err" id="aiChatbotErr" role="alert" hidden></p>
+        <footer class="ai-chatbot-dock__composer">
+          <div class="ai-chatbot-dock__io-row">
+            <label class="ai-sr-only" for="aiChatbotInput">Votre message</label>
+            <textarea
+              id="aiChatbotInput"
+              class="ai-chatbot-dock__input"
+              rows="2"
+              maxlength="4000"
+              placeholder="Écrivez votre message..."
+              spellcheck="false"
+              autocomplete="off"
+            ></textarea>
+            <button
+              type="button"
+              class="ai-chatbot-dock__send"
+              id="aiChatbotSend"
+              title="Envoyer (Entrée)"
+              aria-label="Envoyer le message"
+            >
+              <span class="ai-chatbot-dock__send-text">Envoyer</span>
+              <svg class="ai-chatbot-dock__send-ico" width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </button>
+          </div>
+          <div class="ai-chatbot-dock__controls" role="toolbar" aria-label="Actions du chat">
+            <button type="button" class="ai-chatbot-dock__icon-btn" id="aiChatbotClose" title="Fermer" aria-label="Fermer le chat">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2.25" stroke-linecap="round"/>
+              </svg>
+            </button>
+            <button
+              type="button"
+              class="ai-chatbot-dock__icon-btn"
+              id="aiChatbotFab"
+              aria-expanded="false"
+              aria-controls="aiChatbotPanel"
+              title="Réduire"
+              aria-label="Réduire le chat"
+            >
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8.5z" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </button>
+          </div>
+        </footer>
+      </div>
+      <button type="button" class="ai-chatbot-dock__launcher" id="aiChatbotLauncher" title="Ouvrir l’assistant" aria-label="Ouvrir le chat assistant">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8.5z" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+    </div>
+  </div>
 </div>
 {% endblock %}
 
@@ -167,6 +314,8 @@
   }
 })();
 </script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js" crossorigin="anonymous"></script>
+<script src="{% static 'monitoring/ai_dashboard_globe.js' %}"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js" crossorigin="anonymous"></script>
 <script src="{% static 'monitoring/ai_dashboard.js' %}"></script>
 {% endblock %}

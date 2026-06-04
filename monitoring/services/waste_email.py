@@ -50,4 +50,10 @@ def send_waste_alert_email(
         return {"success": True, "mode": "smtp", "message": "Email sent successfully"}
     except Exception as exc:
         logger.exception("waste email failed")
-        return {"success": False, "mode": "smtp", "message": str(exc)}
+        err = str(exc or "").strip()
+        if "WinError 10061" in err or "Connection refused" in err:
+            err = (
+                "SMTP connection refused. Verify EMAIL_HOST / EMAIL_PORT and provider access "
+                "(for Yahoo use smtp.mail.yahoo.com:587 with TLS + app password)."
+            )
+        return {"success": False, "mode": "smtp", "message": err}

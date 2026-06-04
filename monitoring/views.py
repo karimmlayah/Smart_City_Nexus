@@ -10,7 +10,7 @@ from django.contrib import messages
 from django.db.models import Count
 from django.http import FileResponse, JsonResponse, StreamingHttpResponse
 from django.urls import reverse
-from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.csrf import csrf_exempt, ensure_csrf_cookie
 from django.views.decorators.http import require_GET, require_POST
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -2965,6 +2965,7 @@ def stream_page(request, pk):
     return redirect("monitoring:surveillance_dashboard")
 
 
+@ensure_csrf_cookie
 def ai_dashboard(request):
     """Central analytics dashboard for AI model usage (demo data via JSON API)."""
     bootstrap = build_ai_dashboard_summary()
@@ -2987,3 +2988,104 @@ def ai_dashboard_api_summary(request):
     if payload["filters"].get("model") in (None, "", "all"):
         payload["filters"]["model"] = "all"
     return JsonResponse(payload)
+
+
+_AI_DASH_CHAT_SYSTEM = (
+    "Tu es l'assistant du tableau de bord « AI Command Center » d'une plateforme Smart City "
+    "(observabilité IA, surveillance, déchets, UAV, trafic, détection incendie). "
+    "Réponds en français, de façon claire et professionnelle. "
+    "Tu n'as pas accès aux flux capteurs en direct ni aux bases internes : si l'utilisateur demande "
+    "des données live, explique-le et propose des pistes générales ou des bonnes pratiques."
+)
+
+
+@never_cache
+@require_POST
+def ai_dashboard_chatbot(request):
+    """Proxy chat OpenAI — clé OPENAI_API_KEY dans .env uniquement."""
+    api_key = (getattr(django_settings, "OPENAI_API_KEY", None) or "").strip()
+    if not api_key:
+        return JsonResponse(
+            {
+                "error": "OPENAI_API_KEY manquante : ajoutez-la au fichier .env à la racine du projet Django.",
+            },
+            status=503,
+        )
+    try:
+        body = json.loads(request.body.decode("utf-8") or "{}")
+    except json.JSONDecodeError:
+        return JsonResponse({"error": "Corps JSON invalide."}, status=400)
+    raw_messages = body.get("messages")
+    if not isinstance(raw_messages, list) or not raw_messages:
+        return JsonResponse({"error": "Le champ « messages » (liste) est requis."}, status=400)
+
+    cleaned: list[dict[str, str]] = []
+    for item in raw_messages[-32:]:
+        if not isinstance(item, dict):
+            continue
+        role = (item.get("role") or "").strip()
+        content = (item.get("content") or "").strip()
+        if role not in ("user", "assistant") or not content:
+            continue
+        cleaned.append({"role": role, "content": content[:12000]})
+    if not cleaned:
+        return JsonResponse({"error": "Aucun message utilisateur ou assistant valide."}, status=400)
+
+    model = (getattr(django_settings, "OPENAI_CHAT_MODEL", None) or "gpt-4o-mini").strip()
+    api_messages = [{"role": "system", "content": _AI_DASH_CHAT_SYSTEM}] + cleaned
+
+    try:
+        resp = requests.post(
+            "https://api.openai.com/v1/chat/completions",
+            headers={
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json",
+            },
+            json={
+                "model": model,
+                "messages": api_messages,
+                "temperature": 0.55,
+                "max_tokens": 1200,
+            },
+            timeout=90,
+        )
+    except requests.RequestException as exc:
+        logger.warning("OpenAI chat request failed: %s", exc)
+        return JsonResponse(
+            {"error": "Impossible de joindre l'API OpenAI. Réessayez dans un instant."},
+            status=502,
+        )
+
+    try:
+        data = resp.json()
+    except ValueError:
+        data = {}
+
+    if resp.status_code >= 400:
+        err_raw = data.get("error")
+        msg = ""
+        if isinstance(err_raw, dict):
+            msg = (err_raw.get("message") or "").strip()
+        elif isinstance(err_raw, str):
+            msg = err_raw.strip()
+        if not msg:
+            msg = resp.text[:500] if resp.text else "Erreur API OpenAI."
+        logger.warning("OpenAI chat HTTP %s: %s", resp.status_code, msg)
+        return JsonResponse({"error": msg}, status=min(resp.status_code, 502) or 502)
+
+    choices = data.get("choices")
+    reply = ""
+    if isinstance(choices, list) and choices:
+        first = choices[0]
+        if isinstance(first, dict):
+            msg_obj = first.get("message")
+            if isinstance(msg_obj, dict):
+                reply = (msg_obj.get("content") or "").strip()
+    if not reply:
+        return JsonResponse({"error": "Réponse OpenAI vide ou inattendue."}, status=502)
+    return JsonResponse({"reply": reply})
+
+
+def introduction_page(request):
+    """MedinaMind interactive introduction page with webcam + hologram city."""
+    return render(request, "monitoring/introduction.html", {})

@@ -1,0 +1,236 @@
+{% extends "base.html" %}
+
+{% block title %}Smart City — Feux IA ESP32{% endblock %}
+{% block body_class %}cockpit traffic-signal-sc{% endblock %}
+
+{% block extra_head %}
+<style>
+  .ts-page {
+    min-height: calc(100vh - 32px);
+    padding: 24px;
+    color: #e5f0ff;
+  }
+  .ts-hero {
+    display: grid;
+    grid-template-columns: minmax(280px, 420px) 1fr;
+    gap: 18px;
+    align-items: start;
+  }
+  .ts-card {
+    background: linear-gradient(160deg, rgba(15, 23, 42, 0.96), rgba(2, 6, 23, 0.98));
+    border: 1px solid rgba(34, 211, 238, 0.2);
+    border-radius: 18px;
+    box-shadow: 0 18px 48px rgba(0, 0, 0, 0.32);
+    padding: 18px;
+  }
+  .ts-title {
+    margin: 0 0 6px;
+    font-size: clamp(1.35rem, 2vw, 2rem);
+    font-weight: 900;
+    letter-spacing: -0.03em;
+  }
+  .ts-muted {
+    color: #94a3b8;
+    line-height: 1.55;
+  }
+  .ts-field {
+    display: grid;
+    gap: 7px;
+    margin-top: 14px;
+  }
+  .ts-field label {
+    color: #a8c7ff;
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .ts-field input[type="file"],
+  .ts-field input[type="url"] {
+    width: 100%;
+    box-sizing: border-box;
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    border-radius: 12px;
+    background: rgba(2, 6, 23, 0.74);
+    color: #e5f0ff;
+    padding: 11px 12px;
+  }
+  .ts-check {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    margin: 14px 0 0;
+    color: #cbd5e1;
+  }
+  .ts-btn {
+    width: 100%;
+    margin-top: 16px;
+    border: 0;
+    border-radius: 13px;
+    padding: 12px 16px;
+    color: #fff;
+    background: linear-gradient(135deg, #22d3ee, #2563eb);
+    font-weight: 900;
+    cursor: pointer;
+  }
+  .ts-alert {
+    margin-top: 14px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    background: rgba(239, 68, 68, 0.14);
+    border: 1px solid rgba(239, 68, 68, 0.32);
+    color: #fecaca;
+  }
+  .ts-result-head {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+  }
+  .ts-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border-radius: 999px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .ts-pill.red { background: rgba(239, 68, 68, 0.18); color: #fecaca; border: 1px solid rgba(239, 68, 68, 0.45); }
+  .ts-pill.green { background: rgba(34, 197, 94, 0.18); color: #bbf7d0; border: 1px solid rgba(34, 197, 94, 0.45); }
+  .ts-pill.unknown { background: rgba(148, 163, 184, 0.15); color: #cbd5e1; border: 1px solid rgba(148, 163, 184, 0.35); }
+  .ts-preview {
+    background: #000;
+    border: 1px solid rgba(148, 163, 184, 0.16);
+    border-radius: 14px;
+    overflow: hidden;
+    min-height: 320px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .ts-preview img,
+  .ts-preview video {
+    max-width: 100%;
+    max-height: 70vh;
+    display: block;
+  }
+  .ts-metrics {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(120px, 1fr));
+    gap: 10px;
+    margin-top: 14px;
+  }
+  .ts-metric {
+    border-radius: 13px;
+    background: rgba(15, 23, 42, 0.82);
+    border: 1px solid rgba(148, 163, 184, 0.16);
+    padding: 12px;
+  }
+  .ts-metric span {
+    display: block;
+    color: #94a3b8;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    font-weight: 800;
+    margin-bottom: 5px;
+  }
+  .ts-metric strong {
+    font-size: 1.1rem;
+  }
+  .ts-esp {
+    margin-top: 14px;
+    border-radius: 13px;
+    padding: 12px 14px;
+    border: 1px solid rgba(148, 163, 184, 0.18);
+    background: rgba(2, 6, 23, 0.55);
+  }
+  .ts-esp.ok { border-color: rgba(34, 197, 94, 0.45); color: #bbf7d0; }
+  .ts-esp.err { border-color: rgba(239, 68, 68, 0.45); color: #fecaca; }
+  .ts-code {
+    white-space: pre-wrap;
+    word-break: break-word;
+    color: #cbd5e1;
+    font-size: 0.78rem;
+  }
+  @media (max-width: 980px) {
+    .ts-hero { grid-template-columns: 1fr; }
+    .ts-metrics { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<main class="ts-page">
+  <div class="ts-hero">
+    <section class="ts-card">
+      <h1 class="ts-title">Détection feu rouge / vert</h1>
+      <p class="ts-muted">
+        Charge une image ou une vidéo, l’IA détecte l’état du feu, puis envoie automatiquement le résultat à la carte ESP32.
+      </p>
+
+      <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="ts-field">
+          <label for="ts-media">Image ou vidéo</label>
+          <input id="ts-media" name="media" type="file" accept="image/*,video/*" required>
+        </div>
+
+        <div class="ts-field">
+          <label for="ts-esp32">URL ESP32</label>
+          <input id="ts-esp32" name="esp32_url" type="url" value="{{ default_esp32_url }}" placeholder="http://192.168.1.50/signal">
+        </div>
+
+        <button class="ts-btn" type="submit">Analyser et envoyer à l’ESP32</button>
+      </form>
+
+      {% if error %}
+        <div class="ts-alert">{{ error }}</div>
+      {% endif %}
+    </section>
+
+    <section class="ts-card">
+      {% if result and result.success %}
+        <div class="ts-result-head">
+          <div>
+            <h2 class="ts-title" style="font-size:1.25rem;">Résultat IA</h2>
+            <p class="ts-muted" style="margin:0;">Modèle : traffic_sign_detector.pt</p>
+          </div>
+          <span class="ts-pill {{ result.state }}">{{ result.label }}</span>
+        </div>
+
+        <div class="ts-preview">
+          {% if result.media_type == "video" %}
+            <video src="{{ result.annotated_url }}" controls playsinline></video>
+          {% else %}
+            <img src="{{ result.annotated_url }}" alt="Résultat annoté">
+          {% endif %}
+        </div>
+
+        <div class="ts-metrics">
+          <div class="ts-metric"><span>Confiance</span><strong>{{ result.confidence }}</strong></div>
+          <div class="ts-metric"><span>Rouge</span><strong>{{ result.red_count }}</strong></div>
+          <div class="ts-metric"><span>Vert</span><strong>{{ result.green_count }}</strong></div>
+          <div class="ts-metric"><span>Détections</span><strong>{{ result.detection_count }}</strong></div>
+        </div>
+
+        {% if esp32_result %}
+          <div class="ts-esp {% if esp32_result.ok %}ok{% else %}err{% endif %}">
+            <strong>ESP32 :</strong>
+            {% if esp32_result.status_code %}status {{ esp32_result.status_code }} · {% endif %}{{ esp32_result.message }}
+            <div class="ts-code">URL: {{ esp32_result.url }}
+Payload JSON: {{ esp32_result.payload_json }}</div>
+          </div>
+        {% endif %}
+      {% else %}
+        <div class="ts-preview">
+          <p class="ts-muted">Le résultat annoté apparaîtra ici après analyse.</p>
+        </div>
+      {% endif %}
+    </section>
+  </div>
+</main>
+{% endblock %}

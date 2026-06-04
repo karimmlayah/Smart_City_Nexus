@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import uuid
 from pathlib import Path
 
@@ -241,7 +242,12 @@ def waste_send_email(request):
     except json.JSONDecodeError:
         return _json_err("Invalid JSON", status=400)
 
-    to_email = (body.get("to") or "").strip()
+    to_email = (body.get("to") or "").strip() or (
+        getattr(settings, "WASTE_DEFAULT_MUNICIPALITY_EMAIL", "")
+        or os.environ.get("EMAIL_USER", "")
+        or getattr(settings, "EMAIL_HOST_USER", "")
+        or ""
+    )
     subject = (body.get("subject") or "Smart City Waste Alert").strip()
     message = (body.get("message") or "").strip()
     report_id = body.get("report_id")

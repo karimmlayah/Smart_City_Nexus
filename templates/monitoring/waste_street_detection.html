@@ -422,13 +422,13 @@
       <h1>Waste Street Detection</h1>
       <p>
         Upload an image or paste a URL, run AI waste detection, review severity and recommended action,
-        then save a report and alert the municipality by SMS. Configure model path (<code>WASTE_MODEL_PATH</code>)
-        and Twilio in <code>settings.py</code> (see comments in waste services).
+        then save a report and alert the municipality by email. Configure model path (<code>WASTE_MODEL_PATH</code>)
+        and email settings in <code>settings.py</code> (see comments in waste services).
       </p>
     </div>
     <div class="ws-muted-note" style="max-width:300px;">
       POST {{ detect_url }}<br>
-      POST {{ sms_url }}<br>
+      POST {{ email_url }}<br>
       GET/POST {{ reports_url }} · GET {{ statistics_url }}
     </div>
   </header>
@@ -534,14 +534,14 @@
           <span class="ws-spinner" id="ws-spin-save"></span>
           Save Report
         </button>
-        <button type="button" class="ws-btn ws-btn-secondary" id="ws-send-sms">
-          <span class="ws-spinner" id="ws-spin-sms"></span>
-          Send SMS
+        <button type="button" class="ws-btn ws-btn-secondary" id="ws-send-email">
+          <span class="ws-spinner" id="ws-spin-email"></span>
+          Send Email
         </button>
       </div>
       <p class="ws-muted-note">
-        SMS: set <code>TWILIO_ACCOUNT_SID</code>, <code>TWILIO_AUTH_TOKEN</code>, <code>TWILIO_PHONE_NUMBER</code>,
-        <code>MUNICIPALITY_PHONE_NUMBER</code>. If not configured, mock mode logs only.
+        Email: set <code>EMAIL_HOST</code>, <code>EMAIL_PORT</code>, <code>EMAIL_HOST_USER</code>,
+        <code>EMAIL_HOST_PASSWORD</code>. If not configured, mock mode logs only.
       </p>
     </section>
   </div>
@@ -559,7 +559,7 @@
       <div class="ws-stat-card"><div class="lbl">Total reports</div><div class="val" id="ws-st-total">—</div></div>
       <div class="ws-stat-card"><div class="lbl">High severity</div><div class="val" id="ws-st-high">—</div></div>
       <div class="ws-stat-card"><div class="lbl">Detected objects (total)</div><div class="val" id="ws-st-objs">—</div></div>
-      <div class="ws-stat-card"><div class="lbl">SMS sent</div><div class="val" id="ws-st-sms">—</div></div>
+      <div class="ws-stat-card"><div class="lbl">Alerts sent</div><div class="val" id="ws-st-sms">—</div></div>
       <div class="ws-stat-card"><div class="lbl">Most reported zone</div><div class="val" id="ws-st-zone" style="font-size:1.15rem;line-height:1.25;">—</div></div>
     </div>
 
@@ -572,7 +572,7 @@
             <th>Location</th>
             <th>Severity</th>
             <th>Count</th>
-            <th>SMS</th>
+            <th>Email</th>
           </tr>
         </thead>
         <tbody id="ws-reports-body">
@@ -599,7 +599,8 @@
 <script>
 (function () {
   var DETECT_URL = "{{ detect_url|escapejs }}";
-  var SMS_URL = "{{ sms_url|escapejs }}";
+  var EMAIL_URL = "{{ email_url|escapejs }}";
+  var DEFAULT_EMAIL_TO = "{{ default_email_to|escapejs }}";
   var REPORTS_URL = "{{ reports_url|escapejs }}";
   var STATS_URL = "{{ statistics_url|escapejs }}";
 
@@ -627,27 +628,27 @@
   var modalTitleEl = document.getElementById("ws-modal-title");
   var modalBodyEl = document.getElementById("ws-modal-body");
   var modalCloseBtn = document.getElementById("ws-modal-close");
-  function showSmsPopup(ok, title, message) {
+  function showNotificationPopup(ok, title, message) {
     if (!modalEl || !modalTitleEl || !modalBodyEl) {
       window.alert((title || "Notification") + "\n\n" + (message || ""));
       return;
     }
     modalEl.classList.remove("ws-modal-success", "ws-modal-error");
     modalEl.classList.add(ok ? "ws-modal-success" : "ws-modal-error");
-    modalTitleEl.textContent = title || (ok ? "SMS sent" : "SMS failed");
+    modalTitleEl.textContent = title || (ok ? "Email sent" : "Email failed");
     modalBodyEl.textContent = message || "";
     modalEl.classList.add("on");
     modalEl.style.display = "flex";
   }
-  function hideSmsPopup() {
+  function hideNotificationPopup() {
     if (!modalEl) return;
     modalEl.classList.remove("on");
     modalEl.style.display = "";
   }
-  if (modalCloseBtn) modalCloseBtn.addEventListener("click", hideSmsPopup);
+  if (modalCloseBtn) modalCloseBtn.addEventListener("click", hideNotificationPopup);
   if (modalEl) {
     modalEl.addEventListener("click", function (evt) {
-      if (evt.target === modalEl) hideSmsPopup();
+      if (evt.target === modalEl) hideNotificationPopup();
     });
   }
 
@@ -761,7 +762,7 @@
     var locLine = locationLine();
     var imgSrc = lastPayload.source_image_url || (mode === "url" ? (urlEl.value || "").trim() : "(upload)");
     var confPct = pctDisplay(lastPayload.max_confidence).replace("%", "");
-    var smsSt = lastReportSnapshot ? String(lastReportSnapshot.sms_status || "pending") : "—";
+    var emailSt = lastReportSnapshot ? String(lastReportSnapshot.email_status || "pending") : "—";
     ta.value = [
       "Report ID: " + (lastReportSnapshot && lastReportSnapshot.id ? "#" + lastReportSnapshot.id : "(save to assign ID)"),
       "Date/time: " + (lastReportSnapshot && lastReportSnapshot.created_at ? lastReportSnapshot.created_at : new Date().toISOString()),
@@ -772,7 +773,7 @@
       "Severity: " + (lastPayload.severity || "—"),
       "Recommended municipality action: " + (lastPayload.recommended_action || "—"),
       "Notes: " + ((document.getElementById("ws-notes").value || "").trim() || "—"),
-      "SMS status: " + smsSt,
+      "Email status: " + emailSt,
       "",
       "Alert message:",
       buildAlertText(locLine, confPct)
@@ -828,7 +829,7 @@
     } catch (_e) {}
   }
 
-  function formatSmsStatus(s) {
+  function formatEmailStatus(s) {
     if (!s) return "—";
     return String(s).replace(/_/g, " ");
   }
@@ -863,7 +864,7 @@
           "<td>" + escHtml(loc) + "</td>" +
           '<td><span class="' + badgeClass + '">' + escHtml(r.severity || "—") + "</span></td>" +
           "<td>" + escHtml(r.count != null ? r.count : "—") + "</td>" +
-          "<td>" + escHtml(formatSmsStatus(r.sms_status)) + "</td>";
+          "<td>" + escHtml(formatEmailStatus(r.email_status)) + "</td>";
         tbody.appendChild(tr);
       });
       updateIncidentMapFromInputs();
@@ -1047,55 +1048,53 @@
     }
   });
 
-  document.getElementById("ws-send-sms").addEventListener("click", async function () {
+  document.getElementById("ws-send-email").addEventListener("click", async function () {
     var locLine = locationLine();
     if (!locLine || locLine === "Unknown location") {
       showAlert("warn", "Fill city and/or address for the alert location.");
-      showSmsPopup(false, "Localisation manquante", "Ajoute City et/ou Address avant d'envoyer le SMS.");
+      showNotificationPopup(false, "Localisation manquante", "Ajoute City et/ou Address avant d'envoyer l'email.");
       return;
     }
-    var btn = document.getElementById("ws-send-sms");
+    var btn = document.getElementById("ws-send-email");
     btn.disabled = true;
-    setLoading("ws-spin-sms", true);
+    setLoading("ws-spin-email", true);
     hideAlert();
     try {
+      var confPctStr = pctDisplay(lastPayload.max_confidence).replace("%", "");
       var payload = {
-        location: locLine,
-        count: lastPayload.count,
-        confidence: lastPayload.max_confidence,
-        severity: lastPayload.severity,
-        recommended_action: lastPayload.recommended_action,
-        notes: (document.getElementById("ws-notes").value || "").trim()
+        to: DEFAULT_EMAIL_TO,
+        subject: "Smart City Waste Alert",
+        message: buildAlertText(locLine, confPctStr),
       };
       if (lastReportId) payload.report_id = lastReportId;
-      var res = await fetch(SMS_URL, {
+      var res = await fetch(EMAIL_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
       });
       var data = await res.json().catch(function () { return {}; });
       if (data.success) {
-        var okText = "SMS envoye avec succes.";
-        if (data.mode === "mock") okText = "SMS non envoye en reel: mode simulation (mock).";
+        var okText = "Email envoye avec succes.";
+        if (data.mode === "mock") okText = "Email non envoye en reel: mode simulation (mock).";
         if (data.message) okText += "\n" + data.message;
-        showAlert("ok", "SMS queued — " + (data.message || "") + " (" + (data.mode || "") + ")");
-        showSmsPopup(true, data.mode === "mock" ? "SMS simulation" : "SMS envoye", okText);
+        showAlert("ok", "Email queued — " + (data.message || "") + " (" + (data.mode || "") + ")");
+        showNotificationPopup(true, data.mode === "mock" ? "Email simulation" : "Email envoye", okText);
       } else {
-        showAlert("err", data.message || "SMS failed");
-        showSmsPopup(false, "Echec envoi SMS", data.message || "SMS failed");
+        showAlert("err", data.message || "Email failed");
+        showNotificationPopup(false, "Echec envoi email", data.message || "Email failed");
       }
       await loadStatistics();
       await loadReportsTable();
       if (lastReportSnapshot) {
-        lastReportSnapshot.sms_status = data.success ? "sent_or_mock" : "failed";
+        lastReportSnapshot.email_status = data.success ? "sent_or_mock" : "failed";
       }
       refreshAutoReport();
     } catch (e) {
-      showAlert("err", "SMS error — " + e);
-      showSmsPopup(false, "Erreur SMS", String(e));
+      showAlert("err", "Email error — " + e);
+      showNotificationPopup(false, "Erreur email", String(e));
     } finally {
       btn.disabled = false;
-      setLoading("ws-spin-sms", false);
+      setLoading("ws-spin-email", false);
     }
   });
 

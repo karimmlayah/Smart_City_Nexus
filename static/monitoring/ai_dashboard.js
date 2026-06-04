@@ -57,9 +57,9 @@
     var light = root.getAttribute("data-ai-theme") === "light";
     return {
       light: light,
-      tick: light ? "#64748b" : "#94a3b8",
-      grid: light ? "rgba(15,23,42,0.08)" : "rgba(255,255,255,0.06)",
-      tooltipBorder: light ? "rgba(14, 165, 233, 0.35)" : "rgba(14, 165, 233, 0.45)",
+      tick: light ? "#64748b" : "#bae6fd",
+      grid: light ? "rgba(15,23,42,0.08)" : "rgba(56, 189, 248, 0.09)",
+      tooltipBorder: light ? "rgba(37, 99, 235, 0.35)" : "rgba(56, 189, 248, 0.5)",
     };
   }
 
@@ -90,8 +90,8 @@
     var sem = data.semantic_palette || {};
     var ct = data.chart_theme || {};
     var lineTheme = ct.requests_line || {};
-    var lineBorder = lineTheme.borderColor || "rgba(14, 165, 233, 0.92)";
-    var lineFill = lineTheme.backgroundColor || "rgba(14, 165, 233, 0.12)";
+    var lineBorder = lineTheme.borderColor || "rgba(56, 189, 248, 0.95)";
+    var lineFill = lineTheme.backgroundColor || "rgba(56, 189, 248, 0.14)";
     var barDomains = bar.domains || [];
 
     var lineCtx = $("#aiChartLine");
@@ -121,9 +121,9 @@
           plugins: {
             legend: { display: false },
             tooltip: {
-              backgroundColor: pal.light ? "rgba(255,255,255,0.96)" : "rgba(15,23,42,0.94)",
-              titleColor: pal.light ? "#0f172a" : "#f1f5f9",
-              bodyColor: pal.light ? "#334155" : "#cbd5e1",
+              backgroundColor: pal.light ? "rgba(232, 243, 252, 0.98)" : "rgba(8, 14, 22, 0.94)",
+              titleColor: pal.light ? "#0f172a" : "#e8fbff",
+              bodyColor: pal.light ? "#334155" : "#a5e9ff",
               borderColor: pal.tooltipBorder,
               borderWidth: 1,
             },
@@ -168,9 +168,9 @@
           plugins: {
             legend: { display: false },
             tooltip: {
-              backgroundColor: pal.light ? "rgba(255,255,255,0.96)" : "rgba(15,23,42,0.94)",
-              titleColor: pal.light ? "#0f172a" : "#f1f5f9",
-              bodyColor: pal.light ? "#334155" : "#cbd5e1",
+              backgroundColor: pal.light ? "rgba(232, 243, 252, 0.98)" : "rgba(8, 14, 22, 0.94)",
+              titleColor: pal.light ? "#0f172a" : "#e8fbff",
+              bodyColor: pal.light ? "#334155" : "#a5e9ff",
               borderColor: pal.tooltipBorder,
               borderWidth: 1,
             },
@@ -207,7 +207,7 @@
                 return paletteFillForDomain(p.domain || "vision", sem);
               }),
               borderWidth: 2,
-              borderColor: pal.light ? "#fff" : "rgba(15,23,42,0.85)",
+              borderColor: pal.light ? "#f0f7ff" : "rgba(10, 14, 20, 0.9)",
             },
           ],
         },
@@ -224,9 +224,9 @@
               },
             },
             tooltip: {
-              backgroundColor: pal.light ? "rgba(255,255,255,0.96)" : "rgba(15,23,42,0.94)",
-              titleColor: pal.light ? "#0f172a" : "#f1f5f9",
-              bodyColor: pal.light ? "#334155" : "#cbd5e1",
+              backgroundColor: pal.light ? "rgba(232, 243, 252, 0.98)" : "rgba(8, 14, 22, 0.94)",
+              titleColor: pal.light ? "#0f172a" : "#e8fbff",
+              bodyColor: pal.light ? "#334155" : "#a5e9ff",
               borderColor: pal.tooltipBorder,
               borderWidth: 1,
             },
@@ -507,8 +507,7 @@
     if (el && tb.from_label) el.textContent = tb.from_label;
     el = $("#aiLblTo");
     if (el && tb.to_label) el.textContent = tb.to_label;
-    el = $("#aiLblTheme");
-    if (el && tb.theme) el.textContent = tb.theme;
+    syncThemeNavBtn();
     el = $("#aiLblRefresh");
     if (el && tb.refresh) el.textContent = tb.refresh;
     el = $("#aiLblAutoRefresh");
@@ -627,6 +626,329 @@
       });
   }
 
+  function syncThemeNavBtn() {
+    var root = $("#aiDashRoot");
+    var lbl = $("#aiLblTheme");
+    var btn = $("#aiBtnTheme");
+    if (!root || !lbl) return;
+    var light = root.getAttribute("data-ai-theme") === "light";
+    lbl.textContent = light ? "Mode sombre" : "Mode clair";
+    if (btn) {
+      btn.title = light ? "Passer au thème sombre" : "Passer au thème clair";
+    }
+  }
+
+  function initFullscreen(root) {
+    var btn = $("#aiBtnFullscreen");
+    var lbl = $("#aiLblFullscreen");
+    if (!btn || !root) return;
+
+    function sync() {
+      var active =
+        document.fullscreenElement === root ||
+        document.webkitFullscreenElement === root ||
+        document.msFullscreenElement === root;
+      btn.setAttribute("aria-pressed", active ? "true" : "false");
+      if (lbl) {
+        lbl.textContent = active ? "Quitter écran" : "Plein écran";
+      }
+      btn.title = active ? "Quitter le plein écran (Échap)" : "Afficher le tableau de bord en plein écran";
+      root.classList.toggle("ai-dash-root--fullscreen", !!active);
+    }
+
+    btn.addEventListener("click", function () {
+      var fs =
+        document.fullscreenElement ||
+        document.webkitFullscreenElement ||
+        document.msFullscreenElement;
+      if (!fs) {
+        var req =
+          root.requestFullscreen ||
+          root.webkitRequestFullscreen ||
+          root.msRequestFullscreen;
+        if (req) {
+          try {
+            var p = req.call(root);
+            if (p && typeof p.catch === "function") p.catch(function () {});
+          } catch (e1) {}
+        }
+      } else {
+        var exit =
+          document.exitFullscreen ||
+          document.webkitExitFullscreen ||
+          document.msExitFullscreen;
+        if (exit) {
+          try {
+            exit.call(document);
+          } catch (e2) {}
+        }
+      }
+    });
+
+    document.addEventListener("fullscreenchange", sync);
+    document.addEventListener("webkitfullscreenchange", sync);
+    document.addEventListener("MSFullscreenChange", sync);
+    sync();
+  }
+
+  function getCsrfToken() {
+    var inp = document.querySelector("[name=csrfmiddlewaretoken]");
+    if (inp && inp.value) return inp.value;
+    var m = document.cookie.match(/csrftoken=([^;]+)/);
+    return m ? decodeURIComponent(m[1]) : "";
+  }
+
+  function initAiChatbot(root) {
+    var url = root.getAttribute("data-chat-url") || "";
+    if (!url) return;
+    var wrap = document.getElementById("aiChatbot");
+    var panel = document.getElementById("aiChatbotPanel");
+    var launcher = document.getElementById("aiChatbotLauncher");
+    var fab = document.getElementById("aiChatbotFab");
+    var backdrop = document.getElementById("aiChatbotBackdrop");
+    var closeBtn = document.getElementById("aiChatbotClose");
+    var msgsEl = document.getElementById("aiChatbotMessages");
+    var inp = document.getElementById("aiChatbotInput");
+    var sendBtn = document.getElementById("aiChatbotSend");
+    var errEl = document.getElementById("aiChatbotErr");
+    if (!wrap || !launcher || !fab || !msgsEl || !inp || !sendBtn) return;
+
+    var session = [];
+    var open = false;
+    var pending = false;
+
+    var welcome =
+      "Bonjour — assistant OpenAI du AI Command Center. Posez vos questions sur la plateforme Smart City (observabilité, surveillance, déchets, UAV, trafic…). Je n’ai pas accès aux flux capteurs en direct.";
+
+    function setErr(text) {
+      if (!errEl) return;
+      if (text) {
+        errEl.textContent = text;
+        errEl.hidden = false;
+      } else {
+        errEl.textContent = "";
+        errEl.hidden = true;
+      }
+    }
+
+    function syncSendEnabled() {
+      if (!sendBtn || !inp) return;
+      var has = !!(inp.value || "").trim();
+      sendBtn.disabled = pending || !has;
+    }
+
+    function scrollMsgs() {
+      if (!msgsEl) return;
+      var instant = false;
+      try {
+        instant =
+          window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      } catch (e0) {
+        instant = false;
+      }
+      try {
+        msgsEl.scrollTo({
+          top: msgsEl.scrollHeight,
+          behavior: instant ? "auto" : "smooth",
+        });
+      } catch (e1) {
+        msgsEl.scrollTop = msgsEl.scrollHeight;
+      }
+    }
+
+    function stripDisplayMarkdown(s) {
+      if (s == null || s === "") return "";
+      var t = String(s);
+      t = t.replace(/\*\*([^*]+)\*\*/g, "$1");
+      t = t.replace(/\*([^*]+)\*/g, "$1");
+      t = t.replace(/__([^_]+)__/g, "$1");
+      t = t.replace(/`([^`]+)`/g, "$1");
+      t = t.replace(/^#{1,6}\s+/gm, "");
+      return t;
+    }
+
+    function appendBubble(role, text) {
+      var row = document.createElement("div");
+      row.className =
+        "ai-chatbot-dock__row ai-chatbot-dock__row--" + (role === "user" ? "user" : "assistant");
+      var block = document.createElement("div");
+      block.className =
+        "ai-chatbot-dock__msg-block ai-chatbot-dock__msg-block--" + (role === "user" ? "user" : "assistant");
+      var label = document.createElement("span");
+      label.className = "ai-chatbot-dock__msg-label";
+      label.textContent = role === "user" ? "Vous" : "Assistant";
+      var bubble = document.createElement("div");
+      bubble.className =
+        "ai-chatbot-dock__bubble ai-chatbot-dock__bubble--" + (role === "user" ? "user" : "assistant");
+      bubble.textContent = stripDisplayMarkdown(text);
+      block.appendChild(label);
+      block.appendChild(bubble);
+      row.appendChild(block);
+      msgsEl.appendChild(row);
+      row.classList.add("ai-chatbot-dock__row--in");
+    }
+
+    function renderAll() {
+      msgsEl.innerHTML = "";
+      appendBubble("assistant", welcome);
+      if (session.length === 0) {
+        var empty = document.createElement("div");
+        empty.className = "ai-chatbot-dock__empty";
+        empty.setAttribute("role", "status");
+        var et = document.createElement("p");
+        et.className = "ai-chatbot-dock__empty-title";
+        et.textContent = "Prêt à échanger";
+        var eh = document.createElement("p");
+        eh.className = "ai-chatbot-dock__empty-hint";
+        eh.textContent = "Votre conversation apparaîtra ici. Posez une question sur la plateforme.";
+        empty.appendChild(et);
+        empty.appendChild(eh);
+        msgsEl.appendChild(empty);
+      }
+      session.forEach(function (msg) {
+        appendBubble(msg.role, msg.content);
+      });
+      scrollMsgs();
+      syncSendEnabled();
+    }
+
+    function setOpen(v) {
+      open = v;
+      wrap.classList.toggle("ai-chatbot-dock--open", v);
+      fab.setAttribute("aria-expanded", v ? "true" : "false");
+      if (panel) panel.setAttribute("aria-hidden", v ? "false" : "true");
+      document.body.classList.toggle("ai-chat-open", v);
+      if (v) {
+        setTimeout(function () {
+          inp.focus();
+          scrollMsgs();
+          syncSendEnabled();
+        }, 180);
+      }
+    }
+
+    function removeTyping() {
+      var t = document.getElementById("aiChatbotTypingRow");
+      if (t && t.parentNode) t.parentNode.removeChild(t);
+    }
+
+    function showTyping() {
+      removeTyping();
+      var typingRow = document.createElement("div");
+      typingRow.className = "ai-chatbot-dock__row ai-chatbot-dock__row--assistant";
+      typingRow.id = "aiChatbotTypingRow";
+      var block = document.createElement("div");
+      block.className = "ai-chatbot-dock__msg-block ai-chatbot-dock__msg-block--assistant";
+      var label = document.createElement("span");
+      label.className = "ai-chatbot-dock__msg-label";
+      label.textContent = "Assistant";
+      var typing = document.createElement("div");
+      typing.className =
+        "ai-chatbot-dock__bubble ai-chatbot-dock__bubble--assistant ai-chatbot-dock__typing";
+      typing.innerHTML = "<span></span><span></span><span></span>";
+      block.appendChild(label);
+      block.appendChild(typing);
+      typingRow.appendChild(block);
+      msgsEl.appendChild(typingRow);
+      typingRow.classList.add("ai-chatbot-dock__row--in");
+      scrollMsgs();
+    }
+
+    function send() {
+      if (pending) return;
+      var text = (inp.value || "").trim();
+      if (!text) return;
+      setErr("");
+      inp.value = "";
+      session.push({ role: "user", content: text });
+      renderAll();
+
+      showTyping();
+
+      pending = true;
+      syncSendEnabled();
+      inp.disabled = true;
+
+      fetch(url, {
+        method: "POST",
+        credentials: "same-origin",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRFToken": getCsrfToken(),
+          Accept: "application/json",
+        },
+        body: JSON.stringify({ messages: session }),
+      })
+        .then(function (res) {
+          return res.text().then(function (raw) {
+            var data = {};
+            try {
+              data = raw ? JSON.parse(raw) : {};
+            } catch (e) {
+              data = {};
+            }
+            return { ok: res.ok, data: data };
+          });
+        })
+        .then(function (pack) {
+          removeTyping();
+          if (!pack.ok) {
+            var err = (pack.data && pack.data.error) || "Erreur serveur.";
+            setErr(typeof err === "string" ? err : "Erreur.");
+            session.pop();
+            renderAll();
+            return;
+          }
+          var reply = pack.data && pack.data.reply;
+          if (typeof reply === "string" && reply) {
+            session.push({ role: "assistant", content: reply });
+            renderAll();
+          } else {
+            setErr("Réponse inattendue du serveur.");
+            session.pop();
+            renderAll();
+          }
+        })
+        .catch(function () {
+          removeTyping();
+          setErr("Impossible de contacter le serveur.");
+          session.pop();
+          renderAll();
+        })
+        .finally(function () {
+          pending = false;
+          inp.disabled = false;
+          syncSendEnabled();
+          if (open) inp.focus();
+        });
+    }
+
+    renderAll();
+
+    inp.addEventListener("input", syncSendEnabled);
+
+    launcher.addEventListener("click", function () {
+      setOpen(true);
+    });
+    fab.addEventListener("click", function () {
+      if (open) setOpen(false);
+    });
+    if (closeBtn) closeBtn.addEventListener("click", function () { setOpen(false); });
+    if (backdrop) backdrop.addEventListener("click", function () { setOpen(false); });
+
+    document.addEventListener("keydown", function (ev) {
+      if (ev.key === "Escape" && open) setOpen(false);
+    });
+
+    sendBtn.addEventListener("click", send);
+    inp.addEventListener("keydown", function (ev) {
+      if (ev.key === "Enter" && !ev.shiftKey) {
+        ev.preventDefault();
+        if (!sendBtn.disabled) send();
+      }
+    });
+  }
+
   function initClock() {
     function pad(n) {
       return (n < 10 ? "0" : "") + n;
@@ -647,6 +969,9 @@
     if (!root) return;
     var apiUrl = root.getAttribute("data-api-url") || "";
     initClock();
+    initFullscreen(root);
+    initAiChatbot(root);
+    syncThemeNavBtn();
 
     $("#aiBtnRefresh") &&
       $("#aiBtnRefresh").addEventListener("click", function () {
@@ -658,6 +983,7 @@
       themeBtn.addEventListener("click", function () {
         var t = root.getAttribute("data-ai-theme") === "light" ? "dark" : "light";
         root.setAttribute("data-ai-theme", t);
+        syncThemeNavBtn();
         fetchSummary(root, apiUrl);
       });
     }

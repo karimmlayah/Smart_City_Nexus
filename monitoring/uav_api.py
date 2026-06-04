@@ -146,7 +146,7 @@ def uav_analyze(request):
         "analysis_id": rec.pk,
         "zone": zone,
         "surface_m2": surface_m2,
-        "perception_status": "Perception · analyse terminée",
+        "perception_status": "Analyse terminée",
         "primary": {
             "probabilities": probs,
             "probabilities_dict": out_primary["probabilities_dict"],

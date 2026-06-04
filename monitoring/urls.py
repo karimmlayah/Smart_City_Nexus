@@ -1,7 +1,16 @@
 from django.urls import path
 from django.views.generic import RedirectView
 
-from . import camera_settings_api, fire_camera_views, traffic_nexus_views, traffic_violation_views, uav_views, views, waste_views
+from . import (
+    camera_settings_api,
+    fire_camera_views,
+    traffic_nexus_views,
+    traffic_signal_views,
+    traffic_violation_views,
+    uav_views,
+    views,
+    waste_views,
+)
 
 app_name = "monitoring"
 
@@ -9,7 +18,7 @@ urlpatterns = [
     path(
         "",
         RedirectView.as_view(
-            pattern_name="monitoring:surveillance_dashboard",
+            pattern_name="monitoring:ai_dashboard",
             permanent=False,
         ),
         name="home",
@@ -26,6 +35,11 @@ urlpatterns = [
         "traffic/nexus/",
         traffic_nexus_views.traffic_nexus_dashboard,
         name="traffic_nexus_dashboard",
+    ),
+    path(
+        "traffic/signal-control/",
+        traffic_signal_views.traffic_signal_control_page,
+        name="traffic_signal_control",
     ),
     path(
         "traffic/violations/",
@@ -145,10 +159,16 @@ urlpatterns = [
         camera_settings_api.camera_capture_proxy,
         name="camera_capture_proxy",
     ),
+    path("introduction/", views.introduction_page, name="introduction"),
     path("ai-dashboard/", views.ai_dashboard, name="ai_dashboard"),
     path(
         "ai-dashboard/api/summary/",
         views.ai_dashboard_api_summary,
         name="ai_dashboard_api_summary",
+    ),
+    path(
+        "ai-dashboard/api/chat/",
+        views.ai_dashboard_chatbot,
+        name="ai_dashboard_chatbot",
     ),
 ]

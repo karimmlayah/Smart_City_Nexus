@@ -316,8 +316,36 @@ WASTE_MUNICIPALITY_PHONE = MUNICIPALITY_PHONE_NUMBER or (_MODEL_RD_ENV.get("TWIL
 TWILIO_PHONE_NUMBER = TWILIO_PHONE_NUMBER or TWILIO_FROM_NUMBER
 MUNICIPALITY_PHONE_NUMBER = MUNICIPALITY_PHONE_NUMBER or WASTE_MUNICIPALITY_PHONE
 
+# SMTP email settings (waste alerts + other notifications)
+# Uses .env keys shown in project: EMAIL_HOST / EMAIL_PORT / EMAIL_USER / EMAIL_PASSWORD
+EMAIL_HOST = (os.environ.get("EMAIL_HOST", "") or "").strip()
+EMAIL_PORT = int(os.environ.get("EMAIL_PORT", "587") or "587")
+EMAIL_HOST_USER = (
+    os.environ.get("EMAIL_HOST_USER", "")
+    or os.environ.get("EMAIL_USER", "")
+    or ""
+).strip()
+EMAIL_HOST_PASSWORD = (
+    os.environ.get("EMAIL_HOST_PASSWORD", "")
+    or os.environ.get("EMAIL_PASSWORD", "")
+    or ""
+).strip()
+EMAIL_USE_TLS = str(os.environ.get("EMAIL_USE_TLS", "1")).strip().lower() in {"1", "true", "yes", "on"}
+EMAIL_USE_SSL = str(os.environ.get("EMAIL_USE_SSL", "0")).strip().lower() in {"1", "true", "yes", "on"}
+DEFAULT_FROM_EMAIL = (os.environ.get("DEFAULT_FROM_EMAIL", "") or EMAIL_HOST_USER or "noreply@smartcity.local").strip()
+
+# OpenAI — assistant chat (dashboard) + autres modules
+OPENAI_API_KEY = (os.environ.get("OPENAI_API_KEY", "") or "").strip()
+OPENAI_CHAT_MODEL = (os.environ.get("OPENAI_CHAT_MODEL", "") or "gpt-4o-mini").strip()
+# Groq — optionnel (ex. rapports road damage XAI)
+GROQ_API_KEY = (os.environ.get("GROQ_API_KEY", "") or "").strip()
+GROQ_MODEL = (os.environ.get("GROQ_MODEL", "") or "llama-3.3-70b-versatile").strip()
+
 # Email municipalité (optionnel — préremplissage UI)
-WASTE_DEFAULT_MUNICIPALITY_EMAIL = os.environ.get("WASTE_DEFAULT_MUNICIPALITY_EMAIL", "")
+WASTE_DEFAULT_MUNICIPALITY_EMAIL = (
+    os.environ.get("WASTE_DEFAULT_MUNICIPALITY_EMAIL", "")
+    or "hazem.jbali@esprit.tn"
+)
 # Surcharge possible des mots-clés zones sensibles (waste_severity.py)
 WASTE_SENSITIVE_AREA_KEYWORDS: tuple[str, ...] = ()
 
@@ -380,6 +408,36 @@ TRAFFIC_YOLO_EXCLUDED_CLASSES: tuple[str, ...] = tuple(
 TRAFFIC_SIGNAL_GREEN_REF_S = int(os.environ.get("TRAFFIC_SIGNAL_GREEN_REF_S", "45"))
 TRAFFIC_SIGNAL_RED_REF_S = int(os.environ.get("TRAFFIC_SIGNAL_RED_REF_S", "25"))
 
+# Page autonome Feux IA -> ESP32 (upload image/vidéo + traffic_sign_detector.pt)
+_TRAFFIC_SIGNAL_MODEL_CANDIDATES = (
+    BASE_DIR / "hazemproj" / "traffic_sign_detector.pt",
+    BASE_DIR / "hazemproj" / "Smart city" / "traffic_sign_detector.pt",
+)
+_TRAFFIC_SIGNAL_MODEL_DEFAULT = next(
+    (p for p in _TRAFFIC_SIGNAL_MODEL_CANDIDATES if p.is_file()),
+    None,
+)
+TRAFFIC_SIGNAL_MODEL_PATH = (
+    os.environ.get("TRAFFIC_SIGNAL_MODEL_PATH", "")
+    or (str(_TRAFFIC_SIGNAL_MODEL_DEFAULT) if _TRAFFIC_SIGNAL_MODEL_DEFAULT else "")
+)
+TRAFFIC_SIGNAL_CONF = float(os.environ.get("TRAFFIC_SIGNAL_CONF", "0.25"))
+TRAFFIC_SIGNAL_IOU = float(os.environ.get("TRAFFIC_SIGNAL_IOU", "0.45"))
+TRAFFIC_SIGNAL_IMGSZ = int(os.environ.get("TRAFFIC_SIGNAL_IMGSZ", "640"))
+TRAFFIC_SIGNAL_VIDEO_FRAME_STEP = int(os.environ.get("TRAFFIC_SIGNAL_VIDEO_FRAME_STEP", "3"))
+TRAFFIC_SIGNAL_VIDEO_MAX_FRAMES = int(os.environ.get("TRAFFIC_SIGNAL_VIDEO_MAX_FRAMES", "900"))
+TRAFFIC_SIGNAL_RED_LABELS: tuple[str, ...] = tuple(
+    x.strip().lower()
+    for x in os.environ.get("TRAFFIC_SIGNAL_RED_LABELS", "red light,red,rouge").split(",")
+    if x.strip()
+)
+TRAFFIC_SIGNAL_GREEN_LABELS: tuple[str, ...] = tuple(
+    x.strip().lower()
+    for x in os.environ.get("TRAFFIC_SIGNAL_GREEN_LABELS", "green light,green,vert").split(",")
+    if x.strip()
+)
+TRAFFIC_SIGNAL_ESP32_URL = os.environ.get("TRAFFIC_SIGNAL_ESP32_URL", "http://192.168.0.188/signal")
+
 # Alias : même ensemble que la classification (inventaire, pick_model_path)
 ROAD_VISION_MODELS: dict[str, str] = dict(ROAD_VISION_CLASSIFICATION_MODELS)
 ROAD_VISION_MODEL_LABELS: dict[str, str] = dict(ROAD_VISION_CLASSIFICATION_LABELS)
@@ -410,11 +468,8 @@ ROAD_DAMAGE_ALERT_NOTIFY_MIN_SCORE = 0.75
 ROAD_DAMAGE_ALERT_EMAILS = ""
 ROAD_DAMAGE_TELEGRAM_WEBHOOK = ""
 ROAD_DAMAGE_WHATSAPP_WEBHOOK = ""
-# LLM rapport (OpenAI/Groq) — loaded from environment
-OPENAI_API_KEY = (os.environ.get("OPENAI_API_KEY", "") or "").strip()
+# LLM rapport (OpenAI/Groq) — autres usages (XAI, copilot…)
 OPENAI_MODEL = (os.environ.get("OPENAI_MODEL", "gpt-4o-mini") or "gpt-4o-mini").strip()
-GROQ_API_KEY = (os.environ.get("GROQ_API_KEY", "") or "").strip()
-GROQ_MODEL = (os.environ.get("GROQ_MODEL", "llama-3.3-70b-versatile") or "llama-3.3-70b-versatile").strip()
 # Identifiants Sightengine (NE PAS commiter en production)
 SIGHTENGINE_API_USER = "1098611735"
 SIGHTENGINE_API_KEY = "HfQ2aJNEe8WAbk7o3qTLFf5rMHExmxtU"

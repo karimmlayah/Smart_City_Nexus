@@ -74,7 +74,7 @@ def build_recommendations(
     watch: list[str] = []
     ai_limits: list[str] = [
         "L’interprétation repose sur une image UAV unique ; une inspection terrain reste obligatoire.",
-        "Les cartes Grad-CAM / salience sont des indications d’attention du réseau, pas une mesure géotechnique.",
+        "Les cartes d’attention et de mise en évidence reflètent ce que l’IA observe sur l’image ; elles ne remplacent pas une mesure géotechnique.",
         "Les estimations CO₂ sont des ordres de grandeur à usage décisionnel préliminaire.",
     ]
 

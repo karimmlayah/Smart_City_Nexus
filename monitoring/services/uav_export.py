@@ -83,7 +83,7 @@ def build_multipage_pdf() -> bytes:
     story.append(Paragraph("<b>Smart City — Dashboard UAV</b>", styles["Title"]))
     story.append(
         Paragraph(
-            f"Généré le {timezone.now().strftime('%Y-%m-%d %H:%M')} · Modèle Keras.",
+            f"Généré le {timezone.now().strftime('%Y-%m-%d %H:%M')} · Moteur d’analyse plateforme.",
             styles["Normal"],
         )
     )
@@ -149,9 +149,9 @@ def build_multipage_pdf() -> bytes:
             except Exception:
                 pass
 
-        try_img(latest.primary_original_url, "Image UAV")
-        try_img(latest.primary_gradcam_url, "Grad-CAM")
-        try_img(latest.primary_saliency_url, "Salience")
+        try_img(latest.primary_original_url, "Image drone (référence)")
+        try_img(latest.primary_gradcam_url, "Carte d’attention IA")
+        try_img(latest.primary_saliency_url, "Mise en évidence fine")
     else:
         story.append(Paragraph("Aucune analyse enregistrée pour le moment.", styles["Normal"]))
 

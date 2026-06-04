@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}Smart City · UAV Structural Dashboard{% endblock %}
+{% block title %}Smart City · UAV — Pilotage infrastructure{% endblock %}
 {% block body_class %}cockpit fusion-hub-sc road-damage-sc uav-dash-sc{% endblock %}
 
 {% block extra_head %}
@@ -376,7 +376,7 @@
       </div>
     </div>
     <div class="fh-nav-meta">
-      <span class="fh-nav-loc" title="Module">Infrastructure · Structural UAV</span>
+      <span class="fh-nav-loc" title="Module">Infrastructure · analyse drone</span>
       <span class="fh-clock" id="fhClock" aria-live="polite">--:--:--</span>
       <span class="fh-icon-chip" title="Notifications">🔔</span>
       <span class="fh-nav-user" title="Operator" aria-hidden="true"></span>
@@ -390,10 +390,10 @@
       <div class="uav-logo" aria-hidden="true">🛰</div>
       <div>
         <h1>Smart City UAV</h1>
-        <p>Analyse structurelle · drone · CNN + explicabilité</p>
+        <p>Analyse d’infrastructure · drone · vision IA assistée</p>
       </div>
       <div class="uav-acc">
-        <div class="uav-acc-badge">Précision modèle<br><span id="uav-acc-val">—</span></div>
+        <div class="uav-acc-badge">Fiabilité de lecture<br><span id="uav-acc-val">—</span></div>
       </div>
     </div>
 
@@ -429,7 +429,7 @@
       </form>
     </div>
     <p style="font-size:0.72rem;color:var(--uav-muted);line-height:1.45;margin:0;">
-      Modèle : <code style="color:#9ecbff;">models/best_CNN.keras</code> · <code>UAV_MODEL_PATH</code> dans settings.
+      Moteur d’analyse hébergé sur la plateforme (réglage technique côté administration).
     </p>
   </aside>
 
@@ -438,32 +438,32 @@
 
     <div class="uav-strip idle" id="uav-strip">
       <span class="dot"></span>
-      <span id="uav-strip-text">Perception · en attente d’image UAV</span>
+      <span id="uav-strip-text">En attente d’une image drone</span>
     </div>
 
     <section class="uav-tri" aria-label="Visualisation IA">
       <div class="uav-img-card">
         <h3>Image drone</h3>
-        <div class="box"><div class="uav-img-ph" id="uav-ph-o">Image originale après analyse</div><img id="uav-img-o" alt="" style="display:none;" /></div>
+        <div class="box"><div class="uav-img-ph" id="uav-ph-o">Vue drone après traitement</div><img id="uav-img-o" alt="" style="display:none;" /></div>
       </div>
       <div class="uav-img-card">
-        <h3>Grad-CAM (attention CNN)</h3>
-        <div class="box"><div class="uav-img-ph" id="uav-ph-g">Carte de chaleur attention</div><img id="uav-img-g" alt="" style="display:none;" /></div>
+        <h3>Carte d’attention IA</h3>
+        <div class="box"><div class="uav-img-ph" id="uav-ph-g">Zones prioritaires mises en évidence</div><img id="uav-img-g" alt="" style="display:none;" /></div>
       </div>
       <div class="uav-img-card">
-        <h3>Carte de saillance</h3>
-        <div class="box"><div class="uav-img-ph" id="uav-ph-s">Gradient entrée</div><img id="uav-img-s" alt="" style="display:none;" /></div>
+        <h3>Mise en évidence fine</h3>
+        <div class="box"><div class="uav-img-ph" id="uav-ph-s">Détail des signaux visuels analysés</div><img id="uav-img-s" alt="" style="display:none;" /></div>
       </div>
     </section>
 
     <section class="uav-diag-grid" aria-label="Diagnostic">
       <div class="uav-badge-big intact" id="uav-badge">
-        <div class="lbl">Diagnostic structurel</div>
+        <div class="lbl">Synthèse d’analyse</div>
         <div class="state" id="uav-state-txt">—</div>
         <div class="conf" id="uav-conf-txt">—</div>
       </div>
       <div class="uav-bars">
-        <h4>Probabilités par classe</h4>
+        <h4>Répartition par scénario</h4>
         <div id="uav-bars-host"></div>
       </div>
       <div class="uav-side-metrics">
@@ -673,22 +673,22 @@
     var fd = new FormData(document.getElementById("uav-form"));
     var btn = document.getElementById("uav-submit");
     btn.disabled = true;
-    setStrip("Perception · inférence CNN & cartes XAI…", true);
+    setStrip("Analyse en cours · cartes de lecture IA…", true);
     fetch(ANALYZE_URL, { method: "POST", body: fd })
       .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
       .then(function (x) {
         if (!x.j.success) {
           showErr(x.j.message || x.j.error || "Analyse impossible.");
-          setStrip("Perception · erreur", false);
+          setStrip("Analyse interrompue", false);
           return;
         }
         applyDiag(x.j);
-        setStrip(x.j.perception_status || "Perception · analyse terminée", false);
+        setStrip(x.j.perception_status || "Analyse terminée", false);
         loadHistory();
       })
       .catch(function () {
         showErr("Erreur réseau ou serveur.");
-        setStrip("Perception · erreur réseau", false);
+        setStrip("Erreur réseau", false);
       })
       .finally(function () { btn.disabled = false; });
   });

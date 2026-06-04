@@ -1676,8 +1676,95 @@ def _compute_real_xai_cells(frame_bgr: np.ndarray, det: dict, grid: int = 4) -> 
     return {"cells": cells, "faithfulness": faithfulness, "baseline_conf": float(baseline)}
 
 
-def _annotate_street_sign_frame(frame_bgr: np.ndarray, detections, road_zone: dict | None = None):
+def _build_object_heatmap(roi_bgr: np.ndarray, conf: float) -> np.ndarray | None:
+    """
+    Build a CAM-like heatmap for one detection ROI.
+    Fast proxy for Grad-CAM on exported detector pipelines:
+    combines local gradient energy + center prior weighted by detector confidence.
+    """
+    if roi_bgr is None or roi_bgr.size == 0:
+        return None
+    h, w = roi_bgr.shape[:2]
+    if h < 6 or w < 6:
+        return None
+
+    gray = cv2.cvtColor(roi_bgr, cv2.COLOR_BGR2GRAY)
+    gx = cv2.Sobel(gray, cv2.CV_32F, 1, 0, ksize=3)
+    gy = cv2.Sobel(gray, cv2.CV_32F, 0, 1, ksize=3)
+    grad_mag = cv2.magnitude(gx, gy)
+    grad_mag = cv2.GaussianBlur(grad_mag, (0, 0), sigmaX=1.2, sigmaY=1.2)
+    grad_norm = cv2.normalize(grad_mag, None, 0.0, 1.0, cv2.NORM_MINMAX)
+
+    yy, xx = np.mgrid[0:h, 0:w].astype(np.float32)
+    cx = (w - 1) / 2.0
+    cy = (h - 1) / 2.0
+    sx = max(1.0, w * 0.35)
+    sy = max(1.0, h * 0.35)
+    center_prior = np.exp(-(((xx - cx) ** 2) / (2 * sx * sx) + ((yy - cy) ** 2) / (2 * sy * sy)))
+
+    conf_w = float(max(0.15, min(1.0, conf)))
+    cam_like = (0.65 * grad_norm + 0.35 * center_prior) * conf_w
+    cam_like = cv2.normalize(cam_like, None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)
+    return cv2.applyColorMap(cam_like, cv2.COLORMAP_JET)
+
+
+def _overlay_detection_heatmaps(
+    frame_bgr: np.ndarray,
+    detections: list[dict],
+    plate_boxes: list[tuple[int, int, int, int]] | None = None,
+) -> np.ndarray:
+    """
+    Overlay heatmaps for traffic lights and vehicles.
+    Plate boxes are excluded from heatmap blending to protect OCR readability.
+    """
     out = frame_bgr.copy()
+    h, w = out.shape[:2]
+    safe_plate_boxes = plate_boxes or []
+
+    for det in detections:
+        source = str(det.get("source", "")).lower()
+        label = str(det.get("label", "")).lower()
+        is_light = "light" in label and source in {"new_traffic_sign", "traffic_light"}
+        is_car_like = source == "car" or label.startswith("car")
+        if not (is_light or is_car_like):
+            continue
+
+        x1 = max(0, min(w - 1, int(det.get("x1", 0))))
+        y1 = max(0, min(h - 1, int(det.get("y1", 0))))
+        x2 = max(0, min(w, int(det.get("x2", 0))))
+        y2 = max(0, min(h, int(det.get("y2", 0))))
+        if x2 <= x1 or y2 <= y1:
+            continue
+
+        roi = out[y1:y2, x1:x2]
+        heat = _build_object_heatmap(roi, float(det.get("confidence", 0.0)))
+        if heat is None:
+            continue
+
+        alpha = 0.30 if is_light else 0.25
+        blended = cv2.addWeighted(roi, 1.0 - alpha, heat, alpha, 0.0)
+
+        if safe_plate_boxes and is_car_like:
+            mask = np.ones((y2 - y1, x2 - x1), dtype=np.uint8) * 255
+            for px1, py1, px2, py2 in safe_plate_boxes:
+                ix1 = max(x1, int(px1))
+                iy1 = max(y1, int(py1))
+                ix2 = min(x2, int(px2))
+                iy2 = min(y2, int(py2))
+                if ix2 <= ix1 or iy2 <= iy1:
+                    continue
+                mask[iy1 - y1 : iy2 - y1, ix1 - x1 : ix2 - x1] = 0
+            keep_orig = cv2.bitwise_and(roi, roi, mask=cv2.bitwise_not(mask))
+            keep_heat = cv2.bitwise_and(blended, blended, mask=mask)
+            out[y1:y2, x1:x2] = cv2.add(keep_orig, keep_heat)
+        else:
+            out[y1:y2, x1:x2] = blended
+
+    return out
+
+
+def _annotate_street_sign_frame(frame_bgr: np.ndarray, detections, road_zone: dict | None = None):
+    out = _overlay_detection_heatmaps(frame_bgr, detections, plate_boxes=None)
     if road_zone:
         x1 = int(road_zone.get("x1", 0))
         x2 = int(road_zone.get("x2", out.shape[1] - 1))
@@ -2049,6 +2136,22 @@ def analyze_street_sign_video_tracked(
                 "cars": frame_cars,
             })
 
+            # ── CAM-like heatmaps (traffic lights + cars) ────────────────────
+            heatmap_dets = list(sign_dets)
+            for car in frame_cars:
+                heatmap_dets.append(
+                    {
+                        "label": "car",
+                        "confidence": float(car.get("conf", 0.0)),
+                        "x1": int(car["x1"]),
+                        "y1": int(car["y1"]),
+                        "x2": int(car["x2"]),
+                        "y2": int(car["y2"]),
+                        "source": "car",
+                    }
+                )
+            annotated = _overlay_detection_heatmaps(annotated, heatmap_dets, plate_boxes=None)
+
             # ── annotate frame (no stop line yet) ────────────────────────────
             for det in sign_dets:
                 src = det["source"]
@@ -2336,6 +2439,30 @@ def analyze_street_sign_video_with_violations(
                         "plate_box": plate_box,
                     })
                     all_counts["car"] += 1
+
+            # ── CAM-like heatmaps (traffic lights + cars, exclude plate areas) ──
+            heatmap_dets = list(sign_dets)
+            heatmap_plate_boxes = []
+            for car in frame_cars:
+                heatmap_dets.append(
+                    {
+                        "label": "car",
+                        "confidence": float(car.get("conf", 0.0)),
+                        "x1": int(car["x1"]),
+                        "y1": int(car["y1"]),
+                        "x2": int(car["x2"]),
+                        "y2": int(car["y2"]),
+                        "source": "car",
+                    }
+                )
+                pb = car.get("plate_box")
+                if pb:
+                    heatmap_plate_boxes.append(pb)
+            annotated = _overlay_detection_heatmaps(
+                annotated,
+                heatmap_dets,
+                plate_boxes=heatmap_plate_boxes,
+            )
 
             # ── annotate frame ────────────────────────────────────────────────
             for det in sign_dets:
