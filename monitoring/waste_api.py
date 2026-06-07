@@ -8,8 +8,12 @@ import os
 import uuid
 from pathlib import Path
 
-import cv2
-import numpy as np
+import json
+import logging
+import os
+import uuid
+from pathlib import Path
+
 import requests
 from django.conf import settings
 from django.http import JsonResponse
@@ -17,7 +21,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 
 from monitoring.models import WasteReport
-from monitoring.services.waste_detection import detect_waste_bgr
+from monitoring.runtime import ML_UNAVAILABLE_MESSAGE, ml_deps_available
 from monitoring.services.waste_email import send_waste_alert_email
 from monitoring.services.waste_report_service import (
     compute_statistics,
@@ -66,7 +70,10 @@ def _parse_detect_payload(request):
     return None, "missing_image"
 
 
-def _bgr_from_upload(fobj) -> tuple[np.ndarray | None, str | None]:
+def _bgr_from_upload(fobj):
+    import cv2
+    import numpy as np
+
     raw = fobj.read()
     if not raw:
         return None, "empty_upload"
@@ -75,7 +82,9 @@ def _bgr_from_upload(fobj) -> tuple[np.ndarray | None, str | None]:
     return (img, None) if img is not None else (None, "decode_failed")
 
 
-def _bgr_from_url(url: str) -> tuple[np.ndarray | None, str | None]:
+def _bgr_from_url(url: str):
+    import cv2
+    import numpy as np
     if not url.startswith(("http://", "https://")):
         return None, "invalid_url_scheme"
     try:
@@ -113,6 +122,10 @@ def _save_upload_copy(frame_bgr: np.ndarray) -> str | None:
 @csrf_exempt
 @require_http_methods(["POST"])
 def waste_detect(request):
+    if not ml_deps_available():
+        return _json_err(ML_UNAVAILABLE_MESSAGE, status=503)
+    from monitoring.services.waste_detection import detect_waste_bgr
+
     spec, err = _parse_detect_payload(request)
     if spec is None:
         return _json_err(err or "bad_request", extra={"error": err})

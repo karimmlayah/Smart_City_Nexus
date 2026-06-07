@@ -4,15 +4,13 @@ from __future__ import annotations
 
 import logging
 
-import cv2
-import numpy as np
 from django.conf import settings
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 
 from monitoring.models import UavStructuralAnalysis
-from monitoring.services.uav_cnn_inference import predict_structural_state, uav_model_status
+from monitoring.runtime import ML_UNAVAILABLE_MESSAGE, ml_deps_available
 from monitoring.services.uav_export import history_csv_response, history_pdf_response
 from monitoring.services.uav_risk_engine import (
     build_recommendations,
@@ -28,7 +26,10 @@ def _json_err(message: str, status: int = 400, **extra):
     return JsonResponse({"success": False, "message": message, **extra}, status=status)
 
 
-def _bgr_from_upload(fobj) -> tuple[np.ndarray | None, str | None]:
+def _bgr_from_upload(fobj):
+    import cv2
+    import numpy as np
+
     raw = fobj.read()
     if not raw:
         return None, "empty_upload"
@@ -40,6 +41,10 @@ def _bgr_from_upload(fobj) -> tuple[np.ndarray | None, str | None]:
 @csrf_exempt
 @require_http_methods(["POST"])
 def uav_analyze(request):
+    if not ml_deps_available():
+        return _json_err(ML_UNAVAILABLE_MESSAGE, status=503)
+    from monitoring.services.uav_cnn_inference import predict_structural_state
+
     primary_file = request.FILES.get("image_primary") or request.FILES.get("image")
     if not primary_file:
         return _json_err("UAV image file required (image_primary).")
@@ -183,6 +188,16 @@ def uav_analyze(request):
 
 @require_http_methods(["GET"])
 def uav_model_status_api(request):
+    if not ml_deps_available():
+        return JsonResponse(
+            {
+                "success": True,
+                "ready": False,
+                "message": ML_UNAVAILABLE_MESSAGE,
+            }
+        )
+    from monitoring.services.uav_cnn_inference import uav_model_status
+
     return JsonResponse({"success": True, **uav_model_status(verify_load=True)})
 
 

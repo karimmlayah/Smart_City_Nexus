@@ -1,9 +1,10 @@
 from django.urls import path
 
+from monitoring.runtime import ml_deps_available, ml_stub_view
+
 from . import (
     assistant_api,
     camera_settings_api,
-    fire_camera_views,
     mayor_mission_views,
     platform_settings_views,
     traffic_nexus_views,
@@ -13,6 +14,19 @@ from . import (
     views,
     waste_views,
 )
+
+_fire_camera_views = None
+if ml_deps_available():
+    try:
+        from . import fire_camera_views as _fire_camera_views
+    except ImportError:
+        _fire_camera_views = None
+
+
+def _fire_view(name: str, label: str):
+    if _fire_camera_views is not None:
+        return getattr(_fire_camera_views, name)
+    return ml_stub_view(label)
 
 app_name = "monitoring"
 
@@ -102,47 +116,47 @@ urlpatterns = [
     path("fusion/", views.fusion_hub, name="fusion_hub"),
     path(
         "camera/settings/",
-        fire_camera_views.fire_camera_settings,
+        _fire_view("fire_camera_settings", "Fire camera settings"),
         name="camera_settings",
     ),
     path(
         "fire-camera/settings/",
-        fire_camera_views.fire_camera_settings,
+        _fire_view("fire_camera_settings", "Fire camera settings"),
         name="fire_camera_settings",
     ),
     path(
         "fire-camera/settings/patch/",
-        fire_camera_views.fire_camera_settings_patch,
+        _fire_view("fire_camera_settings_patch", "Fire camera settings"),
         name="fire_camera_settings_patch",
     ),
     path(
         "fire-camera/detect/",
-        fire_camera_views.fire_camera_detect,
+        _fire_view("fire_camera_detect", "Fire/smoke detection (ONNX)"),
         name="fire_camera_detect",
     ),
     path(
         "fire-camera/analyze/",
-        fire_camera_views.fire_camera_analyze,
+        _fire_view("fire_camera_analyze", "Fire camera analysis"),
         name="fire_camera_analyze",
     ),
     path(
         "fire-camera/twilio-test/",
-        fire_camera_views.fire_camera_twilio_test,
+        _fire_view("fire_camera_twilio_test", "Fire camera Twilio test"),
         name="fire_camera_twilio_test",
     ),
     path(
         "fire-camera/api/state/",
-        fire_camera_views.fire_camera_settings_state,
+        _fire_view("fire_camera_settings_state", "Fire camera state"),
         name="fire_camera_settings_state",
     ),
     path(
         "api/esp/capture/",
-        fire_camera_views.esp_capture_proxy,
+        _fire_view("esp_capture_proxy", "ESP32 capture"),
         name="esp_capture_proxy",
     ),
     path(
         "api/esp/stream/",
-        fire_camera_views.esp_stream_proxy,
+        _fire_view("esp_stream_proxy", "ESP32 stream"),
         name="esp_stream_proxy",
     ),
     path(

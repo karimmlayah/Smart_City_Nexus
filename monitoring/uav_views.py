@@ -3,11 +3,15 @@
 from django.shortcuts import render
 from django.urls import reverse
 
-from monitoring.services.uav_cnn_inference import uav_model_status
+from monitoring.runtime import ml_deps_available
 
 
 def uav_dashboard_page(request):
-    model_status = uav_model_status(verify_load=False)
+    model_status = {"ready": False, "model_path": "", "message": "UAV model unavailable on this host."}
+    if ml_deps_available():
+        from monitoring.services.uav_cnn_inference import uav_model_status
+
+        model_status = uav_model_status(verify_load=False)
     return render(
         request,
         "monitoring/uav_dashboard.html",

@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Feature unavailable{% endblock %}
+{% block content %}
+<div class="glass" style="max-width:640px;margin:2rem auto;padding:1.5rem;border-radius:16px;">
+  <h1 style="margin-top:0;">{{ feature|default:"ML feature" }}</h1>
+  <p>{{ message }}</p>
+  {% if is_vercel %}
+  <p class="muted small">Deployed on Vercel — use <code>requirements-local.txt</code> on a GPU/ML host for full inference.</p>
+  {% endif %}
+  <p><a href="{% url 'monitoring:home' %}">← Back to home</a></p>
+</div>
+{% endblock %}

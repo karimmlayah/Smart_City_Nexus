@@ -4,7 +4,7 @@ from django.core.exceptions import ValidationError
 from django.core.validators import FileExtensionValidator
 
 from .models import VideoSource
-from .services.fight_classifier import is_youtube_url
+from .youtube_utils import is_youtube_url
 
 _video_extensions = FileExtensionValidator(
     allowed_extensions=["mp4", "mov", "avi", "webm", "mkv"],

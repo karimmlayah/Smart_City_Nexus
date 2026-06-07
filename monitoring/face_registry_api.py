@@ -4,10 +4,7 @@ from rest_framework import parsers, permissions, status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 
-from monitoring.services.face_registry_enroll import (
-    FaceRegistryEnrollError,
-    enroll_face_to_registry,
-)
+from monitoring.runtime import ML_UNAVAILABLE_MESSAGE, ml_deps_available
 
 
 @csrf_exempt
@@ -18,6 +15,20 @@ def face_registry_enroll(request):
     POST /api/face-registry/enroll/
     multipart: name, category, unique_id, crop_url (optional), cropped_face_image, reference_image
     """
+    if not ml_deps_available():
+        return Response(
+            {
+                "success": False,
+                "message": ML_UNAVAILABLE_MESSAGE,
+                "feature": "Face registry enroll (DeepFace)",
+            },
+            status=status.HTTP_503_SERVICE_UNAVAILABLE,
+        )
+    from monitoring.services.face_registry_enroll import (
+        FaceRegistryEnrollError,
+        enroll_face_to_registry,
+    )
+
     data = request.data
     name = (data.get("name") or data.get("full_name") or "").strip()
     category = (data.get("category") or "").strip()

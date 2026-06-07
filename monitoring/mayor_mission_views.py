@@ -11,20 +11,25 @@ from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_exempt, ensure_csrf_cookie
 from django.views.decorators.http import require_GET, require_POST
 
-from monitoring.demo_mayor_service import (
-    ROUND_SECONDS,
-    TOTAL_ROUNDS,
-    build_certificate_payload,
-    finish_mission,
-    get_challenges,
-    get_scenarios,
-    run_classic_round,
-    run_classic_simulation,
-    run_medinamind_round,
-    run_medinamind_simulation,
-)
+from monitoring.runtime import ML_UNAVAILABLE_MESSAGE, ml_deps_available
 
 logger = logging.getLogger(__name__)
+
+TOTAL_ROUNDS = 5
+ROUND_SECONDS = 55
+
+
+def _demo():
+    from monitoring import demo_mayor_service as demo
+
+    return demo
+
+
+def _ml_guard_json():
+    return JsonResponse(
+        {"success": False, "error": ML_UNAVAILABLE_MESSAGE},
+        status=503,
+    )
 
 
 @ensure_csrf_cookie
@@ -48,25 +53,34 @@ def mayor_mission_page(request):
 @never_cache
 @require_GET
 def mayor_mission_challenges(request):
-    return JsonResponse({"challenges": get_challenges(), "total_rounds": TOTAL_ROUNDS})
+    if not ml_deps_available():
+        return _ml_guard_json()
+    demo = _demo()
+    return JsonResponse({"challenges": demo.get_challenges(), "total_rounds": TOTAL_ROUNDS})
 
 
 @never_cache
 @require_GET
 def mayor_mission_scenarios(request):
-    return JsonResponse({"scenarios": get_scenarios(), "total_rounds": TOTAL_ROUNDS})
+    if not ml_deps_available():
+        return _ml_guard_json()
+    demo = _demo()
+    return JsonResponse({"scenarios": demo.get_scenarios(), "total_rounds": TOTAL_ROUNDS})
 
 
 @csrf_exempt
 @never_cache
 @require_POST
 def mayor_mission_run_classic(request):
+    if not ml_deps_available():
+        return _ml_guard_json()
+    demo = _demo()
     body = _parse_body(request)
     challenge_id = (body.get("challenge_id") or body.get("scenario_id") or "").strip()
     if not challenge_id:
         return JsonResponse({"success": False, "error": "challenge_id required."}, status=400)
     timed_out = bool(body.get("timed_out"))
-    result = run_classic_round(challenge_id, timed_out=timed_out)
+    result = demo.run_classic_round(challenge_id, timed_out=timed_out)
     status = 200 if result.get("success") else 404
     return JsonResponse(result, status=status)
 
@@ -75,6 +89,9 @@ def mayor_mission_run_classic(request):
 @never_cache
 @require_POST
 def mayor_mission_run_medinamind(request):
+    if not ml_deps_available():
+        return _ml_guard_json()
+    demo = _demo()
     try:
         body = json.loads(request.body.decode("utf-8") or "{}")
     except json.JSONDecodeError:
@@ -83,7 +100,7 @@ def mayor_mission_run_medinamind(request):
     if not challenge_id:
         return JsonResponse({"success": False, "error": "challenge_id required."}, status=400)
     inputs = body.get("inputs") if isinstance(body.get("inputs"), dict) else {}
-    result = run_medinamind_round(challenge_id, inputs)
+    result = demo.run_medinamind_round(challenge_id, inputs)
     status = 200 if result.get("success") else 404
     return JsonResponse(result, status=status)
 
@@ -92,17 +109,23 @@ def mayor_mission_run_medinamind(request):
 @never_cache
 @require_POST
 def mayor_mission_finish(request):
+    if not ml_deps_available():
+        return _ml_guard_json()
+    demo = _demo()
     try:
         body = json.loads(request.body.decode("utf-8") or "{}")
     except json.JSONDecodeError:
         return JsonResponse({"success": False, "error": "Invalid JSON."}, status=400)
-    return JsonResponse(finish_mission(body))
+    return JsonResponse(demo.finish_mission(body))
 
 
 @csrf_exempt
 @never_cache
 @require_POST
 def mayor_mission_run(request):
+    if not ml_deps_available():
+        return _ml_guard_json()
+    demo = _demo()
     try:
         body = json.loads(request.body.decode("utf-8") or "{}")
     except json.JSONDecodeError:
@@ -113,9 +136,9 @@ def mayor_mission_run(request):
     if not cid:
         return JsonResponse({"ok": False, "error": "challenge_id required."}, status=400)
     if mode == "medinamind":
-        result = run_medinamind_simulation(cid, inputs)
+        result = demo.run_medinamind_simulation(cid, inputs)
     else:
-        result = run_classic_simulation(cid)
+        result = demo.run_classic_simulation(cid)
     status = 200 if result.get("ok") or result.get("success") else 404
     return JsonResponse(result, status=status)
 
@@ -124,13 +147,16 @@ def mayor_mission_run(request):
 @never_cache
 @require_POST
 def mayor_mission_certificate(request):
+    if not ml_deps_available():
+        return _ml_guard_json()
+    demo = _demo()
     try:
         body = json.loads(request.body.decode("utf-8") or "{}")
     except json.JSONDecodeError:
         return JsonResponse({"ok": False, "error": "Invalid JSON."}, status=400)
     state = body.get("game_state") or body.get("result") or body
     mayor_name = (body.get("mayor_name") or "Mayor").strip()[:80]
-    cert = build_certificate_payload(state, mayor_name=mayor_name)
+    cert = demo.build_certificate_payload(state, mayor_name=mayor_name)
     return JsonResponse({"ok": True, "certificate": cert})
 
 

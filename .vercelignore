@@ -1,9 +1,10 @@
-# Local dev artifacts (not needed on Vercel)
+# Exclude heavy local/ML assets from Vercel serverless bundle (project files).
 .env
 .env.*
 db.sqlite3
 *.sqlite3
 media/
+staticfiles/
 __pycache__/
 **/__pycache__/
 *.pyc
@@ -16,3 +17,17 @@ citizen-report-app/node_modules/
 **/.venv/
 **/venv/
 *.log
+
+# Model weights & large ML artifacts (use external storage / ML host)
+*.pt
+*.pth
+*.onnx
+*.keras
+*.h5
+*.safetensors
+models/
+model_road_damage/
+hazemproj/
+traffic_nexus/
+smart_crowd_safety_ai/
+model_fight/

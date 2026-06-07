@@ -30,6 +30,13 @@ SECRET_KEY = os.environ.get(
 
 VERCEL = os.environ.get("VERCEL") == "1"
 VERCEL_ENV = (os.environ.get("VERCEL_ENV") or "").strip()
+IS_VERCEL = VERCEL
+ML_FEATURES_ENABLED = os.environ.get("ML_FEATURES_ENABLED", "0" if VERCEL else "1").strip().lower() in (
+    "1",
+    "true",
+    "yes",
+    "on",
+)
 
 DEBUG = os.environ.get("DEBUG", "False" if VERCEL else "True").strip().lower() in (
     "1",

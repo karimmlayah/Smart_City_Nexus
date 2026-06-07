@@ -30,7 +30,6 @@ from .forms import (
 from .models import Alert, CitizenReclamation, VideoSource
 from .ai_dashboard_payload import build_ai_dashboard_summary
 from .openai_client import create_openai_client, get_openai_api_key, log_openai_key_status
-from .services.detection import get_live_stats, stream_mjpeg_frames
 
 logger = logging.getLogger(__name__)
 
@@ -2970,6 +2969,12 @@ def source_delete(request, pk):
 
 @xframe_options_exempt
 def video_stream(request, pk):
+    from monitoring.runtime import ml_unavailable_http, ml_deps_available
+
+    if not ml_deps_available():
+        return ml_unavailable_http(request, feature="Live video stream (YOLO)")
+    from .services.detection import stream_mjpeg_frames
+
     source = get_object_or_404(VideoSource, pk=pk, is_active=True)
     return StreamingHttpResponse(
         stream_mjpeg_frames(source),
@@ -2979,6 +2984,12 @@ def video_stream(request, pk):
 
 @never_cache
 def stream_stats(request, pk):
+    from monitoring.runtime import ml_unavailable_json, ml_deps_available
+
+    if not ml_deps_available():
+        return ml_unavailable_json("Live stream stats (YOLO)")
+    from .services.detection import get_live_stats
+
     get_object_or_404(VideoSource, pk=pk)
     return JsonResponse(get_live_stats(pk))
 

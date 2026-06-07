@@ -12,7 +12,7 @@ from django.conf import settings
 from django.shortcuts import render
 from django.views.decorators.http import require_http_methods
 
-from monitoring.services.traffic_signal_detection import analyze_traffic_signal_file
+from monitoring.runtime import ml_deps_available, ml_unavailable_http
 
 logger = logging.getLogger(__name__)
 
@@ -91,6 +91,12 @@ def traffic_signal_control_page(request):
     with open(upload_path, "wb") as out:
         for chunk in media.chunks():
             out.write(chunk)
+
+    if not ml_deps_available():
+        context["error"] = "Traffic signal ML analysis is not available on this host."
+        return render(request, "monitoring/traffic_signal_control.html", context)
+
+    from monitoring.services.traffic_signal_detection import analyze_traffic_signal_file
 
     result = analyze_traffic_signal_file(upload_path)
     context["result"] = result
