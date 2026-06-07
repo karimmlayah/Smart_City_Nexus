@@ -3,7 +3,6 @@ from pathlib import Path
 from rest_framework import serializers
 
 from .models import CitizenReclamation
-from .services.media_upload_utils import maybe_convert_heic_upload
 
 
 class CitizenReclamationSerializer(serializers.ModelSerializer):
@@ -60,6 +59,8 @@ class CitizenReclamationSerializer(serializers.ModelSerializer):
 
             if media_type == CitizenReclamation.MediaType.IMAGE and ext in {"heic", "heif"}:
                 try:
+                    from .services.media_upload_utils import maybe_convert_heic_upload
+
                     media = maybe_convert_heic_upload(media)
                     attrs["media"] = media
                     name = getattr(media, "name", "") or name

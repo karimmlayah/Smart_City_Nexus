@@ -1,3 +1,4 @@
-from .detection import get_live_stats, get_model, open_capture, stream_mjpeg_frames
+# Package marker — keep empty so Vercel never loads cv2/YOLO via side-effect imports.
+# Import submodules directly, e.g. ``from monitoring.services.detection import ...``.
 
-__all__ = ["get_live_stats", "get_model", "open_capture", "stream_mjpeg_frames"]
+__all__: list[str] = []
