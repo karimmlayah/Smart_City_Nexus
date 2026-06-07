@@ -737,6 +737,34 @@ def build_map_payload(enriched_rows: list[dict[str, Any]]) -> dict[str, Any]:
     }
 
 
+def priority_sort_rank(pipeline: dict[str, Any]) -> int:
+    """1=Critical/High, 2=Medium, 3=Low, 4=unknown (for Recent Cases ordering)."""
+    final = str(pipeline.get("final_priority") or "").strip().lower()
+    score = float(pipeline.get("ai_score") or 0)
+
+    if final in ("critical", "high") or score >= 70:
+        return 1
+    if final == "medium" or score >= 40:
+        return 2
+    if final == "low" or score < 40:
+        return 3
+    return 4
+
+
+def sort_enriched_by_priority(enriched_rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Sort by priority rank ASC, then created_at DESC within each group."""
+
+    def _key(row: dict[str, Any]) -> tuple[int, float]:
+        pipeline = row.get("pipeline") or {}
+        rank = priority_sort_rank(pipeline)
+        created = getattr(row.get("rec"), "created_at", None)
+        ts = created.timestamp() if created else 0.0
+        return (rank, -ts)
+
+    enriched_rows.sort(key=_key)
+    return enriched_rows
+
+
 def compute_kpis(enriched_rows: list[dict[str, Any]]) -> dict[str, Any]:
     from django.utils import timezone
 

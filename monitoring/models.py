@@ -313,13 +313,26 @@ class CitizenReclamation(models.Model):
         upload_to="reclamations/%Y/%m/",
         validators=[
             FileExtensionValidator(
-                allowed_extensions=["jpg", "jpeg", "png", "webp", "mp4", "mov", "m4v"],
+                allowed_extensions=["jpg", "jpeg", "png", "webp", "heic", "heif", "mp4", "mov", "m4v"],
             )
         ],
     )
     media_type = models.CharField("Type média", max_length=10, choices=MediaType.choices)
-    latitude = models.FloatField("Latitude")
-    longitude = models.FloatField("Longitude")
+    latitude = models.FloatField("Latitude", null=True, blank=True)
+    longitude = models.FloatField("Longitude", null=True, blank=True)
+    address = models.TextField("Adresse / zone", blank=True, default="")
+
+    class LocationSource(models.TextChoices):
+        GPS = "gps", "GPS"
+        MANUAL = "manual", "Manual"
+        MAP = "map", "Map"
+
+    location_source = models.CharField(
+        "Source localisation",
+        max_length=10,
+        choices=LocationSource.choices,
+        default=LocationSource.GPS,
+    )
     description = models.TextField("Description", blank=True, default="")
     category = models.CharField("Catégorie", max_length=20, choices=Category.choices)
     created_at = models.DateTimeField(auto_now_add=True)

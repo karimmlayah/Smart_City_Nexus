@@ -1,9 +1,8 @@
 """
 Inférence CNN structure UAV — modèle Keras (224×224, 3 classes).
 
-Configurer dans settings.py :
-  UAV_MODEL_PATH — chemin vers best_CNN.keras (obligatoire pour l’inférence)
-  UAV_CLASS_LABELS — tuple de 3 libellés FR alignés sur les indices du modèle [0,1,2]
+Configurer dans settings.py / .env :
+  UAV_MODEL_PATH — chemin absolu ou relatif à BASE_DIR vers best_CNN.keras
 
 Les cartes « Grad-CAM » affichées utilisent un gradient par rapport à l’image d’entrée,
 lissé spatialement (compatible Keras 3 ; les gradients vers couches conv peuvent être absents).
@@ -13,6 +12,7 @@ from __future__ import annotations
 import logging
 import threading
 import uuid
+from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
@@ -24,23 +24,110 @@ logger = logging.getLogger(__name__)
 
 _model_lock = threading.Lock()
 _model = None
+_last_load_error: str | None = None
 
 MODEL_IMG_SIZE = 224
+UAV_MODEL_FILENAME = "best_CNN.keras"
+
+_UAV_FALLBACK_RELATIVE = (
+    "models/best_CNN.keras",
+    "media/models/best_CNN.keras",
+    "static/models/best_CNN.keras",
+    "smartcity/models/best_CNN.keras",
+    "ai_models/best_CNN.keras",
+)
 
 
-def _resolve_model_path() -> Path | None:
-    raw = (getattr(settings, "UAV_MODEL_PATH", "") or "").strip()
-    if raw:
-        p = Path(raw).expanduser()
-        return p if p.is_file() else None
+def _base_dir() -> Path:
+    return Path(getattr(settings, "BASE_DIR", Path.cwd()))
+
+
+def _path_from_setting(raw: str) -> Path:
+    p = Path(raw.strip()).expanduser()
+    if not p.is_absolute():
+        p = _base_dir() / p
+    return p
+
+
+def _collect_uav_model_candidates() -> list[Path]:
+    """Ordered unique candidate paths (configured path first, then fallbacks)."""
+    seen: set[str] = set()
+    out: list[Path] = []
+
+    def _add(path: Path) -> None:
+        key = str(path)
+        if key in seen:
+            return
+        seen.add(key)
+        out.append(path)
+
+    configured = (getattr(settings, "UAV_MODEL_PATH", "") or "").strip()
+    if configured:
+        _add(_path_from_setting(configured))
+    for rel in _UAV_FALLBACK_RELATIVE:
+        _add(_base_dir() / rel)
+    return out
+
+
+@lru_cache(maxsize=1)
+def resolve_uav_model_path() -> Path | None:
+    """Return the first existing UAV model file among configured + fallback paths."""
+    for candidate in _collect_uav_model_candidates():
+        if candidate.is_file():
+            logger.debug("UAV model resolved at %s", candidate)
+            return candidate
+    logger.warning(
+        "UAV model not found; checked: %s",
+        ", ".join(str(p) for p in _collect_uav_model_candidates()),
+    )
     return None
 
 
-def get_uav_model():
-    """Charge le modèle une seule fois (thread-safe)."""
-    global _model
-    path = _resolve_model_path()
+def uav_model_status(*, verify_load: bool = False) -> dict[str, Any]:
+    """Backend model readiness for dashboard / API."""
+    attempted = [str(p) for p in _collect_uav_model_candidates()]
+    path = resolve_uav_model_path()
     if path is None:
+        return {
+            "ready": False,
+            "model_path": "",
+            "message": "UAV model missing",
+            "attempted_paths": attempted,
+        }
+
+    if not verify_load:
+        return {
+            "ready": True,
+            "model_path": str(path),
+            "message": "UAV model ready",
+            "attempted_paths": attempted,
+        }
+
+    model = get_uav_model()
+    if model is None:
+        return {
+            "ready": False,
+            "model_path": str(path),
+            "message": "UAV model found but not loaded",
+            "load_error": _last_load_error or "",
+            "attempted_paths": attempted,
+        }
+
+    return {
+        "ready": True,
+        "model_path": str(path),
+        "message": "UAV model ready",
+        "input_shape": getattr(model, "input_shape", None),
+        "attempted_paths": attempted,
+    }
+
+
+def get_uav_model():
+    """Load the model once (thread-safe)."""
+    global _model, _last_load_error
+    path = resolve_uav_model_path()
+    if path is None:
+        _last_load_error = None
         return None
     with _model_lock:
         if _model is None:
@@ -52,9 +139,11 @@ def get_uav_model():
                 except Exception:
                     pass
                 _model = tf.keras.models.load_model(str(path), compile=False)
+                _last_load_error = None
                 logger.info("UAV Keras model loaded from %s", path)
             except Exception as exc:
-                logger.exception("UAV model load failed: %s", exc)
+                _last_load_error = str(exc)
+                logger.exception("UAV model load failed for %s: %s", path, exc)
                 return None
         return _model
 
@@ -132,7 +221,6 @@ def compute_gradcam_proxy(batch_224: np.ndarray, pred_idx: int) -> np.ndarray:
     """
     g224 = _input_gradient_map(batch_224, pred_idx)
     g = np.maximum(g224, 0)
-    # Réduit le bruit haute fréquence (approximation d’une carte d’attention spatiale).
     g = cv2.GaussianBlur(g.astype(np.float32), (21, 21), 0)
     return g
 
@@ -142,17 +230,37 @@ def compute_saliency_map(batch_224: np.ndarray, pred_idx: int) -> np.ndarray:
     return np.maximum(_input_gradient_map(batch_224, pred_idx), 0)
 
 
+def _model_missing_payload() -> dict[str, Any]:
+    status = uav_model_status()
+    attempted = status.get("attempted_paths") or []
+    path = status.get("model_path") or ""
+    load_error = (status.get("load_error") or "").strip()
+
+    if path and load_error:
+        return {
+            "success": False,
+            "error": "model_load_failed",
+            "message": f"UAV model found at {path} but failed to load. Check TensorFlow/Keras installation.",
+            "model_path": path,
+            "load_error": load_error,
+            "attempted_paths": attempted,
+        }
+
+    return {
+        "success": False,
+        "error": "model_missing",
+        "message": "Set UAV_MODEL_PATH to the best_CNN.keras file.",
+        "attempted_paths": attempted,
+    }
+
+
 def predict_structural_state(frame_bgr: np.ndarray) -> dict[str, Any]:
     """
     Prédit les probabilités + Grad-CAM + salience + URLs relatives sauvegardées sous MEDIA_ROOT/uav_analysis/.
     """
     model = get_uav_model()
     if model is None:
-        return {
-            "success": False,
-            "error": "model_missing",
-            "message": "Modèle UAV absent : définissez UAV_MODEL_PATH vers best_CNN.keras.",
-        }
+        return _model_missing_payload()
 
     batch, rgb_orig = preprocess_bgr_for_model(frame_bgr)
     probs = model.predict(batch, verbose=0)[0]

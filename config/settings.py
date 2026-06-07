@@ -10,7 +10,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 try:
     from dotenv import load_dotenv, dotenv_values
 
-    load_dotenv(BASE_DIR / ".env")
+    # Local dev: .env overrides empty shell vars. Vercel uses platform env vars only.
+    if os.environ.get("VERCEL") != "1":
+        load_dotenv(BASE_DIR / ".env", override=True)
 except ImportError:
     load_dotenv = None
     dotenv_values = None
@@ -21,11 +23,43 @@ if dotenv_values and _MODEL_RD_ENV_PATH.is_file():
     _vals = dotenv_values(_MODEL_RD_ENV_PATH)
     _MODEL_RD_ENV = {str(k): str(v) for k, v in _vals.items() if k and v is not None}
 
-SECRET_KEY = "django-insecure-smartcity-dev-change-in-production"
+SECRET_KEY = os.environ.get(
+    "SECRET_KEY",
+    "django-insecure-smartcity-dev-change-in-production",
+)
 
-DEBUG = True
+VERCEL = os.environ.get("VERCEL") == "1"
+VERCEL_ENV = (os.environ.get("VERCEL_ENV") or "").strip()
 
-ALLOWED_HOSTS = ["*"]
+DEBUG = os.environ.get("DEBUG", "False" if VERCEL else "True").strip().lower() in (
+    "1",
+    "true",
+    "yes",
+    "on",
+)
+
+_allowed_hosts_env = (os.environ.get("ALLOWED_HOSTS") or "").strip()
+if _allowed_hosts_env:
+    ALLOWED_HOSTS = [h.strip() for h in _allowed_hosts_env.split(",") if h.strip()]
+else:
+    ALLOWED_HOSTS = ["localhost", "127.0.0.1", ".vercel.app"]
+    if DEBUG and not VERCEL:
+        ALLOWED_HOSTS.extend(["0.0.0.0"])
+
+CSRF_TRUSTED_ORIGINS: list[str] = []
+_csrf_env = (os.environ.get("CSRF_TRUSTED_ORIGINS") or "").strip()
+if _csrf_env:
+    CSRF_TRUSTED_ORIGINS.extend(h.strip() for h in _csrf_env.split(",") if h.strip())
+_vercel_url = (os.environ.get("VERCEL_URL") or "").strip()
+if _vercel_url:
+    CSRF_TRUSTED_ORIGINS.append(f"https://{_vercel_url}")
+_vercel_prod = (os.environ.get("VERCEL_PROJECT_PRODUCTION_URL") or "").strip()
+if _vercel_prod:
+    CSRF_TRUSTED_ORIGINS.append(f"https://{_vercel_prod}")
+CSRF_TRUSTED_ORIGINS = list(dict.fromkeys(CSRF_TRUSTED_ORIGINS))
+
+if VERCEL:
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -50,6 +84,10 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
+if not DEBUG:
+    _sec_idx = MIDDLEWARE.index("django.middleware.security.SecurityMiddleware")
+    MIDDLEWARE.insert(_sec_idx + 1, "whitenoise.middleware.WhiteNoiseMiddleware")
+
 ROOT_URLCONF = "config.urls"
 
 TEMPLATES = [
@@ -70,12 +108,25 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "config.wsgi.application"
 
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+DATABASE_URL = (os.environ.get("DATABASE_URL") or "").strip()
+if DATABASE_URL:
+    import dj_database_url
+
+    DATABASES = {
+        "default": dj_database_url.config(
+            default=DATABASE_URL,
+            conn_max_age=600,
+            conn_health_checks=True,
+            ssl_require=not DEBUG,
+        )
     }
-}
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "db.sqlite3",
+        }
+    }
 
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
@@ -91,12 +142,28 @@ USE_TZ = True
 
 STATIC_URL = "/static/"
 STATICFILES_DIRS = [BASE_DIR / "static"]
+STATIC_ROOT = BASE_DIR / "staticfiles"
+
+if not DEBUG:
+    STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
 # Slash initial : évite les URLs résolues sous /reclamations/.../ au lieu de la racine site.
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
-FILE_UPLOAD_TEMP_DIR = BASE_DIR / "media" / "tmp_uploads"
-FILE_UPLOAD_TEMP_DIR.mkdir(parents=True, exist_ok=True)
+
+# Optional external media for production (Vercel has no persistent disk).
+# Example later: django-cloudinary-storage + CLOUDINARY_URL in env.
+DEFAULT_FILE_STORAGE = os.environ.get(
+    "DEFAULT_FILE_STORAGE",
+    "django.core.files.storage.FileSystemStorage",
+)
+
+if VERCEL:
+    FILE_UPLOAD_TEMP_DIR = "/tmp/medinamind_uploads"
+    os.makedirs(FILE_UPLOAD_TEMP_DIR, exist_ok=True)
+else:
+    FILE_UPLOAD_TEMP_DIR = BASE_DIR / "media" / "tmp_uploads"
+    FILE_UPLOAD_TEMP_DIR.mkdir(parents=True, exist_ok=True)
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
@@ -136,6 +203,17 @@ DATA_UPLOAD_MAX_MEMORY_SIZE = 104_857_600
 FILE_UPLOAD_MAX_MEMORY_SIZE = 104_857_600
 
 CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_HEADERS = [
+    "accept",
+    "accept-encoding",
+    "authorization",
+    "content-type",
+    "dnt",
+    "origin",
+    "user-agent",
+    "x-csrftoken",
+    "x-requested-with",
+]
 
 REST_FRAMEWORK = {
     "DEFAULT_PARSER_CLASSES": [
@@ -350,10 +428,18 @@ WASTE_DEFAULT_MUNICIPALITY_EMAIL = (
 # Surcharge possible des mots-clés zones sensibles (waste_severity.py)
 WASTE_SENSITIVE_AREA_KEYWORDS: tuple[str, ...] = ()
 
-# Dashboard UAV — CNN Keras `best_CNN.keras` (224×224, 3 classes)
-# Chemin absolu ou sous BASE_DIR/models/ ; vide → erreur API explicite.
-_UAV_KERAS = BASE_DIR / "models" / "best_CNN.keras"
-UAV_MODEL_PATH = str(_UAV_KERAS) if _UAV_KERAS.is_file() else os.environ.get("UAV_MODEL_PATH", "")
+# Geocoding (Nominatim / OpenStreetMap — no API key required)
+GEOCODING_NOMINATIM_URL = os.environ.get("GEOCODING_NOMINATIM_URL", "https://nominatim.openstreetmap.org")
+GEOCODING_USER_AGENT = os.environ.get("GEOCODING_USER_AGENT", "MedinaMind/1.0 (smartcity)")
+# Chemin absolu ou relatif à BASE_DIR ; résolution avec repli à l'exécution (uav_cnn_inference).
+_uav_env = (os.environ.get("UAV_MODEL_PATH", "") or "").strip()
+if _uav_env:
+    _uav_cfg = Path(_uav_env).expanduser()
+    if not _uav_cfg.is_absolute():
+        _uav_cfg = BASE_DIR / _uav_cfg
+    UAV_MODEL_PATH = str(_uav_cfg)
+else:
+    UAV_MODEL_PATH = str(BASE_DIR / "models" / "best_CNN.keras")
 # Réservé si vous réintroduisez un vrai Grad-CAM conv ; l’UI utilise un proxy gradient-entrée lissé.
 UAV_GRADCAM_LAYER = os.environ.get("UAV_GRADCAM_LAYER", "conv2d_3")
 # Libellés FR pour les 3 sorties du modèle [indice 0, 1, 2] — alignez avec votre entraînement.

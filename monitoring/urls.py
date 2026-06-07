@@ -83,6 +83,11 @@ urlpatterns = [
         name="reclamation_ai_detail",
     ),
     path(
+        "reclamations/<int:pk>/mission-done/",
+        views.reclamation_mission_done,
+        name="reclamation_mission_done",
+    ),
+    path(
         "reclamations/<int:pk>/ai/live/",
         views.reclamation_ai_live,
         name="reclamation_ai_live",

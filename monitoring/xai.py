@@ -219,7 +219,7 @@ def occlusion_sensitivity_image(
             "detection_label_fr": "—",
         }
 
-    model, _req, _used, _err = vision_analysis._load_yolo(model_key)
+    model, backend, _req, _used, _err = vision_analysis._load_vision_model(model_key)
 
     # Pas de modèle : superposition honnête (pas vendue comme attention YOLO)
     if model is None:
@@ -301,7 +301,9 @@ def occlusion_sensitivity_image(
     if cached:
         return cached
 
-    baseline = vision_analysis.baseline_predict_confidence(frame, model, conf=infer_c)
+    baseline = vision_analysis.baseline_predict_confidence(
+        frame, model, conf=infer_c, backend=backend
+    )
     h, w = frame.shape[:2]
     grid_y = grid_n
     grid_x = grid_n
@@ -321,7 +323,9 @@ def occlusion_sensitivity_image(
             y2 = min(h, y1 + occ_h)
             occ = frame.copy()
             occ[y1:y2, x1:x2] = 127
-            conf_occ = vision_analysis.baseline_predict_confidence(occ, model, conf=infer_c)
+            conf_occ = vision_analysis.baseline_predict_confidence(
+                occ, model, conf=infer_c, backend=backend
+            )
             impact = max(0.0, float(baseline) - float(conf_occ))
             heat_small[gy, gx] = impact
 

@@ -712,6 +712,29 @@
     return m ? decodeURIComponent(m[1]) : "";
   }
 
+  var AI_ASSISTANT_NOT_CONFIGURED =
+    "AI assistant is not configured. Please contact the administrator.";
+  var AI_ASSISTANT_UNAVAILABLE =
+    "The AI assistant is temporarily unavailable. Please try again later.";
+
+  function aiChatbotErrorMessage(pack) {
+    var data = (pack && pack.data) || {};
+    if (data.code === "assistant_not_configured") {
+      return AI_ASSISTANT_NOT_CONFIGURED;
+    }
+    if (data.code === "assistant_unavailable") {
+      return AI_ASSISTANT_UNAVAILABLE;
+    }
+    if (pack && pack.status === 503) {
+      return AI_ASSISTANT_NOT_CONFIGURED;
+    }
+    var err = data.error;
+    if (typeof err === "string" && err && !/\bsk-/i.test(err) && !/api key/i.test(err)) {
+      return err;
+    }
+    return AI_ASSISTANT_UNAVAILABLE;
+  }
+
   function initAiChatbot(root) {
     var url = root.getAttribute("data-chat-url") || "";
     if (!url) return;
@@ -901,14 +924,13 @@
             } catch (e) {
               data = {};
             }
-            return { ok: res.ok, data: data };
+            return { ok: res.ok, status: res.status, data: data };
           });
         })
         .then(function (pack) {
           removeTyping();
           if (!pack.ok) {
-            var err = (pack.data && pack.data.error) || "Server error.";
-            setErr(typeof err === "string" ? err : "Something went wrong.");
+            setErr(aiChatbotErrorMessage(pack));
             session.pop();
             renderAll();
             return;
@@ -925,7 +947,7 @@
         })
         .catch(function () {
           removeTyping();
-          setErr("Unable to reach the server.");
+          setErr(AI_ASSISTANT_UNAVAILABLE);
           session.pop();
           renderAll();
         })

@@ -56,9 +56,15 @@ def pick_model_path(model_key: str | None) -> tuple[str | None, str, str]:
 
 
 def resolve_model_path(model_key: str | None = None) -> str | None:
-    """Chemin du fichier .pt pour une clé de registre (avec repli si manquant)."""
+    """Chemin du fichier modèle pour une clé de registre (avec repli si manquant)."""
     path, _, _ = pick_model_path(model_key)
     return path
+
+
+def _model_backend(path: str | None) -> str:
+    if not path:
+        return "yolo"
+    return "fasterrcnn" if Path(path).suffix.lower() == ".pth" else "yolo"
 
 
 @lru_cache(maxsize=16)
@@ -125,18 +131,42 @@ def _stub_result(reason: str, media_type: str, meta: dict[str, Any] | None = Non
     return out
 
 
-def _load_yolo(model_key: str | None = None):
+@lru_cache(maxsize=16)
+def _fasterrcnn_cached(path: str):
+    from monitoring.services.fasterrcnn_inference import load_fasterrcnn
+
+    return load_fasterrcnn(path)
+
+
+def _load_vision_model(model_key: str | None = None):
+    """Charge YOLO (.pt) ou Faster R-CNN (.pth). Retourne (model, backend, req_k, used_k, err)."""
+    path, req_k, used_k = pick_model_path(model_key)
+    if not path:
+        return None, "yolo", req_k, used_k, "model_file_missing"
+
+    backend = _model_backend(path)
+    if backend == "fasterrcnn":
+        try:
+            return _fasterrcnn_cached(path), backend, req_k, used_k, None
+        except Exception as exc:
+            return None, backend, req_k, used_k, f"model_load_error:{exc}"
+
     try:
         import ultralytics  # noqa: F401
     except ImportError:
-        return None, None, None, "ultralytics_not_installed"
-    path, req_k, used_k = pick_model_path(model_key)
-    if not path:
-        return None, req_k, used_k, "model_file_missing"
+        return None, backend, req_k, used_k, "ultralytics_not_installed"
     try:
-        return _yolo_cached(path), req_k, used_k, None
+        return _yolo_cached(path), backend, req_k, used_k, None
     except Exception as exc:
-        return None, req_k, used_k, f"model_load_error:{exc}"
+        return None, backend, req_k, used_k, f"model_load_error:{exc}"
+
+
+def _load_yolo(model_key: str | None = None):
+    """Compatibilité — délègue à _load_vision_model (YOLO uniquement si backend yolo)."""
+    model, backend, req_k, used_k, err = _load_vision_model(model_key)
+    if backend != "yolo":
+        return model, req_k, used_k, err
+    return model, req_k, used_k, err
 
 
 def _names_map(model) -> dict[int, str]:
@@ -189,7 +219,18 @@ def _save_plot_bgr_to_analysis(plot_bgr) -> str | None:
         return None
 
 
-def predict_image_bgr(model, frame_bgr, conf: float | None = None, iou: float | None = None) -> dict[str, Any]:
+def predict_image_bgr(
+    model,
+    frame_bgr,
+    conf: float | None = None,
+    iou: float | None = None,
+    backend: str = "yolo",
+) -> dict[str, Any]:
+    if backend == "fasterrcnn":
+        from monitoring.services.fasterrcnn_inference import predict_fasterrcnn_bgr
+
+        return predict_fasterrcnn_bgr(model, frame_bgr, conf=conf)
+
     conf = conf if conf is not None else float(getattr(settings, "ROAD_DAMAGE_YOLO_CONF", 0.25))
     iou = iou if iou is not None else float(getattr(settings, "ROAD_DAMAGE_YOLO_IOU", 0.45))
     imgsz = int(getattr(settings, "ROAD_DAMAGE_YOLO_IMGSZ", 640))
@@ -244,13 +285,14 @@ def analyze_image_file(
     if not abs_path.is_file():
         return _stub_result("file_not_found", media_type, {"yolo_conf_threshold": conf_effective})
 
-    model, req_k, used_k, err = _load_yolo(model_key)
+    model, backend, req_k, used_k, err = _load_vision_model(model_key)
     path_used = pick_model_path(model_key)[0]
     meta = {
         "model_key_requested": req_k,
         "model_key_resolved": used_k,
         "model_fallback": req_k != used_k,
         "model_path_used": path_used,
+        "model_backend": backend,
         "yolo_conf_threshold": conf_effective,
     }
     if model is None:
@@ -260,15 +302,18 @@ def analyze_image_file(
     if frame is None:
         return _stub_result("cv2_imread_failed", media_type, meta)
 
-    pred = predict_image_bgr(model, frame, conf=conf)
+    pred = predict_image_bgr(model, frame, conf=conf, backend=backend)
     seg_path = _segmentation_model_path()
     meta["segmentation_model_path_used"] = seg_path
     meta["segmentation_masks_drawn"] = False
     annotated_url = None
     annotated_seg_url = None
     try:
-        annotated_url = _save_plot_bgr_to_analysis(_result_plot_bgr(pred["raw_result"]))
-        if seg_path:
+        if backend == "fasterrcnn":
+            annotated_url = _save_plot_bgr_to_analysis(pred.get("annotated_bgr"))
+        else:
+            annotated_url = _save_plot_bgr_to_analysis(_result_plot_bgr(pred["raw_result"]))
+        if seg_path and backend == "yolo":
             try:
                 imgsz = int(getattr(settings, "ROAD_DAMAGE_YOLO_IMGSZ", 640))
                 iou_effective = float(getattr(settings, "ROAD_DAMAGE_YOLO_IOU", 0.45))
@@ -288,6 +333,7 @@ def analyze_image_file(
         pass
 
     pred.pop("raw_result", None)
+    pred.pop("annotated_bgr", None)
     return {
         "ok": True,
         "stub": False,
@@ -318,27 +364,31 @@ def analyze_bgr_frame(
     if frame_bgr is None or not isinstance(frame_bgr, np.ndarray) or frame_bgr.size == 0:
         return _stub_result("empty_frame", media_type, {"yolo_conf_threshold": conf_effective})
 
-    model, req_k, used_k, err = _load_yolo(model_key)
+    model, backend, req_k, used_k, err = _load_vision_model(model_key)
     path_used = pick_model_path(model_key)[0]
     meta = {
         "model_key_requested": req_k,
         "model_key_resolved": used_k,
         "model_fallback": req_k != used_k,
         "model_path_used": path_used,
+        "model_backend": backend,
         "yolo_conf_threshold": conf_effective,
     }
     if model is None:
         return _stub_result(err or "no_model", media_type, meta)
 
-    pred = predict_image_bgr(model, frame_bgr, conf=conf)
+    pred = predict_image_bgr(model, frame_bgr, conf=conf, backend=backend)
     seg_path = _segmentation_model_path()
     meta["segmentation_model_path_used"] = seg_path
     meta["segmentation_masks_drawn"] = False
     annotated_url = None
     annotated_seg_url = None
     try:
-        annotated_url = _save_plot_bgr_to_analysis(_result_plot_bgr(pred["raw_result"]))
-        if seg_path:
+        if backend == "fasterrcnn":
+            annotated_url = _save_plot_bgr_to_analysis(pred.get("annotated_bgr"))
+        else:
+            annotated_url = _save_plot_bgr_to_analysis(_result_plot_bgr(pred["raw_result"]))
+        if seg_path and backend == "yolo":
             try:
                 imgsz = int(getattr(settings, "ROAD_DAMAGE_YOLO_IMGSZ", 640))
                 iou_effective = float(getattr(settings, "ROAD_DAMAGE_YOLO_IOU", 0.45))
@@ -358,6 +408,7 @@ def analyze_bgr_frame(
         pass
 
     pred.pop("raw_result", None)
+    pred.pop("annotated_bgr", None)
     return {
         "ok": True,
         "stub": False,
@@ -391,13 +442,14 @@ def analyze_video_file(
     if not abs_path.is_file():
         return _stub_result("file_not_found", media_type, {"yolo_conf_threshold": conf_effective})
 
-    model, req_k, used_k, err = _load_yolo(model_key)
+    model, backend, req_k, used_k, err = _load_vision_model(model_key)
     path_used = pick_model_path(model_key)[0]
     meta = {
         "model_key_requested": req_k,
         "model_key_resolved": used_k,
         "model_fallback": req_k != used_k,
         "model_path_used": path_used,
+        "model_backend": backend,
         "yolo_conf_threshold": conf_effective,
     }
     if model is None:
@@ -422,13 +474,16 @@ def analyze_video_file(
         if not ret:
             break
         if idx % frame_step == 0:
-            pr = predict_image_bgr(model, frame, conf=conf)
+            pr = predict_image_bgr(model, frame, conf=conf, backend=backend)
             max_conf_global = max(max_conf_global, pr["max_confidence"])
             all_labels.update(pr["labels"])
             thumb_url = None
             try:
-                plot_rgb = pr["raw_result"].plot()
-                plot_bgr = plot_rgb[:, :, ::-1] if plot_rgb is not None else None
+                if backend == "fasterrcnn":
+                    plot_bgr = pr.get("annotated_bgr")
+                else:
+                    plot_rgb = pr["raw_result"].plot()
+                    plot_bgr = plot_rgb[:, :, ::-1] if plot_rgb is not None else None
                 if plot_bgr is not None:
                     out = _analysis_out_dir() / f"vid_frame_{uuid.uuid4().hex}.jpg"
                     cv2.imwrite(str(out), plot_bgr)
@@ -436,7 +491,8 @@ def analyze_video_file(
                     thumb_url = f"{settings.MEDIA_URL.rstrip('/')}/{rel.as_posix().replace(chr(92), '/')}"
             except Exception:
                 pass
-            raw_res = pr.pop("raw_result", None)
+            pr.pop("raw_result", None)
+            pr.pop("annotated_bgr", None)
             frame_results.append(
                 {
                     "frame_index": idx,
@@ -501,7 +557,7 @@ def max_confidence_from_boxes(pred_dict: dict[str, Any]) -> float:
 
 
 def baseline_predict_confidence(
-    frame_bgr, model, conf: float | None = None
+    frame_bgr, model, conf: float | None = None, backend: str = "yolo"
 ) -> float:
-    pr = predict_image_bgr(model, frame_bgr, conf=conf)
+    pr = predict_image_bgr(model, frame_bgr, conf=conf, backend=backend)
     return float(pr["max_confidence"])

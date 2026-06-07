@@ -1,0 +1,67 @@
+<div id="faceEnrollModal" class="face-enroll-modal is-hidden" role="dialog" aria-modal="true" aria-labelledby="faceEnrollModalTitle" aria-hidden="true">
+  <div class="face-enroll-modal__backdrop" data-face-enroll-dismiss tabindex="-1"></div>
+  <div class="face-enroll-modal__card">
+    <header class="face-enroll-modal__head">
+      <div>
+        <span class="face-enroll-modal__kicker">Biometric Registry</span>
+        <h3 id="faceEnrollModalTitle">Enroll This Face</h3>
+      </div>
+      <button type="button" class="face-enroll-modal__close" id="faceEnrollModalClose" aria-label="Close">&times;</button>
+    </header>
+    <form id="faceEnrollForm" class="face-enroll-modal__form" enctype="multipart/form-data">
+      <input type="hidden" name="crop_url" id="faceEnrollCropUrl" value="">
+      <input type="hidden" name="face_id" id="faceEnrollFaceId" value="">
+      <div class="face-enroll-modal__preview-wrap">
+        <div class="face-enroll-modal__preview">
+          <img id="faceEnrollPreviewImg" src="" alt="" hidden>
+          <div id="faceEnrollPreviewEmpty" class="face-enroll-modal__preview-empty">No crop preview</div>
+        </div>
+        <p class="face-enroll-modal__preview-caption">Detected face crop will be saved as the primary reference.</p>
+      </div>
+      <label class="face-enroll-field">
+        <span class="face-enroll-field__label">Full name</span>
+        <input type="text" name="name" id="faceEnrollName" required maxlength="160" placeholder="e.g. Naoya Inoue" autocomplete="name">
+      </label>
+      <label class="face-enroll-field">
+        <span class="face-enroll-field__label">Category</span>
+        <input type="text" name="category" id="faceEnrollCategory" maxlength="120" placeholder="e.g. Boxer, Personnel, Visitor">
+      </label>
+      <label class="face-enroll-field">
+        <span class="face-enroll-field__label">Unique ID</span>
+        <input type="text" name="unique_id" id="faceEnrollUniqueId" required maxlength="64" placeholder="e.g. OSO-001" autocomplete="off">
+      </label>
+      <label class="face-enroll-field">
+        <span class="face-enroll-field__label">Additional reference photo <span class="face-enroll-field__opt">(optional)</span></span>
+        <input type="file" name="reference_image" id="faceEnrollReferenceImage" accept="image/jpeg,image/png,image/webp">
+      </label>
+      <div class="face-enroll-modal__actions">
+        <button type="button" class="face-enroll-btn face-enroll-btn--ghost" id="faceEnrollCancel">Cancel</button>
+        <button type="submit" class="face-enroll-btn face-enroll-btn--primary" id="faceEnrollSubmit">Save to Face Registry</button>
+      </div>
+      <p class="face-enroll-modal__status" id="faceEnrollStatus" hidden role="status"></p>
+    </form>
+  </div>
+</div>
+
+<div class="face-enroll-toast is-hidden" id="faceEnrollToast" role="status" aria-live="polite"></div>
+
+<div id="faceEnrollImportModal" class="face-enroll-modal is-hidden" role="dialog" aria-modal="true" aria-labelledby="faceEnrollImportTitle" aria-hidden="true">
+  <div class="face-enroll-modal__backdrop" data-face-enroll-import-dismiss tabindex="-1"></div>
+  <div class="face-enroll-modal__card face-enroll-modal__card--compact">
+    <header class="face-enroll-modal__head">
+      <div>
+        <span class="face-enroll-modal__kicker">Bulk import</span>
+        <h3 id="faceEnrollImportTitle">Import From Folder</h3>
+      </div>
+      <button type="button" class="face-enroll-modal__close" id="faceEnrollImportClose" aria-label="Close">&times;</button>
+    </header>
+    <p class="face-enroll-import-text">
+      Place one folder per person under <code>media/face_registry/</code>, then run:
+    </p>
+    <pre class="face-enroll-import-command" id="faceEnrollImportCommand">{{ face_registry_seed_command }}</pre>
+    <div class="face-enroll-modal__actions">
+      <button type="button" class="face-enroll-btn face-enroll-btn--ghost" id="faceEnrollImportDismiss">Close</button>
+      <button type="button" class="face-enroll-btn face-enroll-btn--primary" id="faceEnrollImportCopy">Copy Command</button>
+    </div>
+  </div>
+</div>

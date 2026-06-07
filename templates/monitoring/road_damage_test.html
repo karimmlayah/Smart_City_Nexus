@@ -12,7 +12,7 @@
   <link rel="stylesheet" href="{% static 'monitoring/fusion_hub_dashboard.css' %}">
   <link rel="stylesheet" href="{% static 'monitoring/fusion_hub_smartcity.css' %}">
   <link rel="stylesheet" href="{% static 'monitoring/road_damage_theme.css' %}">
-  <link rel="stylesheet" href="{% static 'monitoring/road_damage_modern.css' %}?v=7">
+  <link rel="stylesheet" href="{% static 'monitoring/road_damage_modern.css' %}?v=8">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
 {% endblock %}
 
@@ -218,7 +218,7 @@
           <div class="rd-section__head">
             <div>
               <h2 class="rd-section__title">Recent Cases</h2>
-              <p class="rd-section__sub">Latest reported road issues ranked by AI priority.</p>
+              <p class="rd-section__sub">Highest priority road issues appear first.</p>
             </div>
           </div>
           <div class="case-list{% if citizen_enriched|length == 1 %} case-list--single{% endif %}" id="caseList">
@@ -336,7 +336,13 @@
                   </ul>
                 </div>
               </details>
-              <a class="btn-ai-detail case-review-panel__cta" href="{% url 'monitoring:reclamation_ai_detail' r.pk %}">Open Full Review</a>
+              <div class="case-review-panel__cta-row">
+                <a class="btn-ai-detail case-review-panel__cta" href="{% url 'monitoring:reclamation_ai_detail' r.pk %}">Open Full Review</a>
+                <button type="button" class="btn-mission-done case-review-panel__cta" data-case-id="{{ r.pk }}" aria-label="Mark case {{ r.pk }} as mission done">
+                  <svg class="btn-mission-done__icon" viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"><path fill="currentColor" d="M13.485 3.515a1 1 0 0 1 0 1.414l-6.5 6.5a1 1 0 0 1-1.414 0l-3-3a1 1 0 1 1 1.414-1.414L6.5 9.086l5.793-5.793a1 1 0 0 1 1.192-.078z"/></svg>
+                  Mission Done
+                </button>
+              </div>
             </div>
             {% endwith %}
           {% empty %}
@@ -358,6 +364,8 @@
         </div>
       </div>
     </section>
+
+    <div class="rd-toast" id="rdToast" role="status" aria-live="polite" hidden></div>
 
     {{ citizen_map_payload|json_script:"citizen-map-data" }}
 
@@ -529,6 +537,34 @@
 </div>
 {% endblock %}
 
+{% block page_modals %}
+<div id="missionDoneModal" class="mm-modal hidden" role="dialog" aria-modal="true" aria-labelledby="missionDoneModalTitle" aria-hidden="true">
+  <div class="mm-modal-backdrop" data-mm-modal-dismiss tabindex="-1"></div>
+  <div class="mm-modal-card">
+    <div class="mm-modal-icon" aria-hidden="true">
+      <svg viewBox="0 0 48 48" width="28" height="28" focusable="false">
+        <circle cx="24" cy="24" r="22" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.35"/>
+        <path fill="currentColor" d="M33.5 16.5a1.2 1.2 0 0 1 0 1.7l-12 12a1.2 1.2 0 0 1-1.7 0l-6-6a1.2 1.2 0 1 1 1.7-1.7l5.15 5.15 11.15-11.15a1.2 1.2 0 0 1 1.7 0z"/>
+      </svg>
+    </div>
+    <h3 id="missionDoneModalTitle" class="mm-modal-title">Complete Mission?</h3>
+    <p class="mm-modal-message">This road damage case will be marked as completed and removed from active missions.</p>
+    <p class="mm-modal-sub">You can still keep it in history if completion mode is enabled.</p>
+    <div class="mm-modal-loading" id="missionDoneModalLoading" hidden>
+      <span class="mm-modal-spinner" aria-hidden="true"></span>
+      <span>Completing mission...</span>
+    </div>
+    <div class="mm-modal-actions" id="missionDoneModalActions">
+      <button type="button" id="cancelMissionDone" class="mm-modal-btn mm-modal-btn--secondary">Cancel</button>
+      <button type="button" id="confirmMissionDone" class="mm-modal-btn mm-modal-btn--success">
+        <svg class="mm-modal-btn__icon" viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><path fill="currentColor" d="M13.485 3.515a1 1 0 0 1 0 1.414l-6.5 6.5a1 1 0 0 1-1.414 0l-3-3a1 1 0 1 1 1.414-1.414L6.5 9.086l5.793-5.793a1 1 0 0 1 1.192-.078z"/></svg>
+        Yes, Mission Done
+      </button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
 {% block extra_js %}
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <script src="https://cdn.jsdelivr.net/npm/leaflet.heat@0.2.0/dist/leaflet-heat.min.js"></script>
@@ -604,6 +640,77 @@
   var body = document.getElementById("caseReviewBody");
   if (!list || !body) return;
 
+  var missionDoneTpl = "{{ reclamation_mission_done_url_template|escapejs }}";
+  var toastEl = document.getElementById("rdToast");
+  var toastTimer = null;
+  var modal = document.getElementById("missionDoneModal");
+  var cancelBtn = document.getElementById("cancelMissionDone");
+  var confirmBtn = document.getElementById("confirmMissionDone");
+  var modalLoading = document.getElementById("missionDoneModalLoading");
+  var modalActions = document.getElementById("missionDoneModalActions");
+  var modalBackdrop = modal && modal.querySelector("[data-mm-modal-dismiss]");
+  var pendingMissionDoneCaseId = null;
+  var pendingMissionDoneBtn = null;
+  var lastFocusedEl = null;
+  var modalIsLoading = false;
+
+  if (modal && modal.parentElement !== document.body) {
+    document.body.appendChild(modal);
+  }
+
+  function isModalHidden() {
+    return !modal || modal.classList.contains("hidden");
+  }
+
+  function getCsrfToken() {
+    var input = document.querySelector("[name=csrfmiddlewaretoken]");
+    if (input && input.value) return input.value;
+    var match = document.cookie.match(/csrftoken=([^;]+)/);
+    return match ? decodeURIComponent(match[1]) : "";
+  }
+
+  function showToast(message, type) {
+    if (!toastEl) return;
+    toastEl.textContent = message;
+    toastEl.classList.remove("rd-toast--error", "rd-toast--success");
+    toastEl.classList.add(type === "error" ? "rd-toast--error" : "rd-toast--success");
+    toastEl.hidden = false;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () {
+      toastEl.hidden = true;
+    }, 4200);
+  }
+
+  function previewEmptyHtml() {
+    return (
+      '<div class="rd-preview-empty" id="rdPreviewEmpty">' +
+      '<div class="rd-preview-empty__holo" aria-hidden="true">' +
+      '<div class="rd-preview-empty__grid"></div>' +
+      '<div class="rd-preview-empty__scan"></div>' +
+      '<svg viewBox="0 0 120 48" class="rd-preview-empty__road" aria-hidden="true">' +
+      '<line x1="8" y1="24" x2="112" y2="24" stroke="rgba(0,213,255,0.25)" stroke-width="1" stroke-dasharray="6 8"/>' +
+      '<circle cx="72" cy="24" r="10" fill="none" stroke="rgba(255,120,60,0.5)" stroke-width="1.5"/>' +
+      '<circle cx="72" cy="24" r="4" fill="rgba(255,120,60,0.6)"/>' +
+      "</svg></div>" +
+      "<strong>No cases to preview</strong>" +
+      "<span>Select a case to reveal its AI-powered maintenance insight.</span>" +
+      "</div>"
+    );
+  }
+
+  function updateCaseSummary() {
+    var summary = document.querySelector(".rd-cases-summary");
+    var count = list.querySelectorAll(".case-card-compact").length;
+    if (count === 0) {
+      if (summary) summary.remove();
+      return;
+    }
+    if (summary) {
+      var strongs = summary.querySelectorAll("strong");
+      if (strongs[0]) strongs[0].textContent = String(count);
+    }
+  }
+
   function selectCase(card) {
     var id = card.getAttribute("data-case-id");
     if (!id) return;
@@ -615,6 +722,133 @@
     card.setAttribute("aria-pressed", "true");
     body.querySelectorAll(".case-review-panel__item").forEach(function (p) {
       p.classList.toggle("is-active", p.getAttribute("data-case-id") === id);
+    });
+  }
+
+  function setModalLoading(loading) {
+    modalIsLoading = loading;
+    if (modalLoading) modalLoading.hidden = !loading;
+    if (modalActions) modalActions.hidden = loading;
+    if (cancelBtn) cancelBtn.disabled = loading;
+    if (confirmBtn) confirmBtn.disabled = loading;
+    if (modal) modal.classList.toggle("mm-modal--loading", loading);
+  }
+
+  function openMissionDoneModal(caseId, triggerBtn) {
+    if (!modal || !caseId) return;
+    pendingMissionDoneCaseId = caseId;
+    pendingMissionDoneBtn = triggerBtn || null;
+    lastFocusedEl = document.activeElement;
+    setModalLoading(false);
+    modal.classList.remove("hidden");
+    modal.setAttribute("aria-hidden", "false");
+    document.body.classList.add("modal-open");
+    if (cancelBtn) cancelBtn.focus();
+  }
+
+  function closeMissionDoneModal(force) {
+    if (!modal || (modalIsLoading && !force)) return;
+    modalIsLoading = false;
+    pendingMissionDoneCaseId = null;
+    pendingMissionDoneBtn = null;
+    setModalLoading(false);
+    modal.classList.add("hidden");
+    modal.setAttribute("aria-hidden", "true");
+    document.body.classList.remove("modal-open");
+    if (lastFocusedEl && typeof lastFocusedEl.focus === "function") {
+      try { lastFocusedEl.focus(); } catch (e) { /* ignore */ }
+    }
+    lastFocusedEl = null;
+  }
+
+  function trapModalFocus(e) {
+    if (isModalHidden() || e.key !== "Tab") return;
+    var focusables = modal.querySelectorAll(
+      'button:not([disabled]), [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+    );
+    if (!focusables.length) return;
+    var first = focusables[0];
+    var last = focusables[focusables.length - 1];
+    if (e.shiftKey && document.activeElement === first) {
+      e.preventDefault();
+      last.focus();
+    } else if (!e.shiftKey && document.activeElement === last) {
+      e.preventDefault();
+      first.focus();
+    }
+  }
+
+  async function markMissionDoneConfirmed(caseId) {
+    if (!caseId) return;
+    setModalLoading(true);
+
+    try {
+      var response = await fetch(missionDoneTpl.replace("__PK__", caseId), {
+        method: "POST",
+        headers: {
+          "X-CSRFToken": getCsrfToken(),
+          "Content-Type": "application/json",
+        },
+        credentials: "same-origin",
+      });
+      var data = await response.json().catch(function () {
+        return { success: false };
+      });
+
+      if (data.success) {
+        closeMissionDoneModal(true);
+        showToast("Mission completed successfully.");
+        removeCaseFromUI(caseId);
+      } else {
+        setModalLoading(false);
+        showToast("Could not complete mission. Please try again.", "error");
+      }
+    } catch (err) {
+      setModalLoading(false);
+      showToast("Could not complete mission. Please try again.", "error");
+    }
+  }
+
+  function removeCaseFromUI(caseId) {
+    var card = list.querySelector('.case-card-compact[data-case-id="' + caseId + '"]');
+    var panel = body.querySelector('.case-review-panel__item[data-case-id="' + caseId + '"]');
+    if (card) card.remove();
+    if (panel) panel.remove();
+
+    var remaining = list.querySelectorAll(".case-card-compact");
+    updateCaseSummary();
+
+    if (remaining.length === 0) {
+      list.innerHTML = '<p class="prior-empty">No cases yet.</p>';
+      body.innerHTML = previewEmptyHtml();
+      return;
+    }
+    selectCase(remaining[0]);
+  }
+
+  if (modal && cancelBtn && confirmBtn) {
+    cancelBtn.addEventListener("click", function () {
+      closeMissionDoneModal();
+    });
+
+    confirmBtn.addEventListener("click", function () {
+      if (!pendingMissionDoneCaseId) return;
+      markMissionDoneConfirmed(pendingMissionDoneCaseId);
+    });
+
+    if (modalBackdrop) {
+      modalBackdrop.addEventListener("click", function () {
+        closeMissionDoneModal();
+      });
+    }
+
+    modal.addEventListener("keydown", trapModalFocus);
+
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape" && modal && !isModalHidden()) {
+        e.preventDefault();
+        closeMissionDoneModal();
+      }
     });
   }
 
@@ -631,6 +865,14 @@
     if (!card) return;
     e.preventDefault();
     selectCase(card);
+  });
+
+  body.addEventListener("click", function (e) {
+    var btn = e.target.closest(".btn-mission-done");
+    if (!btn) return;
+    e.preventDefault();
+    e.stopPropagation();
+    openMissionDoneModal(btn.getAttribute("data-case-id"), btn);
   });
 })();
 </script>

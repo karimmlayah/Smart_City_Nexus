@@ -1,0 +1,368 @@
+/* Face registry enrollment modal — Surveillance / Fusion Hub */
+.face-enroll-modal {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 2147483646 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 24px !important;
+  box-sizing: border-box !important;
+}
+
+.face-enroll-modal.is-hidden {
+  display: none !important;
+}
+
+.face-enroll-modal__backdrop {
+  position: fixed !important;
+  inset: 0 !important;
+  background: rgba(2, 8, 23, 0.78) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+}
+
+.face-enroll-modal__card {
+  position: relative;
+  z-index: 1;
+  width: min(520px, calc(100vw - 32px));
+  max-height: calc(100vh - 48px);
+  overflow: auto;
+  padding: 20px 20px 18px;
+  border-radius: 22px;
+  background: linear-gradient(145deg, rgba(7, 23, 45, 0.98), rgba(8, 34, 63, 0.92));
+  border: 1px solid rgba(0, 210, 255, 0.32);
+  box-shadow:
+    0 0 45px rgba(0, 210, 255, 0.18),
+    0 24px 90px rgba(0, 0, 0, 0.55);
+  color: #f8fbff;
+}
+
+.face-enroll-modal__card--compact {
+  width: min(460px, calc(100vw - 32px));
+}
+
+.face-enroll-modal__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.face-enroll-modal__kicker {
+  display: block;
+  font-size: 0.58rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #22d3ee;
+  margin-bottom: 4px;
+}
+
+.face-enroll-modal__head h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #f8fbff;
+}
+
+.face-enroll-modal__close {
+  border: none;
+  background: rgba(255, 255, 255, 0.06);
+  color: #b8cce8;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.face-enroll-modal__close:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+}
+
+.face-enroll-modal__preview-wrap {
+  margin-bottom: 14px;
+}
+
+.face-enroll-modal__preview {
+  width: 112px;
+  height: 132px;
+  margin: 0 auto 8px;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid rgba(0, 210, 255, 0.28);
+  background: rgba(0, 210, 255, 0.08);
+  display: grid;
+  place-items: center;
+}
+
+.face-enroll-modal__preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.face-enroll-modal__preview-empty {
+  font-size: 0.68rem;
+  color: #8fb3d9;
+  padding: 0 8px;
+  text-align: center;
+}
+
+.face-enroll-modal__preview-caption {
+  margin: 0;
+  text-align: center;
+  font-size: 0.68rem;
+  color: #8fb3d9;
+  line-height: 1.45;
+}
+
+.face-enroll-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.face-enroll-field__label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #8fb3d9;
+}
+
+.face-enroll-field__opt {
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: 0;
+  color: #647896;
+}
+
+.face-enroll-field input[type="text"],
+.face-enroll-field input[type="file"] {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(0, 210, 255, 0.22);
+  background: rgba(0, 16, 36, 0.72);
+  color: #f8fbff;
+  font: inherit;
+  font-size: 0.85rem;
+}
+
+.face-enroll-field input[type="text"]:focus {
+  outline: none;
+  border-color: rgba(0, 210, 255, 0.45);
+  box-shadow: 0 0 0 3px rgba(0, 210, 255, 0.12);
+}
+
+.face-enroll-modal__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 6px;
+}
+
+.face-enroll-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  cursor: pointer;
+  border: 1px solid transparent;
+  font-family: inherit;
+}
+
+.face-enroll-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.face-enroll-btn--primary {
+  color: #ecffff;
+  background: linear-gradient(135deg, rgba(0, 210, 255, 0.35), rgba(37, 99, 235, 0.45));
+  border-color: rgba(0, 210, 255, 0.42);
+  box-shadow: 0 0 18px rgba(0, 210, 255, 0.14);
+}
+
+.face-enroll-btn--primary:hover:not(:disabled) {
+  box-shadow: 0 0 24px rgba(0, 210, 255, 0.22);
+}
+
+.face-enroll-btn--ghost {
+  color: #b8cce8;
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.face-enroll-modal__status {
+  margin: 10px 0 0;
+  font-size: 0.72rem;
+  color: #ffb4b4;
+}
+
+.face-enroll-toast {
+  position: fixed;
+  bottom: 1.25rem;
+  right: 1.25rem;
+  z-index: 2147483647;
+  max-width: min(92vw, 360px);
+  padding: 0.7rem 1rem;
+  border-radius: 12px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #ecfff6;
+  background: linear-gradient(135deg, rgba(0, 180, 120, 0.92), rgba(0, 140, 95, 0.95));
+  border: 1px solid rgba(0, 230, 160, 0.45);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.35);
+}
+
+.face-enroll-toast.is-hidden {
+  display: none;
+}
+
+.face-enroll-toast--error {
+  color: #ffe8e8;
+  background: linear-gradient(135deg, rgba(180, 50, 50, 0.92), rgba(140, 30, 30, 0.95));
+  border-color: rgba(255, 100, 100, 0.45);
+}
+
+.fh-unknown-enroll-card {
+  margin-top: 10px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: rgba(0, 24, 48, 0.55);
+  border: 1px solid rgba(0, 210, 255, 0.18);
+}
+
+.fh-unknown-enroll-card__lead {
+  margin: 0 0 8px;
+  font-size: 0.74rem;
+  line-height: 1.5;
+  color: #c8dcf5;
+}
+
+.fh-unknown-enroll-card__hint {
+  margin: 0 0 10px;
+  font-size: 0.66rem;
+  color: #8fb3d9;
+  line-height: 1.45;
+}
+
+.fh-unknown-enroll-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.fh-btn-enroll-face {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(0, 210, 255, 0.42);
+  background: linear-gradient(135deg, rgba(0, 210, 255, 0.22), rgba(37, 99, 235, 0.28));
+  color: #ecffff;
+  font-size: 0.72rem;
+  font-weight: 800;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.fh-btn-enroll-face:hover {
+  box-shadow: 0 0 18px rgba(0, 210, 255, 0.18);
+}
+
+.fh-btn-enroll-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.04);
+  color: #b8cce8;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.fh-btn-enroll-secondary:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+}
+
+.fh-unknown-enroll-card__advanced {
+  margin-top: 10px;
+  font-size: 0.62rem;
+  color: #647896;
+}
+
+.fh-unknown-enroll-card__advanced summary {
+  cursor: pointer;
+  color: #8fb3d9;
+}
+
+.fh-unknown-enroll-card__advanced-text {
+  margin: 8px 0 0;
+  line-height: 1.45;
+}
+
+.fh-unknown-enroll-card__advanced code {
+  color: #9ee0ff;
+}
+
+.face-enroll-import-text {
+  margin: 0 0 10px;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: #9fb7d5;
+}
+
+.face-enroll-import-command {
+  margin: 0 0 14px;
+  padding: 12px;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.28);
+  border: 1px solid rgba(0, 210, 255, 0.16);
+  color: #d4ecff;
+  font-size: 0.72rem;
+  overflow-x: auto;
+}
+
+body.face-enroll-modal-open {
+  overflow: hidden !important;
+}
+
+@media (max-width: 480px) {
+  .fh-unknown-enroll-card__actions {
+    flex-direction: column;
+  }
+
+  .fh-btn-enroll-face,
+  .fh-btn-enroll-secondary {
+    width: 100%;
+  }
+
+  .face-enroll-modal__actions {
+    flex-direction: column;
+  }
+
+  .face-enroll-btn {
+    width: 100%;
+  }
+}

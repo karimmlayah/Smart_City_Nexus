@@ -1,7 +1,6 @@
 from typing import Optional
 
 import cv2
-from yt_dlp import YoutubeDL
 
 
 class _SilentYtdlpLogger:
@@ -19,6 +18,13 @@ def resolve_video_source(input_source: str) -> str:
     source = input_source.strip()
     if "youtube.com" not in source and "youtu.be" not in source:
         return source
+
+    try:
+        from yt_dlp import YoutubeDL
+    except ImportError as exc:
+        raise RuntimeError(
+            "YouTube sources require yt-dlp. Install with: pip install yt-dlp"
+        ) from exc
 
     with YoutubeDL(
         {

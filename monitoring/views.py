@@ -29,6 +29,7 @@ from .forms import (
 )
 from .models import Alert, CitizenReclamation, VideoSource
 from .ai_dashboard_payload import build_ai_dashboard_summary
+from .openai_client import create_openai_client, get_openai_api_key, log_openai_key_status
 from .services.detection import get_live_stats, stream_mjpeg_frames
 
 logger = logging.getLogger(__name__)
@@ -392,6 +393,7 @@ def fight_predict(request):
         extract_youtube_video_id,
     )
     from .services.model_inventory import (
+        coerce_fight_weights_pick,
         default_relative_fight_weights,
         default_relative_weapon_weights,
         fight_model_choices,
@@ -406,16 +408,13 @@ def fight_predict(request):
     local_video_url = None
     annotated_video_url = None
 
-    fc = with_default_choice(
-        fight_model_choices(),
-        default_relative_fight_weights(),
-    )
+    fc = fight_model_choices()
     wc = with_default_choice(
         weapon_model_choices(),
         default_relative_weapon_weights(),
     )
 
-    fight_pick = default_relative_fight_weights()
+    fight_pick = coerce_fight_weights_pick(default_relative_fight_weights())
     weapon_pick = default_relative_weapon_weights()
 
     if request.method == "POST":
@@ -426,7 +425,7 @@ def fight_predict(request):
             weapon_choices=wc,
         )
         if form.is_valid():
-            fight_pick = form.cleaned_data["fight_weights"]
+            fight_pick = coerce_fight_weights_pick(form.cleaned_data["fight_weights"])
             weapon_pick = form.cleaned_data["weapon_weights"]
             fy = resolve_weights_for_ultralytics(
                 fight_pick,
@@ -552,6 +551,7 @@ def fusion_analyze_frame(request):
 
     from .services.fight_classifier import analyze_uploaded_image_fusion, read_video_frame_bgr_at_time
     from .services.model_inventory import (
+        coerce_fight_weights_pick,
         default_relative_fight_weights,
         default_relative_weapon_weights,
         resolve_weights_for_ultralytics,
@@ -598,7 +598,7 @@ def fusion_analyze_frame(request):
     use_fight = bool(meta.get("use_fight", True))
     use_weapon = bool(meta.get("use_weapon", True))
     fy = meta.get("fight_resolve") or resolve_weights_for_ultralytics(
-        meta.get("fight_weights") or default_relative_fight_weights(),
+        coerce_fight_weights_pick(meta.get("fight_weights")),
         django_settings.FIGHT_CLASSIFIER_PATH,
     )
     wy = meta.get("weapon_resolve") or resolve_weights_for_ultralytics(
@@ -729,6 +729,7 @@ def _fusion_hub_page(request, *, list_url_name: str):
         extract_youtube_video_id,
     )
     from .services.model_inventory import (
+        coerce_fight_weights_pick,
         default_relative_fight_weights,
         default_relative_weapon_weights,
         fight_model_choices,
@@ -753,16 +754,13 @@ def _fusion_hub_page(request, *, list_url_name: str):
     prog_enabled = bool(getattr(django_settings, "FUSION_PROGRESSIVE_VIDEO_ANALYSIS", True))
     upload_ttl = int(getattr(django_settings, "FUSION_PROGRESSIVE_UPLOAD_CACHE_SECONDS", 7200))
 
-    fc = with_default_choice(
-        fight_model_choices(),
-        default_relative_fight_weights(),
-    )
+    fc = fight_model_choices()
     wc = with_default_choice(
         weapon_model_choices(),
         default_relative_weapon_weights(),
     )
 
-    fight_pick = default_relative_fight_weights()
+    fight_pick = coerce_fight_weights_pick(default_relative_fight_weights())
     weapon_pick = default_relative_weapon_weights()
 
     meta_get: dict | None = None
@@ -782,7 +780,7 @@ def _fusion_hub_page(request, *, list_url_name: str):
                     f"{django_settings.MEDIA_URL.rstrip('/')}/"
                     f"{Path(mg['rel_media']).as_posix()}"
                 )
-                fight_pick = mg.get("fight_weights") or fight_pick
+                fight_pick = coerce_fight_weights_pick(mg.get("fight_weights") or fight_pick)
                 weapon_pick = mg.get("weapon_weights") or weapon_pick
                 progressive_timeline = []
 
@@ -795,7 +793,11 @@ def _fusion_hub_page(request, *, list_url_name: str):
                 run_error = "Progressive session expired or unknown — upload the video again."
                 replay_done = True
             else:
-                fight_pick = request.POST.get("fight_weights") or replay_meta.get("fight_weights") or fight_pick
+                fight_pick = coerce_fight_weights_pick(
+                    request.POST.get("fight_weights")
+                    or replay_meta.get("fight_weights")
+                    or fight_pick
+                )
                 weapon_pick = request.POST.get("weapon_weights") or replay_meta.get("weapon_weights") or weapon_pick
                 use_fight_r = bool(replay_meta.get("use_fight", True))
                 use_weapon_r = bool(replay_meta.get("use_weapon", True))
@@ -837,7 +839,9 @@ def _fusion_hub_page(request, *, list_url_name: str):
             fight_choices=fc,
             weapon_choices=wc,
             initial={
-                "fight_weights": meta_get.get("fight_weights") or fight_pick,
+                "fight_weights": coerce_fight_weights_pick(
+                    meta_get.get("fight_weights") or fight_pick
+                ),
                 "weapon_weights": meta_get.get("weapon_weights") or weapon_pick,
                 "use_fight": meta_get.get("use_fight", True),
                 "use_weapon": meta_get.get("use_weapon", True),
@@ -868,7 +872,7 @@ def _fusion_hub_page(request, *, list_url_name: str):
             use_fight = form.cleaned_data["use_fight"]
             use_weapon = form.cleaned_data["use_weapon"]
             use_openai_threat = form.cleaned_data.get("use_openai_threat", False)
-            fight_pick = form.cleaned_data["fight_weights"]
+            fight_pick = coerce_fight_weights_pick(form.cleaned_data["fight_weights"])
             weapon_pick = form.cleaned_data["weapon_weights"]
             fy = resolve_weights_for_ultralytics(
                 fight_pick,
@@ -1135,6 +1139,8 @@ def _fusion_hub_page(request, *, list_url_name: str):
         fusion_report_payload = _fusion_hub_report_payload(result, fusion_threat_cards)
 
     face_recognition_enabled = getattr(django_settings, "FACE_RECOGNITION_ENABLED", True)
+    face_registry_admin_url = reverse("admin:monitoring_faceidentity_changelist")
+    face_registry_enroll_url = reverse("api_face_registry_enroll")
 
     return render(
         request,
@@ -1161,6 +1167,9 @@ def _fusion_hub_page(request, *, list_url_name: str):
             "fusion_match_disabled": fusion_match_disabled,
             "fusion_gallery_empty": fusion_gallery_empty,
             "face_recognition_enabled": face_recognition_enabled,
+            "face_registry_admin_url": face_registry_admin_url,
+            "face_registry_enroll_url": face_registry_enroll_url,
+            "face_registry_seed_command": "python manage.py seed_face_registry_from_folders",
             "fusion_progressive_mode": fusion_progressive_mode,
             "fusion_progressive_pv": fusion_progressive_pv,
             "fusion_analysis_interval_seconds": float(
@@ -1200,7 +1209,7 @@ def fusion_live_frame(request):
     from django.core.cache import cache
 
     from .services.fight_classifier import analyze_live_frame_bgr, analyze_uploaded_image_fusion
-    from .services.model_inventory import resolve_weights_for_ultralytics
+    from .services.model_inventory import coerce_fight_weights_pick, resolve_weights_for_ultralytics
 
     viz_pb = str(request.POST.get("viz_persons", "0")).lower() in ("1", "true", "yes")
     viz_fm = str(request.POST.get("viz_faces", "0")).lower() in ("1", "true", "yes")
@@ -1212,7 +1221,7 @@ def fusion_live_frame(request):
     uf = request.POST.get("use_fight", "1") not in ("0", "false", "False")
     uw = request.POST.get("use_weapon", "1") not in ("0", "false", "False")
     fy = resolve_weights_for_ultralytics(
-        (request.POST.get("fight_weights") or "").strip() or None,
+        coerce_fight_weights_pick((request.POST.get("fight_weights") or "").strip() or None),
         django_settings.FIGHT_CLASSIFIER_PATH,
     )
     wy = resolve_weights_for_ultralytics(
@@ -1894,6 +1903,7 @@ def road_damage_test(request):
                 "vision": vis,
             }
         )
+    citizen_enriched = citizen_ai.sort_enriched_by_priority(citizen_enriched)
     citizen_kpis = citizen_ai.compute_kpis(citizen_enriched)
     citizen_map_payload = citizen_ai.build_map_payload(citizen_enriched)
     citizen_priority_queue = [
@@ -2154,6 +2164,8 @@ def road_damage_test(request):
 
     _live_u = reverse("monitoring:reclamation_ai_live", kwargs={"pk": 987654321})
     reclamation_ai_live_url_template = _live_u.replace("987654321", "__PK__")
+    _mission_u = reverse("monitoring:reclamation_mission_done", kwargs={"pk": 987654321})
+    reclamation_mission_done_url_template = _mission_u.replace("987654321", "__PK__")
 
     return render(
         request,
@@ -2192,8 +2204,19 @@ def road_damage_test(request):
             "citizen_map_payload": citizen_map_payload,
             "citizen_priority_queue": citizen_priority_queue,
             "reclamation_ai_live_url_template": reclamation_ai_live_url_template,
+            "reclamation_mission_done_url_template": reclamation_mission_done_url_template,
         },
     )
+
+
+@require_POST
+def reclamation_mission_done(request, pk):
+    """Mark a citizen road damage case as completed and remove it from active cases."""
+    rec = CitizenReclamation.objects.filter(pk=pk).first()
+    if not rec:
+        return JsonResponse({"success": False, "message": "Case not found"}, status=404)
+    rec.delete()
+    return JsonResponse({"success": True, "message": "Mission completed"})
 
 
 def reclamation_ai_detail(request, pk):
@@ -2459,13 +2482,15 @@ def reclamation_ai_detail(request, pk):
         if tone in ("critical", "high")
         else ("#fb8c00" if tone == "medium" else "#43a047")
     )
-    mini_map = {
-        "lat": float(rec.latitude),
-        "lng": float(rec.longitude),
-        "zoom": 15,
-        "color": map_color,
-        "id": rec.pk,
-    }
+    mini_map = None
+    if rec.latitude is not None and rec.longitude is not None:
+        mini_map = {
+            "lat": float(rec.latitude),
+            "lng": float(rec.longitude),
+            "zoom": 15,
+            "color": map_color,
+            "id": rec.pk,
+        }
 
     try:
         rs_raw = request.GET.get("refresh_sec")
@@ -3009,16 +3034,39 @@ _AI_DASH_CHAT_SYSTEM = (
     "explain that and offer general guidance or best practices."
 )
 
+_AI_ASSISTANT_NOT_CONFIGURED = (
+    "AI assistant is not configured. Please contact the administrator."
+)
+_AI_ASSISTANT_MISSING_KEY = (
+    "AI assistant is not configured. Missing OPENAI_API_KEY on the server."
+)
+_AI_ASSISTANT_UNAVAILABLE = (
+    "The AI assistant is temporarily unavailable. Please try again later."
+)
+
+
+def _ai_assistant_client_error(status_code: int, provider_message: str = "") -> tuple[str, str, int]:
+    """Map provider failures to safe client messages (never expose API keys)."""
+    raw = (provider_message or "").lower()
+    if status_code in (401, 403) or "api key" in raw or "incorrect" in raw:
+        return _AI_ASSISTANT_UNAVAILABLE, "assistant_unavailable", 502
+    if status_code == 503:
+        return _AI_ASSISTANT_NOT_CONFIGURED, "assistant_not_configured", 503
+    return _AI_ASSISTANT_UNAVAILABLE, "assistant_unavailable", 502
+
 
 @never_cache
 @require_POST
 def ai_dashboard_chatbot(request):
-    """Proxy chat OpenAI — clé OPENAI_API_KEY dans .env uniquement."""
-    api_key = (getattr(django_settings, "OPENAI_API_KEY", None) or "").strip()
+    """Proxy chat OpenAI — OPENAI_API_KEY from environment only (never sent to the client)."""
+    log_openai_key_status("AI dashboard chat")
+    api_key = get_openai_api_key()
     if not api_key:
+        logger.warning("AI dashboard chat: OPENAI_API_KEY is missing after env load")
         return JsonResponse(
             {
-                "error": "OpenAI API key is missing. Add OPENAI_API_KEY to the project .env file.",
+                "error": _AI_ASSISTANT_MISSING_KEY,
+                "code": "assistant_not_configured",
             },
             status=503,
         )
@@ -3042,58 +3090,71 @@ def ai_dashboard_chatbot(request):
     if not cleaned:
         return JsonResponse({"error": "No valid user or assistant message."}, status=400)
 
-    model = (getattr(django_settings, "OPENAI_CHAT_MODEL", None) or "gpt-4o-mini").strip()
+    model = (os.environ.get("OPENAI_CHAT_MODEL") or "gpt-4o-mini").strip()
     api_messages = [{"role": "system", "content": _AI_DASH_CHAT_SYSTEM}] + cleaned
 
-    try:
-        resp = requests.post(
-            "https://api.openai.com/v1/chat/completions",
-            headers={
-                "Authorization": f"Bearer {api_key}",
-                "Content-Type": "application/json",
+    client = create_openai_client()
+    if client is None:
+        logger.warning("AI dashboard chat: OpenAI client could not be created")
+        return JsonResponse(
+            {
+                "error": _AI_ASSISTANT_MISSING_KEY,
+                "code": "assistant_not_configured",
             },
-            json={
-                "model": model,
-                "messages": api_messages,
-                "temperature": 0.55,
-                "max_tokens": 1200,
-            },
-            timeout=90,
+            status=503,
         )
-    except requests.RequestException as exc:
+
+    try:
+        from openai import APIConnectionError, AuthenticationError, OpenAIError, RateLimitError
+
+        completion = client.chat.completions.create(
+            model=model,
+            messages=api_messages,
+            temperature=0.55,
+            max_tokens=1200,
+        )
+    except AuthenticationError as exc:
+        logger.warning("OpenAI chat authentication failed: %s", exc)
+        user_msg, code, http_status = _ai_assistant_client_error(401, str(exc))
+        return JsonResponse({"error": user_msg, "code": code}, status=http_status)
+    except (APIConnectionError, RateLimitError) as exc:
         logger.warning("OpenAI chat request failed: %s", exc)
         return JsonResponse(
-            {"error": "Unable to reach OpenAI. Please try again shortly."},
+            {
+                "error": _AI_ASSISTANT_UNAVAILABLE,
+                "code": "assistant_unavailable",
+            },
+            status=502,
+        )
+    except OpenAIError as exc:
+        logger.warning("OpenAI chat error: %s", exc)
+        user_msg, code, http_status = _ai_assistant_client_error(
+            getattr(exc, "status_code", None) or 502,
+            str(exc),
+        )
+        return JsonResponse({"error": user_msg, "code": code}, status=http_status)
+    except Exception as exc:
+        logger.warning("OpenAI chat unexpected error: %s", exc)
+        return JsonResponse(
+            {
+                "error": _AI_ASSISTANT_UNAVAILABLE,
+                "code": "assistant_unavailable",
+            },
             status=502,
         )
 
-    try:
-        data = resp.json()
-    except ValueError:
-        data = {}
-
-    if resp.status_code >= 400:
-        err_raw = data.get("error")
-        msg = ""
-        if isinstance(err_raw, dict):
-            msg = (err_raw.get("message") or "").strip()
-        elif isinstance(err_raw, str):
-            msg = err_raw.strip()
-        if not msg:
-            msg = resp.text[:500] if resp.text else "OpenAI service error."
-        logger.warning("OpenAI chat HTTP %s: %s", resp.status_code, msg)
-        return JsonResponse({"error": msg}, status=min(resp.status_code, 502) or 502)
-
-    choices = data.get("choices")
     reply = ""
-    if isinstance(choices, list) and choices:
-        first = choices[0]
-        if isinstance(first, dict):
-            msg_obj = first.get("message")
-            if isinstance(msg_obj, dict):
-                reply = (msg_obj.get("content") or "").strip()
+    if completion.choices:
+        reply = (completion.choices[0].message.content or "").strip()
     if not reply:
-        return JsonResponse({"error": "Réponse OpenAI vide ou inattendue."}, status=502)
+        logger.warning("OpenAI chat returned an empty or unexpected response")
+        return JsonResponse(
+            {
+                "error": _AI_ASSISTANT_UNAVAILABLE,
+                "code": "assistant_unavailable",
+            },
+            status=502,
+        )
     return JsonResponse({"reply": reply})
 
 

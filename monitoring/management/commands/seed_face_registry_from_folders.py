@@ -25,6 +25,21 @@ from monitoring.services.face_recognition_gallery import compute_embedding_and_s
 
 
 IMG_EXT = {".jpg", ".jpeg", ".png", ".webp"}
+REFERENCE_NAMES = frozenset(
+    {"reference.jpg", "reference.jpeg", "reference.png", "reference.webp"}
+)
+
+
+def sort_registry_images(imgs: list[Path]) -> list[Path]:
+    """Prefer explicit reference.* as primary dossier photo."""
+
+    def sort_key(p: Path) -> tuple[int, str]:
+        low = p.name.lower()
+        if low in REFERENCE_NAMES or low.startswith("reference."):
+            return (0, low)
+        return (1, low)
+
+    return sorted(imgs, key=sort_key)
 
 
 def display_name_from_folder(folder_name: str) -> str:
@@ -101,10 +116,12 @@ class Command(BaseCommand):
             display_name = display_name_from_folder(folder_name)
             slug = slug_from_folder_name(folder_name)
 
-            imgs = sorted(
-                p
-                for p in folder.iterdir()
-                if p.is_file() and p.suffix.lower() in IMG_EXT
+            imgs = sort_registry_images(
+                sorted(
+                    p
+                    for p in folder.iterdir()
+                    if p.is_file() and p.suffix.lower() in IMG_EXT
+                )
             )
 
             self.stdout.write("")

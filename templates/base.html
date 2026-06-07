@@ -35,6 +35,7 @@
     {% block content %}{% endblock %}
   </div>
   {% include "monitoring/partials/ai_orb.html" %}
+  {% block page_modals %}{% endblock %}
   <script src="{% static 'monitoring/clap_detector.js' %}?v=5"></script>
   <script src="{% static 'monitoring/ai_orb.js' %}?v=12"></script>
   <script src="{% static 'monitoring/theme-toggle.js' %}?v=4"></script>

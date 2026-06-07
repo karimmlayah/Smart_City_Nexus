@@ -70,37 +70,37 @@ def draw_wrapped_text(
     leading = leading or (size + 3)
 
     while size >= 7.0:
-        words = txt.split()
-        lines: list[str] = []
-        line = ""
-        for w in words:
-            test = (line + " " + w).strip()
+    words = txt.split()
+    lines: list[str] = []
+    line = ""
+    for w in words:
+        test = (line + " " + w).strip()
             if c.stringWidth(test, font_name, size) <= max_width:
-                line = test
-            else:
-                if line:
-                    lines.append(line)
-                line = w
-        if line:
-            lines.append(line)
+            line = test
+        else:
+            if line:
+                lines.append(line)
+            line = w
+    if line:
+        lines.append(line)
 
         leading = size + 3
-        max_lines = max(1, int(max_height // leading))
+    max_lines = max(1, int(max_height // leading))
         if len(lines) <= max_lines or not truncate:
             if truncate and len(lines) > max_lines:
-                lines = lines[:max_lines]
-                if lines:
-                    cut = lines[-1]
+        lines = lines[:max_lines]
+        if lines:
+            cut = lines[-1]
                     while cut and c.stringWidth(cut + "...", font_name, size) > max_width:
-                        cut = cut[:-1]
-                    lines[-1] = (cut + "...") if cut else "..."
+                cut = cut[:-1]
+            lines[-1] = (cut + "...") if cut else "..."
             c.setFillColor(_color(color))
             c.setFont(font_name, size)
-            y_cursor = y
-            for ln in lines:
-                c.drawString(x, y_cursor, ln)
-                y_cursor -= leading
-            return y_cursor
+    y_cursor = y
+    for ln in lines:
+        c.drawString(x, y_cursor, ln)
+        y_cursor -= leading
+    return y_cursor
 
         size -= 0.5
 

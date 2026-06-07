@@ -299,6 +299,13 @@
 {% block extra_js %}
 <script>
 (function () {
+  var sel = document.getElementById("id_fight_weights");
+  if (!sel || !sel.options.length) return;
+  var allowed = [];
+  for (var i = 0; i < sel.options.length; i++) allowed.push(sel.options[i].value);
+  if (allowed.indexOf(sel.value) === -1) sel.value = allowed[0];
+})();
+(function () {
   var stage = document.getElementById("mainStage");
   var btn = document.getElementById("btnFullscreen");
   if (stage && btn) {

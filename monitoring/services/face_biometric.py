@@ -21,17 +21,75 @@ from django.conf import settings
 logger = logging.getLogger(__name__)
 
 
+def _face_reference_image_url(ref) -> str | None:
+    """Build public media URL for a FaceReferenceImage row."""
+    if not ref or not ref.image or not ref.image.name:
+        return None
+    try:
+        url = ref.image.url
+        if not url:
+            return None
+        if not url.startswith(("http://", "https://", "/")):
+            url = f"{settings.MEDIA_URL.rstrip('/')}/{ref.image.name.lstrip('/')}"
+        return url
+    except Exception:
+        return None
+
+
 def _reference_image_media_url(ref_pk: int) -> str | None:
-    """URL publique de la photo de référence Django (match)."""
+    """URL publique de la photo de référence Django (par pk FaceReferenceImage)."""
     from monitoring.models import FaceReferenceImage
 
     ref = FaceReferenceImage.objects.filter(pk=int(ref_pk)).only("image").first()
-    if not ref or not ref.image:
-        return None
-    try:
-        return ref.image.url
-    except Exception:
-        return None
+    return _face_reference_image_url(ref) if ref else None
+
+
+def _registry_reference_photo_url(
+    identity_id: int,
+    *,
+    matched_reference_id: int | None = None,
+) -> str | None:
+    """
+    Official registry/dossier photo for the Digital Identity Card.
+    Prefers is_primary reference, then matched gallery row, then any reference.
+    """
+    from monitoring.models import FaceReferenceImage
+
+    qs = FaceReferenceImage.objects.filter(face_identity_id=int(identity_id)).only(
+        "image", "is_primary", "pk"
+    )
+    primary = qs.filter(is_primary=True).order_by("-pk").first()
+    if primary:
+        url = _face_reference_image_url(primary)
+        if url:
+            return url
+    if matched_reference_id:
+        url = _reference_image_media_url(int(matched_reference_id))
+        if url:
+            return url
+    any_ref = qs.order_by("-is_primary", "-pk").first()
+    return _face_reference_image_url(any_ref) if any_ref else None
+
+
+def _identity_card_photo_fields(
+    identity_id: int,
+    matched_reference_id: int,
+    detected_crop_url: str,
+) -> dict[str, str]:
+    """Separate registry photo vs scene crop for identity card rendering."""
+    ref_url = (
+        _registry_reference_photo_url(
+            identity_id,
+            matched_reference_id=matched_reference_id,
+        )
+        or ""
+    )
+    crop = (detected_crop_url or "").strip()
+    return {
+        "reference_photo_url": ref_url,
+        "reference_image_url": ref_url,
+        "detected_crop_url": crop,
+    }
 
 
 def _admin_add_facepersonprofile_url(person_code: str) -> str:
@@ -466,7 +524,10 @@ def build_face_biometric_snapshot(
 
                 prof_payload, has_extended = _serialize_face_person_profile(pcode)
 
-                ref_img_url = _reference_image_media_url(int(m["reference_id"])) or ""
+                identity_id = int(m["identity_id"])
+                ref_id = int(m["reference_id"])
+                photo_fields = _identity_card_photo_fields(identity_id, ref_id, rel_url)
+                ref_img_url = photo_fields["reference_photo_url"]
                 admin_profile_url = _admin_add_facepersonprofile_url(pcode)
                 card_name = str(m["display_name"])
                 if prof_payload and has_extended:
@@ -475,14 +536,14 @@ def build_face_biometric_snapshot(
                         card_name = fn
 
                 match_out = {
-                    "identity_id": int(m["identity_id"]),
-                    "reference_id": int(m["reference_id"]),
+                    "identity_id": identity_id,
+                    "reference_id": ref_id,
                     "display_name": str(m["display_name"]),
                     "person_code": pcode,
                     "category": cat,
                     "distance": dist,
                     "confidence_pct": int(round(conf_pct)),
-                    "reference_image_url": ref_img_url,
+                    **photo_fields,
                     "card_display_name": card_name,
                     "admin_add_facepersonprofile_url": admin_profile_url,
                 }
@@ -491,6 +552,7 @@ def build_face_biometric_snapshot(
                     {
                         "face_id": face_id,
                         "crop_url": rel_url,
+                        "detected_crop_url": rel_url,
                         "bbox": [round(float(x), 1) for x in bbox],
                         "bbox_tight": [round(float(x), 1) for x in tight_xy],
                         "quality": q,
@@ -508,7 +570,7 @@ def build_face_biometric_snapshot(
                         else "No extended profile found",
                         "match": match_out,
                         "gallery_empty": gallery_empty,
-                        "reference_image_url": ref_img_url,
+                        **photo_fields,
                         "card_display_name": card_name,
                         "admin_add_facepersonprofile_url": admin_profile_url,
                     }
@@ -622,7 +684,9 @@ def live_face_row_from_crop(
         conf_pct = match_confidence_pct_from_distance(dist)
         cat = (m.get("category") or "").strip()
         prof, has_ext = _serialize_face_person_profile(pcode)
-        ref_img_url = _reference_image_media_url(int(m["reference_id"])) or ""
+        identity_id = int(m["identity_id"])
+        ref_id = int(m["reference_id"])
+        photo_fields = _identity_card_photo_fields(identity_id, ref_id, "")
         admin_profile_url = _admin_add_facepersonprofile_url(pcode)
         card_name = str(m["display_name"])
         if prof and has_ext:
@@ -630,8 +694,8 @@ def live_face_row_from_crop(
             if fn:
                 card_name = fn
         match_js = {
-            "identity_id": int(m["identity_id"]),
-            "reference_id": int(m["reference_id"]),
+            "identity_id": identity_id,
+            "reference_id": ref_id,
             "display_name": str(m["display_name"]),
             "person_code": pcode,
             "category": cat,
@@ -645,7 +709,7 @@ def live_face_row_from_crop(
             "identity_code": pcode,
             "status": "match_found",
             "no_extended_profile_message": "" if has_ext else "No extended profile found",
-            "reference_image_url": ref_img_url,
+            **photo_fields,
             "card_display_name": card_name,
             "admin_add_facepersonprofile_url": admin_profile_url,
         }
@@ -655,6 +719,7 @@ def live_face_row_from_crop(
         "bbox": [round(float(v), 1) for v in bbox_xyxy[:4]],
         "person_conf": round(float(person_conf), 4),
         "crop_data_url": data_url,
+        "detected_crop_url": data_url,
         "match": match_js,
         "matched": matched,
         "full_name": disp if matched else "Unknown Individual",
@@ -663,5 +728,8 @@ def live_face_row_from_crop(
         "profile_extended": has_ext if matched else False,
         "history_id": uuid.uuid4().hex[:18],
     }
+    if matched and match_js:
+        row["reference_photo_url"] = match_js.get("reference_photo_url") or ""
+        row["reference_image_url"] = match_js.get("reference_image_url") or ""
 
     return row

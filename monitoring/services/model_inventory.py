@@ -11,13 +11,20 @@ from pathlib import Path
 
 from django.conf import settings
 
-# Entrées combat explicites (même si le fichier n’existe pas encore)
-_MODEL_FIGHT_ALWAYS_LIST: tuple[tuple[str, str], ...] = (
+# Menu combat fixe (dropdown Violence Model) — ordre et libellés détaillés
+_FIGHT_MENU_CHOICES: tuple[tuple[str, str], ...] = (
     ("model_fight/fd_v2.h5", "model_fight/fd_v2.h5 • Keras TensorFlow (.h5)"),
     (
-        "model_fight/model_16_m3_0.8888.pth",
-        "model_fight/model_16_m3_0.8888.pth • PyTorch nn.Module (.pth)",
+        "best_fight_classifier.pt",
+        "best_fight_classifier.pt • (réglages) classify combat",
     ),
+)
+FIGHT_MENU_VALUES = frozenset(v for v, _ in _FIGHT_MENU_CHOICES)
+DEFAULT_FIGHT_WEIGHTS = "model_fight/fd_v2.h5"
+
+# Autres entrées model_fight (hors menu dropdown combat)
+_MODEL_FIGHT_ALWAYS_LIST: tuple[tuple[str, str], ...] = (
+    ("model_fight/fd_v2.h5", "model_fight/fd_v2.h5 • Keras TensorFlow (.h5)"),
 )
 
 SKIP_DIR_PARTS = frozenset({
@@ -263,10 +270,25 @@ def build_inventory() -> list[tuple[str, str]]:
 
 
 def fight_model_choices() -> list[tuple[str, str]]:
-    """Liste dédiée : uniquement les poids « combat » (classifier), séparée des guns."""
-    pairs = [(v, lbl) for v, lbl in build_inventory() if is_fight_only_entry(v, lbl)]
-    pairs.sort(key=lambda x: x[0].lower())
-    return pairs
+    """Dropdown Violence Model : .h5 par défaut, puis best_fight_classifier.pt."""
+    base = Path(getattr(settings, "BASE_DIR", ".")).resolve()
+    out: list[tuple[str, str]] = []
+    for val, lbl in _FIGHT_MENU_CHOICES:
+        exists = (base / val).is_file()
+        out.append((val, lbl + ("" if exists else " — absent")))
+    return out
+
+
+def coerce_fight_weights_pick(pick: str | None) -> str:
+    """Réinitialise les anciens modèles retirés du menu vers fd_v2.h5."""
+    norm = (pick or "").strip().replace("\\", "/")
+    if norm in FIGHT_MENU_VALUES:
+        return norm
+    base_name = Path(norm).name
+    for val in FIGHT_MENU_VALUES:
+        if base_name == Path(val).name:
+            return val
+    return DEFAULT_FIGHT_WEIGHTS
 
 
 def weapon_model_choices() -> list[tuple[str, str]]:
@@ -278,12 +300,7 @@ def weapon_model_choices() -> list[tuple[str, str]]:
 
 def default_relative_fight_weights() -> str:
     """Valeur par défaut du menu combat ( posix relatif à BASE_DIR )."""
-    base = Path(getattr(settings, "BASE_DIR", ".")).resolve()
-    fp = Path(getattr(settings, "FIGHT_CLASSIFIER_PATH", "") or "").resolve()
-    try:
-        return fp.relative_to(base).as_posix()
-    except ValueError:
-        return fp.name
+    return DEFAULT_FIGHT_WEIGHTS
 
 
 def default_relative_weapon_weights() -> str:

@@ -3,16 +3,39 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
 
-from monitoring.api_views import ReclamationCreateView
+from monitoring.api_views import (
+    ReclamationCreateView,
+    api_health,
+    reclamation_geocode,
+    reclamation_reverse_geocode,
+)
+from monitoring.face_registry_api import face_registry_enroll
 
+# Mobile + core API routes first (must load even if optional modules fail).
 urlpatterns = [
     path("admin/", admin.site.urls),
+    path("api/health/", api_health, name="api_health"),
     path("api/reclamations/", ReclamationCreateView.as_view(), name="api_reclamations"),
+    path("api/reclamations/geocode/", reclamation_geocode, name="api_reclamations_geocode"),
+    path("api/reclamations/reverse-geocode/", reclamation_reverse_geocode, name="api_reclamations_reverse_geocode"),
+    path("api/face-registry/enroll/", face_registry_enroll, name="api_face_registry_enroll"),
     path("api/waste/", include(("monitoring.waste_urls", "waste_api"), namespace="waste_api")),
     path("api/uav/", include(("monitoring.uav_urls", "uav_api"), namespace="uav_api")),
-    path("api/traffic/", include(("monitoring.traffic_urls", "traffic_api"), namespace="traffic_api")),
-    path("", include("monitoring.urls")),
 ]
+
+try:
+    urlpatterns.append(
+        path("api/traffic/", include(("monitoring.traffic_urls", "traffic_api"), namespace="traffic_api")),
+    )
+except Exception:
+    import logging
+
+    logging.getLogger(__name__).warning(
+        "Traffic API routes disabled (optional dependency missing). Mobile API remains available.",
+        exc_info=True,
+    )
+
+urlpatterns.append(path("", include("monitoring.urls")))
 
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

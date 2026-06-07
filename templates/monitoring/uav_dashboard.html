@@ -36,6 +36,7 @@
             <span class="uav-hero-badge">Urban Risk Scan</span>
             <span class="uav-hero-badge">Smart Mapping</span>
             <span class="uav-hero-badge">Mission Reporting</span>
+            <span class="uav-hero-badge" id="uav-model-status" title="{% if uav_model_path %}{{ uav_model_path|escape }}{% endif %}">{{ uav_model_status_message }}</span>
           </div>
         </div>
         <div class="uav-hero-holo" aria-hidden="true">
@@ -69,10 +70,6 @@
                 <input type="file" id="uav-primary" name="image_primary" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" required />
               </div>
               <div class="uav-field">
-                <label for="uav-compare">Comparison Image</label>
-                <input type="file" id="uav-compare" name="image_compare" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" />
-              </div>
-              <div class="uav-field">
                 <label for="uav-zone">Zone</label>
                 <select id="uav-zone" name="zone">
                   <option value="A">Zone A</option>
@@ -81,7 +78,9 @@
                 </select>
               </div>
               <div class="uav-field">
-                <label for="uav-surface">Estimated Area (m²)</label>
+                <label for="uav-surface">
+                  
+                  Area (m²)</label>
                 <input type="number" id="uav-surface" name="surface_m2" min="0" step="1" placeholder="e.g. 850" value="500" />
               </div>
               <div class="uav-btn-row">
@@ -279,6 +278,7 @@
   var CSV_URL = "{{ csv_url|escapejs }}";
   var PDF_URL = "{{ pdf_url|escapejs }}";
   var SIM_URL = "{{ sim_buildings_url|escapejs }}";
+  var MODEL_STATUS_URL = "{{ model_status_url|escapejs }}";
 
   function absMedia(u) {
     if (!u || typeof u !== "string") return "";
@@ -430,6 +430,20 @@
 
     setMissionChip("ready");
   }
+
+  function refreshModelStatus() {
+    if (!MODEL_STATUS_URL) return;
+    fetch(MODEL_STATUS_URL)
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        var el = document.getElementById("uav-model-status");
+        if (!el || !d) return;
+        el.textContent = d.message || (d.ready ? "UAV model ready" : "UAV model missing");
+        if (d.model_path) el.title = d.model_path;
+      })
+      .catch(function () {});
+  }
+  refreshModelStatus();
 
   document.getElementById("uav-primary").addEventListener("change", function () {
     setMissionChip(this.files && this.files[0] ? "ready" : "wait");

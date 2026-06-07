@@ -1,0 +1,94 @@
+/* Global analysis loading overlay (Fusion / Surveillance) */
+.analysis-loading-modal {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  z-index: 2147483647 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 24px !important;
+  box-sizing: border-box !important;
+}
+
+.analysis-loading-modal.is-hidden {
+  display: none !important;
+}
+
+.analysis-loading-backdrop {
+  position: fixed !important;
+  inset: 0 !important;
+  background: rgba(2, 8, 23, 0.78) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  z-index: 0 !important;
+}
+
+.analysis-loading-card {
+  position: relative !important;
+  z-index: 1 !important;
+  width: min(460px, calc(100vw - 32px)) !important;
+  padding: 34px 30px !important;
+  border-radius: 24px !important;
+  background: rgba(8, 20, 40, 0.96) !important;
+  border: 1px solid rgba(0, 210, 255, 0.38) !important;
+  box-shadow:
+    0 0 45px rgba(0, 210, 255, 0.22),
+    0 24px 90px rgba(0, 0, 0, 0.55) !important;
+  text-align: center !important;
+  color: #f8fbff !important;
+}
+
+.analysis-loading-card h3 {
+  margin: 16px 0 10px !important;
+  font-size: 22px !important;
+  font-weight: 800 !important;
+  color: #f8fbff !important;
+}
+
+.analysis-loading-card p {
+  margin: 0 !important;
+  color: #9fb7d5 !important;
+  line-height: 1.5 !important;
+}
+
+.analysis-loading-spinner {
+  width: 64px !important;
+  height: 64px !important;
+  margin: 0 auto 18px !important;
+  border-radius: 50% !important;
+  border: 3px solid rgba(0, 210, 255, 0.16) !important;
+  border-top-color: #22d3ee !important;
+  animation: mmSpin 0.9s linear infinite !important;
+}
+
+.analysis-loading-progress {
+  margin-top: 24px !important;
+  height: 3px !important;
+  border-radius: 999px !important;
+  overflow: hidden !important;
+  background: rgba(0, 210, 255, 0.12) !important;
+}
+
+.analysis-loading-progress::before {
+  content: "" !important;
+  display: block !important;
+  width: 42% !important;
+  height: 100% !important;
+  background: linear-gradient(90deg, transparent, #22d3ee, transparent) !important;
+  animation: mmLoadingSweep 1.2s ease-in-out infinite !important;
+}
+
+@keyframes mmSpin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes mmLoadingSweep {
+  0% { transform: translateX(-120%); }
+  100% { transform: translateX(260%); }
+}
+
+body.analysis-modal-open {
+  overflow: hidden !important;
+}

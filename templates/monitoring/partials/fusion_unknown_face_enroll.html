@@ -1,0 +1,46 @@
+{# Unknown face — enrollment help card (Surveillance / Fusion biometric panel) #}
+<div class="fh-unknown-enroll-card">
+  <p class="fh-unknown-enroll-card__lead">
+    No match found. Add this person to the identity registry to recognize them next time.
+  </p>
+  {% if face.match_hint %}
+    <p class="fh-unknown-enroll-card__hint">{{ face.match_hint }}</p>
+  {% elif face.nearest_distance is not None %}
+    <p class="fh-unknown-enroll-card__hint">
+      Nearest: {{ face.nearest_display_name }} · distance {{ face.nearest_distance }}
+      (threshold {{ face.match_threshold }})
+    </p>
+  {% endif %}
+  <div class="fh-unknown-enroll-card__actions">
+    <button
+      type="button"
+      class="fh-btn-enroll-face"
+      data-crop-url="{{ face.crop_url|default:''|escape }}"
+      data-face-id="{{ face.face_id|default:''|escape }}"
+    >
+      Enroll This Face
+    </button>
+    <a
+      class="fh-btn-enroll-secondary"
+      href="{{ face_registry_admin_url }}"
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      Open Face Registry Admin
+    </a>
+    <button
+      type="button"
+      class="fh-btn-enroll-secondary fh-btn-enroll-import"
+      data-seed-command="{{ face_registry_seed_command|escape }}"
+    >
+      Import From Folder
+    </button>
+  </div>
+  <details class="fh-unknown-enroll-card__advanced">
+    <summary>Advanced options</summary>
+    <p class="fh-unknown-enroll-card__advanced-text">
+      Bulk import from <code>media/face_registry/&lt;folder&gt;/</code>:
+      <code>{{ face_registry_seed_command }}</code>
+    </p>
+  </details>
+</div>

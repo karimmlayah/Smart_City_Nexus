@@ -9,11 +9,13 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="{% static 'monitoring/fusion_hub_dashboard.css' %}">
+  <link rel="stylesheet" href="{% static 'monitoring/fusion_hub_dashboard.css' %}?v=3">
   <link rel="stylesheet" href="{% static 'monitoring/fusion_hub_smartcity.css' %}">
   {% if request.resolver_match.url_name == 'surveillance_dashboard' %}
-  <link rel="stylesheet" href="{% static 'monitoring/surveillance-intelligence.css' %}?v=3">
+  <link rel="stylesheet" href="{% static 'monitoring/surveillance-intelligence.css' %}?v=4">
   {% endif %}
+  <link rel="stylesheet" href="{% static 'monitoring/face-enroll-modal.css' %}?v=1">
+  <link rel="stylesheet" href="{% static 'monitoring/analysis-loading-modal.css' %}?v=1">
 {% endblock %}
 
 {% block content %}
@@ -138,20 +140,6 @@
       </div>
     </section>
     {% endif %}
-
-    <div id="fhLoadingOverlay" class="fh-loading" aria-hidden="true" role="alert">
-      <div class="fh-glass fh-loading-inner">
-        <div class="fh-spinner"></div>
-        {% if request.resolver_match.url_name == 'surveillance_dashboard' %}
-        <p>Analyzing city scene…</p>
-        <p class="fh-muted small" style="color:var(--fh-muted,#8ba4c9)">MedinaMind is reviewing safety signals in your media.</p>
-        {% else %}
-        <p>Analyzing source…</p>
-        <p class="fh-muted small" style="color:var(--fh-muted,#8ba4c9)">Running fusion models on your media.</p>
-        {% endif %}
-        <div class="fh-scan-bars"></div>
-      </div>
-    </div>
 
     {% if request.resolver_match.url_name == 'surveillance_dashboard' %}
     <section class="fh-glass fh-input-card fh-input-card--premium surv-input-card">
@@ -403,7 +391,7 @@
       {{ fusion_report_payload|json_script:"fusion-report-payload" }}
 
       <div class="fh-main-grid">
-        <aside class="fh-col fh-glass fusion-side-panel">
+        <aside class="fh-col fh-glass fusion-side-panel incident-overview-column">
           <h3 class="fh-panel-title">
             {% if request.resolver_match.url_name == 'surveillance_dashboard' %}
             <span class="fh-kicker">Incidents</span>Incident Overview
@@ -667,7 +655,7 @@
           {% endif %}
         </section>
 
-        <aside class="fh-col fh-glass fusion-intel-panel">
+        <aside class="fh-col fh-glass fusion-intel-panel people-recognition-column">
           <h3 class="fh-panel-title fh-intel-heading">
             {% if request.resolver_match.url_name == 'surveillance_dashboard' %}
             <span class="fh-kicker">People</span>People Recognition
@@ -703,6 +691,9 @@
                   <article
                     class="fh-face-scan-card fh-bio-card fh-bio-scanner-card fh-bio-face-article {% if face.matched or face.match %}fh-face-has-match{% else %}fh-face-unknown-card{% endif %} fh-bio-phase"
                     data-bio-ix="{{ forloop.counter0 }}"
+                    data-face-card
+                    data-face-id="{{ face.face_id|default:''|escape }}"
+                    data-crop-url="{{ face.crop_url|default:''|escape }}"
                   >
                     <header class="fh-bio-card-head">
                       <span class="fh-bio-card-slot">Face {{ forloop.counter }}</span>
@@ -733,13 +724,7 @@
                         <p class="fh-bio-scan-done-line">Biometric match verified — digital credential issued below.</p>
                       {% else %}
                         <div class="fh-bio-name fh-bio-unknown-title">Unknown Individual</div>
-                        <p class="fh-bio-soft">No gallery match under threshold</p>
-                        {% if face.match_hint %}
-                          <p class="fh-bio-soft">{{ face.match_hint }}</p>
-                        {% elif face.nearest_distance is not None %}
-                          <p class="fh-bio-soft">Nearest · {{ face.nearest_display_name }} · distance {{ face.nearest_distance }} (threshold {{ face.match_threshold }})</p>
-                        {% endif %}
-                        <p class="fh-bio-soft">Action · Enroll reference images in Django admin or run <code>seed_face_registry_from_folders</code></p>
+                        {% include "monitoring/partials/fusion_unknown_face_enroll.html" %}
                       {% endif %}
                     </div>
                     {% if face.matched or face.match %}
@@ -907,9 +892,41 @@
 </div>
 {% endblock %}
 
+{% block page_modals %}
+<div id="analysisLoadingModal" class="analysis-loading-modal is-hidden" role="alertdialog" aria-modal="true" aria-labelledby="analysisLoadingTitle" aria-busy="false">
+  <div class="analysis-loading-backdrop"></div>
+  <div class="analysis-loading-card">
+    <div class="analysis-loading-spinner" aria-hidden="true"></div>
+    {% if request.resolver_match.url_name == 'surveillance_dashboard' %}
+    <h3 id="analysisLoadingTitle">Analyzing city scene...</h3>
+    <p>MedinaMind is reviewing safety signals in your media.</p>
+    {% else %}
+    <h3 id="analysisLoadingTitle">Analyzing source...</h3>
+    <p>Running fusion models on your media.</p>
+    {% endif %}
+    <div class="analysis-loading-progress" aria-hidden="true"></div>
+  </div>
+</div>
+{% include "monitoring/partials/fusion_face_enroll_modal.html" %}
+{% endblock %}
+
 {% block extra_js %}
-<script src="{% static 'monitoring/fusion_hub_dashboard.js' %}"></script>
 <script>
+window.FUSION_FACE_ENROLL = {
+  enrollUrl: "{{ face_registry_enroll_url|escapejs }}",
+  adminUrl: "{{ face_registry_admin_url|escapejs }}",
+  seedCommand: "{{ face_registry_seed_command|escapejs }}"
+};
+</script>
+<script src="{% static 'monitoring/fusion_hub_dashboard.js' %}?v=3"></script>
+<script>
+(function () {
+  var sel = document.getElementById("id_fight_weights");
+  if (!sel || !sel.options.length) return;
+  var allowed = [];
+  for (var i = 0; i < sel.options.length; i++) allowed.push(sel.options[i].value);
+  if (allowed.indexOf(sel.value) === -1) sel.value = allowed[0];
+})();
 (function () {
   var zoomed = false;
   var zbtn = document.getElementById("fhBtnZoom");
@@ -1156,10 +1173,32 @@
         return d.innerHTML;
       }
 
+      function fusionIdentityInitials(name) {
+        var text = String(name || "").trim();
+        if (!text) return "?";
+        var parts = text.split(/\s+/).filter(Boolean);
+        if (!parts.length) return "?";
+        if (parts.length === 1) {
+          var w = parts[0];
+          return (w.length >= 2 ? w.slice(0, 2) : w.slice(0, 1)).toUpperCase();
+        }
+        return (parts[0].slice(0, 1) + parts[parts.length - 1].slice(0, 1)).toUpperCase();
+      }
+
+      function fusionRegistryPhotoUrl(face) {
+        var m = face && face.match;
+        if (!face && !m) return "";
+        return String(
+          (face && (face.reference_photo_url || face.reference_image_url)) ||
+            (m && (m.reference_photo_url || m.reference_image_url)) ||
+            ""
+        );
+      }
+
       function fusionBuildDigitalIdCardEl(face) {
         var m = face && face.match;
         if (!m || typeof m !== "object") return null;
-        var refUrl = String(face.reference_image_url || m.reference_image_url || "");
+        var refUrl = fusionRegistryPhotoUrl(face);
         var cardName = String(
           face.card_display_name ||
             m.card_display_name ||
@@ -1179,31 +1218,32 @@
             : m.distance;
         var prof = face.profile;
         var hasExt = !!face.profile_extended;
-        var noProf = String(
-          face.no_extended_profile_message || "No extended profile found"
-        );
         var adminUrl = String(
           face.admin_add_facepersonprofile_url ||
             m.admin_add_facepersonprofile_url ||
             "/admin/monitoring/facepersonprofile/add/"
         );
-        var bars = "";
-        for (var bi = 0; bi < 20; bi++) bars += "<span></span>";
+        var initials = fusionIdentityInitials(cardName);
 
         var photoInner = refUrl
           ? '<img class="fh-did-photo" src="' +
             escH(refUrl) +
-            '" alt="" width="96" height="96" loading="lazy" />'
-          : '<div class="fh-did-photo fh-did-photo--placeholder" role="img" aria-hidden="true">—</div>';
+            '" alt="" loading="lazy" decoding="async" onerror="this.style.display=\'none\'; var fb=this.parentElement.querySelector(\'.fh-did-photo-fallback\'); if(fb){fb.hidden=false;}" />' +
+            '<div class="fh-did-photo-fallback" hidden aria-hidden="true"><span class="fh-did-photo-fallback__initials">' +
+            escH(initials) +
+            "</span></div>"
+          : '<div class="fh-did-photo-fallback" aria-hidden="false"><span class="fh-did-photo-fallback__initials">' +
+            escH(initials) +
+            "</span></div>";
 
-        var catRow = cat
-          ? '<div class="fh-did-row"><dt>Category</dt><dd>' +
+        var catField = cat
+          ? '<div class="identity-field"><dt class="identity-field-label">Category</dt><dd class="identity-field-value">' +
             escH(cat) +
             "</dd></div>"
           : "";
 
         var profileBlock = "";
-          if (prof && hasExt) {
+        if (prof && hasExt) {
           var grid = "";
           if (
             typeof prof.age === "number" ||
@@ -1233,63 +1273,60 @@
               escH(String(prof.notes)) +
               "</p>"
             : "";
-          var extraHtml = prof.extra_info_display
-            ? '<pre class="fh-did-extra">' +
-              escH(String(prof.extra_info_display)) +
-              "</pre>"
-            : "";
           profileBlock =
-            '<div class="fh-did-profile">' +
-            '<span class="fh-did-profile-label">Extended registry profile</span>' +
-            '<span class="fh-did-profile-hint">Linked by <code>identity_code</code> = <code>' +
-            escH(pcode) +
-            "</code></span>" +
-            (grid
-              ? '<ul class="fh-did-profile-grid">' + grid + "</ul>"
-              : "") +
+            '<div class="fh-did-profile"><span class="fh-did-profile-label">Extended registry profile</span>' +
+            (grid ? '<ul class="fh-did-profile-grid">' + grid + "</ul>" : "") +
             notesHtml +
-            extraHtml +
             "</div>";
-        } else {
-          profileBlock =
-            '<p class="fh-did-no-profile">' +
-            escH(noProf) +
-            '</p><a class="fh-did-admin-link" href="' +
-            escH(adminUrl) +
-            '" target="_blank" rel="noopener noreferrer">Add extended profile in Django admin</a>';
         }
 
+        var actionBlock = hasExt
+          ? '<span class="complete-profile-btn complete-profile-btn--done" title="Extended profile linked">Profile Complete</span>'
+          : '<a class="complete-profile-btn fh-did-admin-link" href="' +
+            escH(adminUrl) +
+            '" target="_blank" rel="noopener noreferrer" title="Open Django admin">Complete Profile</a>';
+
         var html =
-          '<section class="fh-digital-id-card" aria-label="Digital identity card">' +
+          '<section class="fh-digital-id-card digital-id-card" aria-label="Digital identity card">' +
           '<div class="fh-did-pattern" aria-hidden="true"></div>' +
           '<header class="fh-did-header"><div class="fh-did-titles">' +
           '<span class="fh-did-kicker">DIGITAL IDENTITY CARD</span>' +
           '<span class="fh-did-subkicker">AI VERIFIED PROFILE</span></div>' +
-          '<div class="fh-did-badges"><span class="fh-did-verified">' +
-          '<span class="fh-did-verified-dot" aria-hidden="true"></span>VERIFIED</span></div></header>' +
-          '<div class="fh-did-body">' +
-          '<div class="fh-did-photo-col"><div class="fh-did-photo-frame">' +
+          '<span class="fh-did-verified"><span class="fh-did-verified-dot" aria-hidden="true"></span>VERIFIED</span></header>' +
+          '<div class="fh-did-main identity-main">' +
+          '<div class="identity-photo fh-did-photo-frame">' +
           photoInner +
-          '</div><div class="fh-did-chip" aria-hidden="true" title="Secure element">' +
-          '<span class="fh-did-chip-gold"></span><span class="fh-did-chip-lines"></span></div></div>' +
-          '<div class="fh-did-main"><h3 class="fh-did-name">' +
+          '</div><div class="identity-details">' +
+          '<h3 class="fh-did-name identity-name">' +
           escH(cardName) +
-          "</h3><dl class=\"fh-did-dl\">" +
-          '<div class="fh-did-row"><dt>Unique ID</dt><dd><code class="fh-did-code">' +
+          "</h3>" +
+          '<dl class="identity-fields fh-did-fields">' +
+          '<div class="identity-field"><dt class="identity-field-label">Name</dt><dd class="identity-field-value">' +
+          escH(cardName) +
+          "</dd></div>" +
+          '<div class="identity-field"><dt class="identity-field-label">Unique ID</dt><dd class="identity-field-value"><code class="fh-did-code unique-id-badge">' +
           escH(pcode) +
           "</code></dd></div>" +
-          catRow +
-          '<div class="fh-did-row fh-did-row--metrics"><div><dt>Match confidence</dt><dd>' +
+          catField +
+          '<div class="identity-field"><dt class="identity-field-label">Match confidence</dt><dd class="identity-field-value">' +
           escH(conf != null ? String(conf) : "—") +
-          '%</dd></div><div><dt>Cosine distance</dt><dd>' +
+          '%</dd></div><div class="identity-field"><dt class="identity-field-label">Distance score</dt><dd class="identity-field-value">' +
           escH(dist != null ? String(dist) : "—") +
-          "</dd></div></div></dl>" +
+          "</dd></div></dl>" +
           profileBlock +
-          '</div><div class="fh-did-side"><div class="fh-did-qr" aria-hidden="true"></div>' +
-          '<div class="fh-did-barcode" aria-hidden="true">' +
-          bars +
-          "</div></div></div>" +
-          '<footer class="fh-did-footer"><span class="fh-did-footer-id">REF #' +
+          "</div></div>" +
+          '<footer class="identity-footer fh-did-footer">' +
+          '<div class="identity-code-block">' +
+          '<div class="identity-chip-pattern fh-did-chip" aria-hidden="true" title="Secure element">' +
+          '<span class="fh-did-chip-gold"></span><span class="fh-did-chip-lines"></span></div>' +
+          '<div class="identity-barcode fh-did-barcode" aria-hidden="true"></div>' +
+          '<span class="identity-code-value">' +
+          escH(pcode) +
+          "</span></div>" +
+          '<div class="identity-footer-actions">' +
+          actionBlock +
+          "</div>" +
+          '<span class="fh-did-footer-id">REF #' +
           escH(String(m.reference_id != null ? m.reference_id : "")) +
           " · IDENTITY #" +
           escH(String(m.identity_id != null ? m.identity_id : "")) +
@@ -1298,6 +1335,64 @@
         wrap.innerHTML = html;
         return wrap.firstElementChild;
       }
+
+      function fusionBuildUnknownEnrollHtml(face) {
+        var cfg = window.FUSION_FACE_ENROLL || {};
+        var adminUrl = cfg.adminUrl || "/admin/monitoring/faceidentity/";
+        var seedCmd =
+          cfg.seedCommand || "python manage.py seed_face_registry_from_folders";
+        var crop = face && face.crop_url ? String(face.crop_url) : "";
+        var faceId = face && face.face_id ? String(face.face_id) : "";
+        var hint = "";
+        if (face && face.match_hint) {
+          hint =
+            '<p class="fh-unknown-enroll-card__hint">' +
+            escH(String(face.match_hint)) +
+            "</p>";
+        } else if (
+          face &&
+          face.nearest_distance != null &&
+          face.nearest_distance !== undefined
+        ) {
+          hint =
+            '<p class="fh-unknown-enroll-card__hint">Nearest: ' +
+            escH(String(face.nearest_display_name || "")) +
+            " · distance " +
+            escH(String(face.nearest_distance)) +
+            " (threshold " +
+            escH(
+              String(
+                face.match_threshold != null ? face.match_threshold : ""
+              )
+            ) +
+            ")</p>";
+        }
+        return (
+          '<div class="fh-unknown-enroll-card">' +
+          '<p class="fh-unknown-enroll-card__lead">No match found. Add this person to the identity registry to recognize them next time.</p>' +
+          hint +
+          '<div class="fh-unknown-enroll-card__actions">' +
+          '<button type="button" class="fh-btn-enroll-face" data-crop-url="' +
+          escH(crop) +
+          '" data-face-id="' +
+          escH(faceId) +
+          '">Enroll This Face</button>' +
+          '<a class="fh-btn-enroll-secondary" href="' +
+          escH(adminUrl) +
+          '" target="_blank" rel="noopener noreferrer">Open Face Registry Admin</a>' +
+          '<button type="button" class="fh-btn-enroll-secondary fh-btn-enroll-import" data-seed-command="' +
+          escH(seedCmd) +
+          '">Import From Folder</button>' +
+          "</div>" +
+          '<details class="fh-unknown-enroll-card__advanced"><summary>Advanced options</summary>' +
+          '<p class="fh-unknown-enroll-card__advanced-text">Bulk import from <code>media/face_registry/&lt;folder&gt;/</code>: <code>' +
+          escH(seedCmd) +
+          "</code></p></details></div>"
+        );
+      }
+
+      window.fusionBuildDigitalIdCardEl = fusionBuildDigitalIdCardEl;
+      window.fusionBuildUnknownEnrollHtml = fusionBuildUnknownEnrollHtml;
 
       var faBtn = document.getElementById("fhBtnFullVideoAnalysis");
       var faField = document.getElementById("fusionFullAnalysisField");
@@ -1389,24 +1484,13 @@
           } else {
             capHtml =
               '<div class="fh-bio-name fh-bio-unknown-title">Unknown Individual</div>' +
-              '<p class="fh-bio-soft">No gallery match under threshold</p>';
-            if (face.match_hint) {
-              capHtml +=
-                '<p class="fh-bio-soft">' + escH(String(face.match_hint)) + "</p>";
-            } else if (face.nearest_distance != null && face.nearest_distance !== undefined) {
-              capHtml +=
-                '<p class="fh-bio-soft">Nearest · ' +
-                escH(String(face.nearest_display_name || "")) +
-                " · distance " +
-                escH(String(face.nearest_distance)) +
-                " (threshold " +
-                escH(String(face.match_threshold != null ? face.match_threshold : "")) +
-                ")</p>";
-            }
-            capHtml +=
-              '<p class="fh-bio-soft">Enroll in Django admin or run seed_face_registry_from_folders</p>';
+              fusionBuildUnknownEnrollHtml(face);
           }
           cap.innerHTML = capHtml;
+
+          card.setAttribute("data-face-card", "");
+          if (face.face_id) card.setAttribute("data-face-id", String(face.face_id));
+          if (crop) card.setAttribute("data-crop-url", crop);
 
           card.appendChild(head);
           card.appendChild(bioVis);

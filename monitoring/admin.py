@@ -76,10 +76,10 @@ class VideoSourceAdmin(admin.ModelAdmin):
 
 @admin.register(CitizenReclamation)
 class CitizenReclamationAdmin(admin.ModelAdmin):
-    list_display = ("category", "media_type", "latitude", "longitude", "created_at")
-    list_filter = ("category", "media_type", "created_at")
+    list_display = ("category", "media_type", "location_source", "latitude", "longitude", "created_at")
+    list_filter = ("category", "media_type", "location_source", "created_at")
     readonly_fields = ("created_at",)
-    search_fields = ("description",)
+    search_fields = ("description", "address")
 
 
 @admin.register(Alert)

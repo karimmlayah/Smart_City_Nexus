@@ -12,7 +12,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 
 from monitoring.models import UavStructuralAnalysis
-from monitoring.services.uav_cnn_inference import predict_structural_state
+from monitoring.services.uav_cnn_inference import predict_structural_state, uav_model_status
 from monitoring.services.uav_export import history_csv_response, history_pdf_response
 from monitoring.services.uav_risk_engine import (
     build_recommendations,
@@ -179,6 +179,11 @@ def uav_analyze(request):
         "model_accuracy_display": getattr(settings, "UAV_DISPLAY_MODEL_ACCURACY", "96.06%"),
     }
     return JsonResponse(payload)
+
+
+@require_http_methods(["GET"])
+def uav_model_status_api(request):
+    return JsonResponse({"success": True, **uav_model_status(verify_load=True)})
 
 
 @require_http_methods(["GET"])

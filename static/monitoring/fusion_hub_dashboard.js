@@ -34,23 +34,56 @@
     });
   });
 
-  /* ——— Form analyse → loading overlay ——— */
+  /* ——— Form analyse → global loading modal ——— */
   var form = document.getElementById("fusionBatchForm");
-  var overlay = document.getElementById("fhLoadingOverlay");
   var submitAnalyze = document.getElementById("fhAnalyzeBtn");
-  if (form && overlay) {
+
+  function mountAnalysisLoadingModal() {
+    var modal = document.getElementById("analysisLoadingModal");
+    if (modal && modal.parentElement !== document.body) {
+      document.body.appendChild(modal);
+    }
+    return modal;
+  }
+
+  function showAnalysisLoading() {
+    var modal = mountAnalysisLoadingModal();
+    if (!modal) return;
+    modal.classList.remove("is-hidden");
+    modal.setAttribute("aria-busy", "true");
+    document.body.classList.add("analysis-modal-open");
+  }
+
+  function hideAnalysisLoading() {
+    var modal = document.getElementById("analysisLoadingModal");
+    if (!modal) return;
+    modal.classList.add("is-hidden");
+    modal.setAttribute("aria-busy", "false");
+    document.body.classList.remove("analysis-modal-open");
+  }
+
+  window.showAnalysisLoading = showAnalysisLoading;
+  window.hideAnalysisLoading = hideAnalysisLoading;
+
+  mountAnalysisLoadingModal();
+  hideAnalysisLoading();
+
+  if (form) {
     form.addEventListener("submit", function () {
-      if (submitAnalyze && submitAnalyze.closest("fieldset[disabled]"))
-        return;
+      if (submitAnalyze && submitAnalyze.closest("fieldset[disabled]")) return;
       if (
         form.getAttribute("data-fusion-progressive") === "1" &&
         form.getAttribute("data-fusion-force-block") !== "1"
-      )
+      ) {
         return;
-      overlay.classList.add("is-on");
-      overlay.setAttribute("aria-busy", "true");
+      }
+      showAnalysisLoading();
     });
   }
+
+  window.addEventListener("pageshow", function () {
+    hideAnalysisLoading();
+  });
 
   /* ——— Threat cards modal ——— */
   var cardsEl = document.getElementById("fusion-threat-cards");
@@ -399,4 +432,325 @@ window.FusionHubBioScanner = (function () {
   }
 
   return { initCards: initCards };
+})();
+
+/**
+ * Face registry enrollment — modal, form submit, card promotion after enroll.
+ */
+(function () {
+  var cfg = window.FUSION_FACE_ENROLL || {};
+  var enrollUrl = cfg.enrollUrl || "/api/face-registry/enroll/";
+  var activeEnrollCard = null;
+  var toastTimer = null;
+
+  function escapeHtml(s) {
+    var d = document.createElement("div");
+    d.textContent = String(s == null ? "" : s);
+    return d.innerHTML;
+  }
+
+  function getCsrfToken() {
+    var m = document.cookie.match(/csrftoken=([^;]+)/);
+    if (m) return m[1];
+    var inp = document.querySelector("[name=csrfmiddlewaretoken]");
+    return inp ? inp.value : "";
+  }
+
+  function mountModal(id) {
+    var modal = document.getElementById(id);
+    if (modal && modal.parentElement !== document.body) {
+      document.body.appendChild(modal);
+    }
+    return modal;
+  }
+
+  function mountFaceEnrollModals() {
+    mountModal("faceEnrollModal");
+    mountModal("faceEnrollImportModal");
+    var toast = document.getElementById("faceEnrollToast");
+    if (toast && toast.parentElement !== document.body) {
+      document.body.appendChild(toast);
+    }
+  }
+
+  function showToast(message, isError) {
+    var toast = document.getElementById("faceEnrollToast");
+    if (!toast) return;
+    toast.textContent = message;
+    toast.classList.toggle("face-enroll-toast--error", !!isError);
+    toast.classList.remove("is-hidden");
+    if (toastTimer) window.clearTimeout(toastTimer);
+    toastTimer = window.setTimeout(function () {
+      toast.classList.add("is-hidden");
+    }, 4200);
+  }
+
+  function setModalOpen(modal, open) {
+    if (!modal) return;
+    modal.classList.toggle("is-hidden", !open);
+    modal.setAttribute("aria-hidden", open ? "false" : "true");
+    document.body.classList.toggle("face-enroll-modal-open", open);
+  }
+
+  function setPreview(cropUrl) {
+    var img = document.getElementById("faceEnrollPreviewImg");
+    var empty = document.getElementById("faceEnrollPreviewEmpty");
+    var url = (cropUrl || "").trim();
+    if (!img || !empty) return;
+    if (url) {
+      img.src = url;
+      img.alt = "Detected face crop";
+      img.hidden = false;
+      empty.hidden = true;
+    } else {
+      img.removeAttribute("src");
+      img.hidden = true;
+      empty.hidden = false;
+    }
+  }
+
+  function openFaceEnrollModal(cropUrl, faceId, card) {
+    var modal = mountModal("faceEnrollModal");
+    if (!modal) return;
+    activeEnrollCard = card || null;
+    var cropField = document.getElementById("faceEnrollCropUrl");
+    var faceField = document.getElementById("faceEnrollFaceId");
+    var form = document.getElementById("faceEnrollForm");
+    var status = document.getElementById("faceEnrollStatus");
+    if (cropField) cropField.value = cropUrl || "";
+    if (faceField) faceField.value = faceId || "";
+    if (form) form.reset();
+    if (cropField) cropField.value = cropUrl || "";
+    if (faceField) faceField.value = faceId || "";
+    if (status) {
+      status.hidden = true;
+      status.textContent = "";
+    }
+    setPreview(cropUrl);
+    setModalOpen(modal, true);
+    var nameInput = document.getElementById("faceEnrollName");
+    if (nameInput) window.setTimeout(function () { nameInput.focus(); }, 80);
+  }
+
+  function closeFaceEnrollModal() {
+    setModalOpen(mountModal("faceEnrollModal"), false);
+    activeEnrollCard = null;
+  }
+
+  function openImportModal(seedCommand) {
+    var modal = mountModal("faceEnrollImportModal");
+    var cmdEl = document.getElementById("faceEnrollImportCommand");
+    var cmd = seedCommand || cfg.seedCommand || "python manage.py seed_face_registry_from_folders";
+    if (cmdEl) cmdEl.textContent = cmd;
+    setModalOpen(modal, true);
+  }
+
+  function closeImportModal() {
+    setModalOpen(mountModal("faceEnrollImportModal"), false);
+  }
+
+  function fusionPromoteEnrolledFace(card, faceData) {
+    if (!card || !faceData) return;
+    card.classList.remove("fh-face-unknown-card");
+    card.classList.add("fh-face-has-match");
+    var warnBadge = card.querySelector(".fh-bio-badge--warn");
+    if (warnBadge) {
+      warnBadge.classList.remove("fh-bio-badge--warn");
+      warnBadge.classList.add("fh-bio-badge--ok");
+      warnBadge.textContent = "MATCH FOUND";
+    }
+    var cap = card.querySelector(".fh-bio-cap");
+    if (cap) {
+      cap.innerHTML =
+        '<p class="fh-bio-scan-done-line">Biometric match verified — digital credential issued below.</p>';
+    }
+    var oldId = card.querySelector(".fh-digital-id-card");
+    if (oldId) oldId.remove();
+    var build = window.fusionBuildDigitalIdCardEl;
+    if (typeof build === "function") {
+      var idCard = build(faceData);
+      if (idCard) card.appendChild(idCard);
+    }
+  }
+
+  function setEnrollBusy(busy) {
+    var submit = document.getElementById("faceEnrollSubmit");
+    var cancel = document.getElementById("faceEnrollCancel");
+    if (submit) {
+      submit.disabled = busy;
+      submit.textContent = busy ? "Saving…" : "Save to Face Registry";
+    }
+    if (cancel) cancel.disabled = busy;
+  }
+
+  function handleEnrollSubmit(ev) {
+    ev.preventDefault();
+    var form = ev.target;
+    var status = document.getElementById("faceEnrollStatus");
+    var name = (document.getElementById("faceEnrollName") || {}).value || "";
+    var category = (document.getElementById("faceEnrollCategory") || {}).value || "";
+    var uniqueId = (document.getElementById("faceEnrollUniqueId") || {}).value || "";
+    var cropUrl = (document.getElementById("faceEnrollCropUrl") || {}).value || "";
+    var refInput = document.getElementById("faceEnrollReferenceImage");
+
+    if (!name.trim() || !uniqueId.trim()) {
+      if (status) {
+        status.hidden = false;
+        status.textContent = "Full name and Unique ID are required.";
+      }
+      return;
+    }
+    if (!cropUrl.trim() && !(refInput && refInput.files && refInput.files[0])) {
+      if (status) {
+        status.hidden = false;
+        status.textContent = "No face crop available. Re-run analysis or upload a reference photo.";
+      }
+      return;
+    }
+
+    var fd = new FormData();
+    fd.append("name", name.trim());
+    fd.append("category", category.trim());
+    fd.append("unique_id", uniqueId.trim());
+    if (cropUrl.trim()) fd.append("crop_url", cropUrl.trim());
+    if (refInput && refInput.files && refInput.files[0]) {
+      fd.append("reference_image", refInput.files[0]);
+    }
+
+    setEnrollBusy(true);
+    if (status) {
+      status.hidden = true;
+      status.textContent = "";
+    }
+
+    var headers = { Accept: "application/json" };
+    var csrf = getCsrfToken();
+    if (csrf) headers["X-CSRFToken"] = csrf;
+
+    fetch(enrollUrl, {
+      method: "POST",
+      body: fd,
+      headers: headers,
+      credentials: "same-origin",
+    })
+      .then(function (resp) {
+        return resp.json().then(function (data) {
+          return { ok: resp.ok, status: resp.status, data: data };
+        });
+      })
+      .then(function (result) {
+        setEnrollBusy(false);
+        if (!result.ok || !result.data || !result.data.success) {
+          var msg =
+            (result.data && result.data.message) ||
+            "Enrollment failed. Please try again.";
+          if (status) {
+            status.hidden = false;
+            status.textContent = msg;
+          }
+          showToast(msg, true);
+          return;
+        }
+        closeFaceEnrollModal();
+        showToast(result.data.message || "Identity enrolled successfully", false);
+        if (activeEnrollCard && result.data.face) {
+          fusionPromoteEnrolledFace(activeEnrollCard, result.data.face);
+        }
+      })
+      .catch(function () {
+        setEnrollBusy(false);
+        var msg = "Network error while enrolling. Please try again.";
+        if (status) {
+          status.hidden = false;
+          status.textContent = msg;
+        }
+        showToast(msg, true);
+      });
+  }
+
+  function bindFaceEnrollUi() {
+    mountFaceEnrollModals();
+
+    document.addEventListener("click", function (ev) {
+      var enrollBtn = ev.target && ev.target.closest
+        ? ev.target.closest(".fh-btn-enroll-face")
+        : null;
+      if (enrollBtn) {
+        ev.preventDefault();
+        var card = enrollBtn.closest("[data-face-card]");
+        openFaceEnrollModal(
+          enrollBtn.getAttribute("data-crop-url") || "",
+          enrollBtn.getAttribute("data-face-id") || "",
+          card
+        );
+        return;
+      }
+      var importBtn = ev.target && ev.target.closest
+        ? ev.target.closest(".fh-btn-enroll-import")
+        : null;
+      if (importBtn) {
+        ev.preventDefault();
+        openImportModal(importBtn.getAttribute("data-seed-command"));
+      }
+    });
+
+    var closeBtn = document.getElementById("faceEnrollModalClose");
+    var cancelBtn = document.getElementById("faceEnrollCancel");
+    var dismissBackdrop = document.querySelector(
+      "#faceEnrollModal [data-face-enroll-dismiss]"
+    );
+    if (closeBtn) closeBtn.addEventListener("click", closeFaceEnrollModal);
+    if (cancelBtn) cancelBtn.addEventListener("click", closeFaceEnrollModal);
+    if (dismissBackdrop) {
+      dismissBackdrop.addEventListener("click", closeFaceEnrollModal);
+    }
+
+    var importClose = document.getElementById("faceEnrollImportClose");
+    var importDismiss = document.getElementById("faceEnrollImportDismiss");
+    var importBackdrop = document.querySelector(
+      "#faceEnrollImportModal [data-face-enroll-import-dismiss]"
+    );
+    if (importClose) importClose.addEventListener("click", closeImportModal);
+    if (importDismiss) importDismiss.addEventListener("click", closeImportModal);
+    if (importBackdrop) importBackdrop.addEventListener("click", closeImportModal);
+
+    var copyBtn = document.getElementById("faceEnrollImportCopy");
+    if (copyBtn) {
+      copyBtn.addEventListener("click", function () {
+        var cmdEl = document.getElementById("faceEnrollImportCommand");
+        var text = cmdEl ? cmdEl.textContent : "";
+        if (!text) return;
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(function () {
+            showToast("Command copied to clipboard", false);
+          });
+        } else {
+          showToast(text, false);
+        }
+      });
+    }
+
+    var form = document.getElementById("faceEnrollForm");
+    if (form) form.addEventListener("submit", handleEnrollSubmit);
+
+    document.addEventListener("keydown", function (ev) {
+      if (ev.key !== "Escape") return;
+      var enrollModal = document.getElementById("faceEnrollModal");
+      var importModal = document.getElementById("faceEnrollImportModal");
+      if (enrollModal && !enrollModal.classList.contains("is-hidden")) {
+        closeFaceEnrollModal();
+      } else if (importModal && !importModal.classList.contains("is-hidden")) {
+        closeImportModal();
+      }
+    });
+  }
+
+  window.openFaceEnrollModal = openFaceEnrollModal;
+  window.fusionPromoteEnrolledFace = fusionPromoteEnrolledFace;
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", bindFaceEnrollUi);
+  } else {
+    bindFaceEnrollUi();
+  }
 })();
