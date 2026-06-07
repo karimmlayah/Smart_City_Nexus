@@ -14,6 +14,6 @@ def uav_dashboard_page(request):
             "csv_url": reverse("uav_api:uav_export_csv"),
             "pdf_url": reverse("uav_api:uav_export_pdf"),
             "sim_buildings_url": reverse("uav_api:uav_sim_buildings"),
-            "page_title": "Smart City UAV",
+            "page_title": "Drone Mission Intelligence",
         },
     )

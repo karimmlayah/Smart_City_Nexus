@@ -42,7 +42,7 @@ def _bgr_from_upload(fobj) -> tuple[np.ndarray | None, str | None]:
 def uav_analyze(request):
     primary_file = request.FILES.get("image_primary") or request.FILES.get("image")
     if not primary_file:
-        return _json_err("Fichier image UAV requis (image_primary).")
+        return _json_err("UAV image file required (image_primary).")
 
     frame_p, err = _bgr_from_upload(primary_file)
     if frame_p is None:
@@ -227,7 +227,7 @@ def uav_sim_buildings(request):
                 "lat": base_lat + (random.random() - 0.5) * 0.022,
                 "lng": base_lng + (random.random() - 0.5) * 0.022,
                 "state": random.choice(["intact", "damaged", "collapsed"]),
-                "label": f"Bât. {i + 1}",
+                "label": f"Bldg. {i + 1}",
             }
         )
     latest = (

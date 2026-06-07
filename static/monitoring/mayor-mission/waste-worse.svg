@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 480">
+  <rect width="800" height="480" fill="#0f1a14"/>
+  <rect width="800" height="480" fill="#22c55e" opacity="0.05"/>
+  <rect y="300" width="800" height="180" fill="#142018"/>
+  <!-- massive pile -->
+  <ellipse cx="400" cy="380" rx="220" ry="70" fill="#374151"/>
+  <ellipse cx="380" cy="360" rx="180" ry="55" fill="#4b5563"/>
+  <ellipse cx="420" cy="345" rx="140" ry="40" fill="#6b7280"/>
+  <!-- flies / hazard -->
+  <circle cx="300" cy="300" r="3" fill="#94a3b8"/>
+  <circle cx="320" cy="290" r="2" fill="#94a3b8"/>
+  <circle cx="480" cy="295" r="3" fill="#94a3b8"/>
+  <circle cx="500" cy="305" r="2" fill="#94a3b8"/>
+  <rect x="600" y="250" width="100" height="50" rx="4" fill="#ef4444" opacity="0.8"/>
+  <text x="650" y="282" text-anchor="middle" fill="#fff" font-size="12" font-family="sans-serif" font-weight="bold">HAZARD</text>
+  <text x="400" y="60" text-anchor="middle" fill="#ef4444" font-size="24" font-family="sans-serif" font-weight="bold">SANITATION FAILURE</text>
+  <text x="400" y="90" text-anchor="middle" fill="#fca5a5" font-size="14" font-family="sans-serif">Waste spreading — health risk rising</text>
+  <text x="400" y="450" text-anchor="middle" fill="#ef4444" font-size="16" font-family="sans-serif">+24 min delay · 620 citizens impacted</text>
+</svg>

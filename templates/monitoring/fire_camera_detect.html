@@ -1,129 +1,224 @@
 {% extends "base.html" %}
 {% load static %}
-{% block title %}Smart City · Détection feu / fumée{% endblock %}
-{% block body_class %}cockpit fusion-hub-sc road-damage-sc fc-camera-page{% endblock %}
+{% block title %}Smart City · Fire & Smoke Detection{% endblock %}
+{% block body_class %}cockpit fusion-hub-sc road-damage-sc fc-camera-page fire-detect-sc ai-dashboard-sc mm-dash-body{% endblock %}
+
 {% block extra_head %}
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{% static 'monitoring/fusion_hub_dashboard.css' %}">
   <link rel="stylesheet" href="{% static 'monitoring/fusion_hub_smartcity.css' %}">
   <link rel="stylesheet" href="{% static 'monitoring/road_damage_theme.css' %}">
   <link rel="stylesheet" href="{% static 'monitoring/fire-camera-settings.css' %}">
+  <link rel="stylesheet" href="{% static 'monitoring/fire-detect-modern.css' %}?v=1">
 {% endblock %}
-{% block content %}
-<div class="fh-root fh-camera-shell">
-  <header class="fh-nav fh-glass" aria-label="Primary">
-    <div class="fh-nav-brand fh-brand-cluster">
-      <span class="fh-brand-orb" aria-hidden="true"></span>
-      <div class="fh-brand-text">
-        <h1 class="fh-nav-logo">Smart City Platform</h1>
-        <p class="fh-nav-tag">Fire Detection · ONNX / Twilio</p>
-      </div>
-    </div>
-    <div class="fh-nav-meta">
-      <span class="fh-nav-loc" title="Module">ESP32 · Flux &amp; inférence</span>
-      <span class="fh-clock" id="fhClock" aria-live="polite">--:--:--</span>
-      <span class="fh-icon-chip" title="Notifications">🔔</span>
-      <span class="fh-nav-user" title="Operator" aria-hidden="true"></span>
-    </div>
-  </header>
 
-  <div class="fh-camera-settings-body fc-detect-wrap">
-    <header class="fh-glass fc-detect-hero">
-      <h2 class="fc-detect-title">Détection feu / fumée (ONNX + Twilio)</h2>
-      <p class="fc-detect-lead">
-        Django télécharge <code>http://{% if esp_ip %}{{ esp_ip|escape }}{% else %}&lt;IP&gt;{% endif %}/capture</code>, exécute <strong>best.onnx</strong> (YOLO),
-        et déclenche <strong>Twilio</strong> lorsque la détection feu/fumée reste stable pendant le délai réglé (par défaut <strong>2&nbsp;s</strong>).
-      </p>
-      <ul class="fc-detect-list">
-        <li><strong>IP caméra</strong> : <a href="{% url 'monitoring:camera_settings' %}">Réglages caméra</a>, ou <code>DRONE_HOST</code> dans <code>.env</code>.</li>
-        <li><strong>Modèle</strong> : <code>{{ model_path|escape }}</code>
-          {% if model_ok %}<span class="fc-ok"> — fichier présent.</span>
-          {% else %}<strong class="fc-bad"> — fichier absent.</strong> Copiez <code>best.onnx</code> dans <code>models/best.onnx</code> à la racine du projet, ou définissez <code>FIRE_ONNX_MODEL</code> dans <code>.env</code>.{% endif %}
-        </li>
-        <li><strong>ONNX Runtime</strong> : {% if onnx_ok %}<span class="fc-ok">installé.</span>{% else %}<strong class="fc-bad">manquant</strong> — <code>pip install onnxruntime</code>.{% endif %}</li>
-      </ul>
-      <div class="fc-detect-ip" style="margin-top:0.75rem;">
-        <p style="margin:0 0 0.35rem;">IP utilisée : <code>{{ esp_ip|escape }}</code></p>
-        <form method="post" style="display:flex;flex-wrap:wrap;gap:0.55rem;align-items:center;">
-          {% csrf_token %}
-          <label for="esp_ip" style="font-size:0.82rem;white-space:nowrap;">IP ESP32-CAM utilisée</label>
-          <input id="esp_ip" name="esp_ip" type="text" value="{{ esp_ip|escape }}" placeholder="ex: 192.168.0.148" autocomplete="off" style="min-width:14rem;padding:0.45rem 0.55rem;border-radius:10px;border:1px solid rgba(255,255,255,0.12);background:rgba(0,0,0,0.35);color:#e2e8f0;" />
-          <button type="submit" class="jarvis-btn jarvis-btn-ghost" style="padding:0.35rem 0.65rem;font-size:0.8rem;white-space:nowrap;">Appliquer IP</button>
-        </form>
+{% block topbar %}{% include "monitoring/partials/mm_topbar.html" %}{% endblock %}
+
+{% block content %}
+<div class="fh-root fd-root">
+  <div class="fd-page fc-detect-wrap">
+    <div class="fd-page__bg" aria-hidden="true"></div>
+    <div class="fd-page__grid" aria-hidden="true"></div>
+    <div class="fd-page__smoke" aria-hidden="true"></div>
+    <div class="fd-page__particles" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+
+    <!-- Hero -->
+    <section class="fh-glass fd-hero" aria-label="Fire and Smoke Intelligence Center">
+      <div class="fd-hero__sweep" aria-hidden="true"></div>
+      <div>
+        <h1 class="fd-hero__title">Fire &amp; Smoke Intelligence Center</h1>
+        <p class="fd-hero__sub">AI-powered fire and smoke detection with real-time camera monitoring, explainable analysis, and emergency alert automation.</p>
+        <div class="fd-hero__badges">
+          <span class="fd-hero-badge">ESP32-CAM Ready</span>
+          <span class="fd-hero-badge">ONNX Vision</span>
+          <span class="fd-hero-badge fd-hero-badge--alert">Twilio Alerts</span>
+          <span class="fd-hero-badge">Explainable AI</span>
+        </div>
+        <div class="fd-hero__actions">
+          <a href="{% url 'monitoring:camera_settings' %}" class="fd-btn">Camera Settings</a>
+          <a href="{% url 'monitoring:surveillance_dashboard' %}" class="fd-btn fd-btn--ghost">Surveillance</a>
+        </div>
       </div>
-      <p class="fc-detect-actions">
-        <a href="{% url 'monitoring:camera_settings' %}" class="jarvis-btn jarvis-btn-primary" style="text-decoration:none;display:inline-flex;">📷 Réglages caméra</a>
-        <a href="{% url 'monitoring:surveillance_dashboard' %}" class="jarvis-btn jarvis-btn-ghost" style="text-decoration:none;display:inline-flex;margin-left:0.35rem;">Surveillance</a>
-      </p>
-    </header>
+      <div class="fd-hero-holo" aria-hidden="true">
+        <span class="fd-hero-holo__pulse"></span>
+        <span class="fd-hero-holo__pulse"></span>
+        <div class="fd-hero-holo__scan"></div>
+        <svg viewBox="0 0 80 80" width="40" height="40" style="position:relative;z-index:1;opacity:0.7;" aria-hidden="true">
+          <circle cx="40" cy="40" r="18" fill="none" stroke="rgba(255,107,53,0.4)" stroke-width="1.5"/>
+          <path d="M40 28c-4 8-8 10-8 16a8 8 0 0016 0c0-6-4-8-8-16z" fill="rgba(255,107,53,0.55)"/>
+        </svg>
+        <span class="fd-hero-holo__tag">Risk Scan Active</span>
+        <div class="fd-hero-holo__pipe">
+          <span>Camera</span><em>→</em><span>Detection</span><em>→</em><span>Risk</span><em>→</em><span>Alert</span>
+        </div>
+      </div>
+    </section>
+
+    <p class="fd-hero__sub" style="margin:0;padding:0 0.15rem;">
+      MedinaMind monitors the ESP32-CAM feed, analyzes frames with ONNX vision, and triggers emergency notifications when fire or smoke remains stable over the configured delay.
+    </p>
+
+    <details class="fd-tech-details">
+      <summary>System Details &amp; Advanced Configuration</summary>
+      <div class="fd-tech-details__body">
+        <ul style="margin:0;padding-left:1.1rem;">
+          <li><strong>Camera IP</strong>: <a href="{% url 'monitoring:camera_settings' %}">Camera Settings</a>, or <code>DRONE_HOST</code> in <code>.env</code>.</li>
+          <li><strong>Vision Model</strong>: <code>{{ model_path|escape }}</code>
+            {% if model_ok %}<span class="fc-ok"> — file present.</span>
+            {% else %}<strong class="fc-bad"> — file missing.</strong> Copy <code>best.onnx</code> to <code>models/best.onnx</code>, or set <code>FIRE_ONNX_MODEL</code> in <code>.env</code>.{% endif %}
+          </li>
+          <li><strong>Inference Engine</strong>: {% if onnx_ok %}<span class="fc-ok">ONNX Runtime installed.</span>{% else %}<strong class="fc-bad">missing</strong> — <code>pip install onnxruntime</code>.{% endif %}</li>
+          <li>Capture endpoint: <code>http://{% if esp_ip %}{{ esp_ip|escape }}{% else %}&lt;IP&gt;{% endif %}/capture</code> · Model: <strong>best.onnx</strong> (YOLO) · Default alert delay: <strong>2&nbsp;s</strong>.</li>
+        </ul>
+      </div>
+    </details>
+
+    <div class="fd-ip-bar fh-glass">
+      <span class="fd-ip-bar__current">Active camera: <code>{{ esp_ip|escape|default:"Not configured" }}</code></span>
+      <form method="post" style="display:contents;">
+        {% csrf_token %}
+        <label for="esp_ip">Camera IP</label>
+        <input id="esp_ip" name="esp_ip" type="text" value="{{ esp_ip|escape }}" placeholder="e.g. 192.168.0.148" autocomplete="off" />
+        <button type="submit" class="fd-btn fd-btn--ghost">Apply IP</button>
+      </form>
+    </div>
 
     {% if not has_ip %}
-    <div class="fh-glass fc-detect-panel">
-      <p style="margin:0;"><strong>Aucune IP ESP configurée.</strong></p>
-      <p style="margin:0.5rem 0 0;">
-        Ouvrez <a href="{% url 'monitoring:camera_settings' %}">Réglages caméra</a>, enregistrez l’IP, puis rechargez cette page.
-        {% if drone_host_set %}Vérifiez <code>DRONE_HOST</code> dans <code>.env</code>.{% endif %}
+    <div class="fh-glass fd-notice">
+      <p style="margin:0;"><strong>No ESP32-CAM IP configured.</strong></p>
+      <p style="margin:0.45rem 0 0;">
+        Open <a href="{% url 'monitoring:camera_settings' %}">Camera Settings</a>, save the IP, then reload this page.
+        {% if drone_host_set %}Check <code>DRONE_HOST</code> in <code>.env</code>.{% endif %}
       </p>
     </div>
     {% else %}
 
     {% if not analysis_ready %}
-    <div class="fh-glass fc-detect-panel fc-detect-warn">
-      <p style="margin:0;"><strong>Analyse ONNX indisponible.</strong></p>
-      <p style="margin:0.45rem 0 0;">Sans <code>best.onnx</code>, le flux vidéo peut quand même s’afficher à gauche. Placez le modèle dans <code>models/best.onnx</code> puis rechargez la page.</p>
+    <div class="fh-glass fd-notice">
+      <p style="margin:0;"><strong>ONNX analysis unavailable.</strong></p>
+      <p style="margin:0.45rem 0 0;">The live stream may still display on the left. Place the model in <code>models/best.onnx</code> and reload the page.</p>
     </div>
     {% endif %}
 
-    <div class="fh-glass fc-detect-panel fc-detect-toolbar" {% if not analysis_ready %}style="opacity:0.65;pointer-events:none;"{% endif %}>
-      <label><input type="checkbox" id="fcTwilio" {% if not analysis_ready %}disabled{% endif %} /> Appel Twilio si alerte</label>
-      <label>Conf <input type="number" id="fcConf" value="0.65" min="0.05" max="0.95" step="0.05" style="width:4rem;" {% if not analysis_ready %}disabled{% endif %} /></label>
-      <label>IoU <input type="number" id="fcIou" value="0.45" min="0.1" max="0.95" step="0.05" style="width:4rem;" {% if not analysis_ready %}disabled{% endif %} /></label>
-      <label>Alerte après (s) <input type="number" id="fcAlert" value="2" min="0.5" max="15" step="0.5" style="width:4rem;" {% if not analysis_ready %}disabled{% endif %} /></label>
-      <label>Reset grâce (s) <input type="number" id="fcGrace" value="0.8" min="0.2" max="5" step="0.1" style="width:4rem;" {% if not analysis_ready %}disabled{% endif %} /></label>
-      <button type="button" class="jarvis-btn jarvis-btn-ghost" id="fcReset" {% if not analysis_ready %}disabled{% endif %}>Reset compteur feu</button>
-    </div>
-
-    <div class="fh-glass fc-detect-panel fc-detect-toolbar" style="margin-top:0.65rem;border-style:dashed;">
-      <button type="button" class="jarvis-btn jarvis-btn-primary" id="fcTwilioTest" {% if not twilio_ready %}disabled title="Configurez TWILIO_* dans .env"{% endif %}>Test appel Twilio</button>
-      {% if not twilio_ready %}<span class="fc-detect-muted">Variables Twilio manquantes — voir section ci‑dessous.</span>{% endif %}
-    </div>
-
-    <div class="fc-detect-grid">
-      <div class="fh-glass fc-detect-panel">
-        <h3 class="fc-detect-subtitle">Flux ESP (via proxy Django)</h3>
-        {% if esp_host and esp_stream_src %}
-        <p class="fc-detect-muted" style="margin:0 0 0.5rem;font-size:0.8rem;">Si l’image reste vide : vérifiez que la caméra répond sur le port <strong>81</strong> ou <strong>80</strong> (<code>/stream</code>).</p>
-        <img id="fcStreamImg" src="{{ esp_stream_src|escape }}" alt="Flux MJPEG ESP32-CAM" class="fc-detect-stream" />
-        <p id="fcStreamErr" class="fc-detect-muted" style="margin:0.35rem 0 0;display:none;"></p>
-        {% else %}
-        <p class="fc-detect-muted">Flux indisponible.</p>
-        {% endif %}
+    <!-- Emergency Rules -->
+    <section class="fh-glass fd-rules" {% if not analysis_ready %}style="opacity:0.65;pointer-events:none;"{% endif %} aria-label="Emergency rules">
+      <div class="fd-rules__head">
+        <div>
+          <h2 class="fd-rules__title"><span class="fd-rules__title-bar"></span> Emergency Rules</h2>
+          <p class="fd-rules__sub">Automation thresholds and alert triggers for fire/smoke stability.</p>
+        </div>
+        <span class="fd-rules__chip">Alert Console</span>
       </div>
+      <div class="fc-detect-toolbar">
+        <label><input type="checkbox" id="fcTwilio" {% if not analysis_ready %}disabled{% endif %} /> Enable Emergency Call</label>
+        <label>Confidence <input type="number" id="fcConf" value="0.65" min="0.05" max="0.95" step="0.05" {% if not analysis_ready %}disabled{% endif %} /></label>
+        <label>IoU <input type="number" id="fcIou" value="0.45" min="0.1" max="0.95" step="0.05" {% if not analysis_ready %}disabled{% endif %} /></label>
+        <label>Alert Delay <input type="number" id="fcAlert" value="2" min="0.5" max="15" step="0.5" {% if not analysis_ready %}disabled{% endif %} /></label>
+        <label>Reset Grace <input type="number" id="fcGrace" value="0.8" min="0.2" max="5" step="0.1" {% if not analysis_ready %}disabled{% endif %} /></label>
+        <button type="button" class="fd-btn fd-btn--ghost" id="fcReset" {% if not analysis_ready %}disabled{% endif %}>Reset Fire Counter</button>
+      </div>
+      <div class="fd-rules__emergency">
+        <button type="button" class="fd-btn fd-btn--emergency" id="fcTwilioTest" {% if not twilio_ready %}disabled title="Configure TWILIO_* in .env"{% endif %}>Test Emergency Call</button>
+        {% if not twilio_ready %}<span class="fc-detect-muted">Twilio credentials missing — see Emergency Alert Settings below.</span>{% endif %}
+      </div>
+    </section>
+
+    <!-- Main operation grid -->
+    <div class="fd-main-grid">
+      <!-- Live Camera Feed -->
+      <div class="fh-glass fc-detect-panel">
+        <div class="fd-card-head">
+          <h3 class="fd-card-title"><span class="fd-card-title-bar"></span> Live Camera Feed</h3>
+          <p class="fd-card-sub">Real-time ESP32-CAM monitoring through the Django stream proxy.</p>
+        </div>
+        <div class="fd-feed-frame" id="fcStreamFrame">
+          {% if esp_host and esp_stream_src %}
+          <span class="fd-live-badge" id="fcLiveBadge">LIVE</span>
+          <div class="fd-feed-scan" aria-hidden="true"></div>
+          <div class="fd-feed-corners" aria-hidden="true"></div>
+          <img id="fcStreamImg" src="{{ esp_stream_src|escape }}" alt="ESP32-CAM MJPEG stream" class="fc-detect-stream" />
+          <div id="fcStreamEmpty" class="fd-feed-empty" hidden>
+            <div class="fd-feed-empty__ico" aria-hidden="true">📷</div>
+            <p class="fd-feed-empty__title">Waiting for camera frame</p>
+            <p class="fd-feed-empty__hint">Check camera IP, port 80/81, or start the stream.</p>
+          </div>
+          {% else %}
+          <div class="fd-feed-scan" aria-hidden="true"></div>
+          <div class="fd-feed-corners" aria-hidden="true"></div>
+          <div id="fcStreamEmpty" class="fd-feed-empty">
+            <div class="fd-feed-empty__ico" aria-hidden="true">📷</div>
+            <p class="fd-feed-empty__title">Waiting for camera frame</p>
+            <p class="fd-feed-empty__hint">Configure camera IP and ensure the stream is running.</p>
+          </div>
+          {% endif %}
+        </div>
+        <p id="fcStreamErr" class="fc-detect-muted" style="margin:0.35rem 0 0;display:none;"></p>
+        <div class="fd-status-pills">
+          <span class="fd-status-pill" id="fcPillIp">Camera IP: {{ esp_ip|escape }}</span>
+          <span class="fd-status-pill" id="fcPillProxy">Stream Proxy: Active</span>
+          <span class="fd-status-pill fd-status-pill--warn" id="fcPillFrame">Frame: Waiting</span>
+        </div>
+      </div>
+
+      <!-- AI Detection Output -->
       <div class="fh-glass fc-detect-panel fc-detect-onnx-col">
-        <h3 class="fc-detect-subtitle">Analyse ONNX (serveur) · XAI</h3>
-        <p class="fc-detect-muted" style="margin:0 0 0.5rem;font-size:0.8rem;">Image annotée (cadres = sortie NMS) + explication textuelle des boîtes et du risque feu/fumée.</p>
-        <img id="fcOut" alt="Inférence YOLO annotée" class="fc-detect-out" {% if not analysis_ready %}style="min-height:200px;background:#0f172a;"{% endif %} />
+        <div class="fd-card-head">
+          <h3 class="fd-card-title"><span class="fd-card-title-bar"></span> AI Detection Output</h3>
+          <p class="fd-card-sub">Annotated fire/smoke detection with risk interpretation.</p>
+        </div>
+
+        <div class="fd-summary-row" aria-label="Detection summary">
+          <div class="fd-summary-card" id="fcSumStatusCard">
+            <div class="lbl">Fire/Smoke Status</div>
+            <div class="val is-wait" id="fcSumStatus">Waiting</div>
+          </div>
+          <div class="fd-summary-card">
+            <div class="lbl">Confidence</div>
+            <div class="val is-wait" id="fcSumConf">—</div>
+          </div>
+          <div class="fd-summary-card">
+            <div class="lbl">Risk Level</div>
+            <div class="val is-wait" id="fcSumRisk">—</div>
+          </div>
+          <div class="fd-summary-card fd-summary-card--alert">
+            <div class="lbl">Alert State</div>
+            <div class="val is-wait" id="fcSumAlert">Standby</div>
+          </div>
+        </div>
+
+        <div class="fd-feed-frame fd-feed-frame--detect">
+          <div class="fd-feed-scan" aria-hidden="true"></div>
+          <div class="fd-feed-corners" aria-hidden="true"></div>
+          <div id="fcOutEmpty" class="fd-feed-empty">
+            <div class="fd-feed-empty__ico" aria-hidden="true">🔥</div>
+            <p class="fd-feed-empty__title">No frame analyzed yet</p>
+            <p class="fd-feed-empty__hint">Start the stream or refresh the camera feed to run detection.</p>
+          </div>
+          <img id="fcOut" alt="Annotated YOLO inference" class="fc-detect-out" style="display:none;" {% if not analysis_ready %}hidden{% endif %} />
+        </div>
+
         <p id="fcStatus" class="fc-detect-status">
-          {% if analysis_ready %}En attente du premier cliché… (~650&nbsp;ms entre deux analyses){% else %}Ajoutez <code>models/best.onnx</code> pour lancer l’analyse.{% endif %}
+          {% if analysis_ready %}Waiting for first frame… (~650&nbsp;ms between analyses){% else %}Add <code>models/best.onnx</code> to start analysis.{% endif %}
         </p>
+
         <div id="fcXaiBlock" class="fc-xai-block" {% if not analysis_ready %}style="opacity:0.5;pointer-events:none;"{% endif %}>
-          <h4>Explicabilité (XAI)</h4>
-          <p id="fcXaiSummary" class="fc-xai-summary">—</p>
+          <h4>Explainable AI Insight</h4>
+          <p id="fcXaiSummary" class="fc-xai-summary">Waiting for inference… Fire/smoke explanation will appear after the next analyzed frame.</p>
           <div class="fc-xai-table-wrap">
-            <table class="fc-xai-table" aria-label="Détections ONNX">
+            <table class="fc-xai-table" aria-label="ONNX detections">
               <thead>
                 <tr>
                   <th>#</th>
-                  <th>Classe</th>
+                  <th>Class</th>
                   <th>Conf.</th>
-                  <th>Risque feu</th>
-                  <th>Boîte (px)</th>
+                  <th>Fire Risk</th>
+                  <th>Bounding Box</th>
                 </tr>
               </thead>
               <tbody id="fcXaiTbody">
-                <tr><td colspan="5" class="fc-xai-empty">En attente d’inférence…</td></tr>
+                <tr><td colspan="5" class="fc-xai-empty">Waiting for inference…</td></tr>
               </tbody>
             </table>
           </div>
@@ -131,11 +226,31 @@
       </div>
     </div>
 
-    <details class="fh-glass fc-detect-panel fc-detect-details">
-      <summary>Variables Twilio</summary>
+    <!-- Emergency Alert Pipeline -->
+    <section class="fd-pipeline" aria-label="Emergency alert pipeline">
+      <p class="fd-pipeline__label">Emergency Alert Pipeline</p>
+      <div class="fd-pipeline__track">
+        <span class="fd-pipeline__node">Camera Feed</span>
+        <span class="fd-pipeline__line"></span>
+        <span class="fd-pipeline__node">ONNX Detection</span>
+        <span class="fd-pipeline__line"></span>
+        <span class="fd-pipeline__node">Stability Check</span>
+        <span class="fd-pipeline__line fd-pipeline__line--alert"></span>
+        <span class="fd-pipeline__node fd-pipeline__node--alert">Twilio Alert</span>
+      </div>
+    </section>
+
+    <details class="fh-glass fd-twilio-details fc-detect-details">
+      <summary>
+        <span class="fd-twilio-details__ico" aria-hidden="true">📞</span>
+        <span>
+          <span class="fd-twilio-details__title">Emergency Alert Settings</span>
+          <span class="fd-twilio-details__sub">Twilio credentials and alert delivery configuration</span>
+        </span>
+      </summary>
       <ul class="fc-detect-twilio-list">
         {% for name, ok, preview in twilio_rows %}
-        <li><code>{{ name }}</code> — {% if ok %}OK{% else %}manquant{% endif %} — {{ preview|escape }}</li>
+        <li><code>{{ name }}</code> — {% if ok %}OK{% else %}missing{% endif %} — {{ preview|escape }}</li>
         {% endfor %}
       </ul>
     </details>
@@ -147,7 +262,7 @@
   <div class="fc-modal-card fc-modal-card--info" id="fcModalCard">
     <div class="fc-modal-head">
       <h4 id="fcModalTitle" class="fc-modal-title">Notification</h4>
-      <button type="button" class="fc-modal-close" id="fcModalClose" aria-label="Fermer">×</button>
+      <button type="button" class="fc-modal-close" id="fcModalClose" aria-label="Close">×</button>
     </div>
     <div id="fcModalBody" class="fc-modal-body"></div>
   </div>
@@ -159,7 +274,7 @@
     var el = document.getElementById("fhClock");
     if (!el) return;
     var d = new Date();
-    el.textContent = d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+    el.textContent = d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
   }
   tickClock();
   setInterval(tickClock, 1000);
@@ -178,6 +293,7 @@
   }
   const csrftoken = getCookie('csrftoken');
   const img = document.getElementById('fcOut');
+  const outEmpty = document.getElementById('fcOutEmpty');
   const st = document.getElementById('fcStatus');
   const fcModal = document.getElementById('fcModal');
   const fcModalCard = document.getElementById('fcModalCard');
@@ -188,15 +304,90 @@
   const fcXaiTbody = document.getElementById('fcXaiTbody');
   const streamImg = document.getElementById('fcStreamImg');
   const streamErr = document.getElementById('fcStreamErr');
+  const streamEmpty = document.getElementById('fcStreamEmpty');
+  const pillFrame = document.getElementById('fcPillFrame');
+  const sumStatus = document.getElementById('fcSumStatus');
+  const sumStatusCard = document.getElementById('fcSumStatusCard');
+  const sumConf = document.getElementById('fcSumConf');
+  const sumRisk = document.getElementById('fcSumRisk');
+  const sumAlert = document.getElementById('fcSumAlert');
+
+  function setStreamFrameStatus(ok) {
+    if (!pillFrame) return;
+    pillFrame.textContent = ok ? 'Frame: Live' : 'Frame: Waiting';
+    pillFrame.classList.toggle('fd-status-pill--ok', ok);
+    pillFrame.classList.toggle('fd-status-pill--warn', !ok);
+  }
+
+  function showOutImage(show) {
+    if (img) img.style.display = show ? 'block' : 'none';
+    if (outEmpty) outEmpty.hidden = !!show;
+  }
+
+  function updateSummary(data, xai) {
+    if (!sumStatus) return;
+    var hasFire = !!(data && data.has_fire);
+    var statusText = hasFire ? 'Detected' : 'Clear';
+    if (data && !data.ok && data.error === 'no_frame') statusText = 'Waiting';
+    else if (!analysisReady) statusText = 'Offline';
+
+    sumStatus.textContent = statusText;
+    sumStatus.className = 'val ' + (statusText === 'Detected' ? 'is-fire' : statusText === 'Clear' ? 'is-clear' : 'is-wait');
+    if (sumStatusCard) sumStatusCard.classList.toggle('fd-summary-card--alert', hasFire);
+
+    var maxConf = '—';
+    if (xai && xai.detections && xai.detections.length) {
+      var best = 0;
+      xai.detections.forEach(function(d) {
+        var c = parseFloat(d.confidence);
+        if (!isNaN(c) && c > best) best = c;
+      });
+      maxConf = best <= 1 ? (best * 100).toFixed(1) + '%' : best.toFixed(1) + '%';
+    }
+    if (sumConf) {
+      sumConf.textContent = maxConf;
+      sumConf.className = 'val' + (maxConf === '—' ? ' is-wait' : '');
+    }
+
+    var risk = '—';
+    if (data && typeof data.risk_seconds === 'number' && data.has_fire) {
+      var alertAfter = parseFloat(document.getElementById('fcAlert').value) || 2;
+      risk = data.risk_seconds.toFixed(1) + 's / ' + alertAfter + 's';
+    } else if (data && data.ok && !data.has_fire) {
+      risk = 'Low';
+    }
+    if (sumRisk) {
+      sumRisk.textContent = risk;
+      sumRisk.className = 'val' + (data && data.has_fire ? ' is-fire' : risk === 'Low' ? ' is-clear' : ' is-wait');
+    }
+
+    var alertState = 'Standby';
+    if (data && data.twilio_called) alertState = 'Alert Sent';
+    else if (data && data.show_alert) alertState = 'Alert Active';
+    else if (data && data.has_fire) alertState = 'Monitoring';
+    if (sumAlert) {
+      sumAlert.textContent = alertState;
+      sumAlert.className = 'val' + (alertState === 'Alert Sent' || alertState === 'Alert Active' ? ' is-fire' : alertState === 'Monitoring' ? ' is-wait' : ' is-clear');
+    }
+  }
 
   if (streamImg && streamErr) {
     streamImg.addEventListener('error', function() {
       streamErr.style.display = 'block';
-      streamErr.textContent = 'Flux injoignable (502 / timeout). Vérifiez l’IP, le Wi‑Fi et que le MJPEG tourne sur :81/stream ou /stream (port 80).';
+      streamErr.textContent = 'Stream unreachable (502 / timeout). Check IP, Wi‑Fi, and MJPEG on :81/stream or /stream (port 80).';
+      if (streamEmpty) streamEmpty.hidden = false;
+      setStreamFrameStatus(false);
     });
     streamImg.addEventListener('load', function() {
       streamErr.style.display = 'none';
+      if (streamEmpty) streamEmpty.hidden = true;
+      setStreamFrameStatus(true);
     });
+    if (streamImg.complete && streamImg.naturalWidth > 0) {
+      streamErr.style.display = 'none';
+      if (streamEmpty) streamEmpty.hidden = true;
+      setStreamFrameStatus(true);
+    }
   }
 
   async function postJson(url, body) {
@@ -247,10 +438,10 @@
   function renderXai(xai) {
     if (!fcXaiSummary || !fcXaiTbody) return;
     if (!xai) {
-      fcXaiSummary.textContent = '—';
+      fcXaiSummary.textContent = 'Waiting for inference…';
       return;
     }
-    fcXaiSummary.textContent = xai.summary_fr || '—';
+    fcXaiSummary.textContent = xai.summary_fr || 'No explanation available for this frame.';
     fcXaiTbody.textContent = '';
     var list = xai.detections || [];
     if (list.length === 0) {
@@ -258,7 +449,7 @@
       var td0 = document.createElement('td');
       td0.colSpan = 5;
       td0.className = 'fc-xai-empty';
-      td0.textContent = 'Aucune boîte au-dessus du seuil sur cette frame.';
+      td0.textContent = 'No bounding boxes above threshold on this frame.';
       tr0.appendChild(td0);
       fcXaiTbody.appendChild(tr0);
       return;
@@ -276,7 +467,7 @@
       var tdFire = document.createElement('td');
       var span = document.createElement('span');
       span.className = 'fc-xai-badge ' + (d.is_fire_related ? 'fc-xai-badge--yes' : 'fc-xai-badge--no');
-      span.textContent = d.is_fire_related ? 'Oui' : 'Non';
+      span.textContent = d.is_fire_related ? 'Yes' : 'No';
       tdFire.appendChild(span);
       tr.appendChild(tdFire);
       var bx = d.box;
@@ -288,16 +479,16 @@
   var btnTest = document.getElementById('fcTwilioTest');
   if (btnTest && !btnTest.disabled) {
     btnTest.addEventListener('click', async function() {
-      if (st) st.textContent = 'Test Twilio en cours…';
+      if (st) st.textContent = 'Testing emergency call…';
       try {
         const data = await postJson(twilioTestUrl, {});
         if (st) {
-          st.textContent = data.ok ? ('Test Twilio : OK') : ('Test Twilio : échec');
+          st.textContent = data.ok ? 'Emergency call test: OK' : 'Emergency call test: failed';
         }
-        openFcModal(data.modal_title || 'Test Twilio', data.modal_body || data.message || '', data.modal_variant || 'info');
+        openFcModal(data.modal_title || 'Twilio Test', data.modal_body || data.message || '', data.modal_variant || 'info');
       } catch (e) {
-        if (st) st.textContent = 'Réseau : ' + e;
-        openFcModal('Erreur réseau', String(e), 'danger');
+        if (st) st.textContent = 'Network: ' + e;
+        openFcModal('Network Error', String(e), 'danger');
       }
     });
   }
@@ -313,18 +504,27 @@
     };
     try {
       const data = await postJson(analyzeUrl, body);
-      if (data.reset) { st.textContent = 'Compteur réinitialisé.'; return; }
+      if (data.reset) {
+        st.textContent = 'Fire counter reset.';
+        updateSummary({ ok: true, has_fire: false }, null);
+        return;
+      }
       if (!data.ok) {
-        st.textContent = data.message || data.error || 'Erreur inconnue';
+        var msg = data.message || data.error || 'Unknown error';
+        if (data.error === 'no_frame') msg = 'Waiting for camera frame…';
+        st.textContent = msg;
+        updateSummary(data, null);
         return;
       }
       img.src = 'data:image/jpeg;base64,' + data.jpeg_b64;
+      showOutImage(true);
       renderXai(data.xai);
+      updateSummary(data, data.xai);
       let line = data.status || '';
       if (typeof data.risk_seconds === 'number' && data.has_fire) {
         line += ' · stable ' + data.risk_seconds + ' s / ' + body.alert_after + ' s';
       }
-      if (data.twilio_called) line += ' · Twilio : appel lancé';
+      if (data.twilio_called) line += ' · Twilio: call initiated';
       if (data.twilio_error) line += ' · ' + data.twilio_error;
       st.textContent = line;
       if (data.twilio_popup && (data.twilio_popup_l1 || data.twilio_popup_l2)) {
@@ -335,14 +535,15 @@
         );
       }
     } catch (e) {
-      st.textContent = 'Réseau: ' + e;
+      st.textContent = 'Network: ' + e;
     }
   }
 
   if (analysisReady) {
     document.getElementById('fcReset').addEventListener('click', async function() {
       await postJson(analyzeUrl, { reset: true });
-      st.textContent = 'Compteur réinitialisé.';
+      st.textContent = 'Fire counter reset.';
+      updateSummary({ ok: true, has_fire: false }, null);
       closeFcModal();
     });
     setInterval(tick, 650);

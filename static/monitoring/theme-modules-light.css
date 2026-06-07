@@ -1,0 +1,353 @@
+/**
+ * MedinaMind — Light theme module token remaps
+ * Overrides per-module :root variables without editing each module CSS file.
+ */
+
+html[data-theme="light"] {
+  /* Legacy app.css tokens */
+  --bg: var(--bg-main);
+  --bg-elevated: var(--bg-secondary);
+  --glass: var(--glass-bg);
+  --border: var(--border-soft);
+  --text: var(--text-primary);
+  --muted: var(--text-muted);
+
+  /* Introduction / AR HUD */
+  --mm-bg: var(--bg-main);
+  --mm-dark: var(--bg-secondary);
+  --mm-blue: var(--accent-blue);
+  --mm-cyan: var(--accent-cyan);
+  --mm-cyan-bt: var(--accent-cyan-bright);
+  --mm-text: var(--text-primary);
+  --mm-muted: var(--text-muted);
+  --mm-border: var(--border-strong);
+  --mm-glass-bg: var(--bg-card);
+  --mm-panel-shadow: var(--shadow-card), inset 0 0 0 1px var(--border-soft);
+
+  /* Surveillance */
+  --surv-cyan: var(--accent-cyan);
+  --surv-teal: var(--accent-cyan-soft);
+  --surv-card: var(--bg-card);
+  --surv-border: var(--border-soft);
+  --surv-glow: var(--glow-cyan);
+  --surv-text: var(--text-primary);
+  --surv-muted: var(--text-muted);
+  --surv-alert: var(--accent-red);
+  --surv-warn: var(--accent-orange);
+  --surv-ok: var(--accent-green);
+  --surv-purple: rgba(124, 58, 237, 0.2);
+
+  /* Fire & Smoke */
+  --fd-cyan: var(--accent-cyan);
+  --fd-blue: var(--accent-blue);
+  --fd-emergency: var(--accent-orange);
+  --fd-danger: var(--accent-red);
+  --fd-card: var(--bg-card);
+  --fd-border: var(--border-soft);
+  --fd-glow: var(--glow-cyan);
+  --fd-text: var(--text-primary);
+  --fd-muted: var(--text-muted);
+
+  /* Waste */
+  --ws-cyan: var(--accent-cyan);
+  --ws-blue: var(--accent-blue);
+  --ws-card: var(--bg-card);
+  --ws-border: var(--border-soft);
+  --ws-glow: var(--glow-cyan);
+  --ws-text: var(--text-primary);
+  --ws-muted: var(--text-muted);
+  --ws-low: var(--accent-green);
+  --ws-med: var(--accent-orange);
+  --ws-high: var(--accent-red);
+
+  /* UAV */
+  --uav-cyan: var(--accent-cyan);
+  --uav-blue: var(--accent-blue);
+  --uav-card: var(--bg-card);
+  --uav-border: var(--border-soft);
+  --uav-glow: var(--glow-cyan);
+  --uav-text: var(--text-primary);
+  --uav-muted: var(--text-muted);
+  --uav-ok: var(--accent-green);
+  --uav-warn: var(--accent-orange);
+  --uav-crit: var(--accent-red);
+
+  /* Traffic Signal */
+  --ts-cyan: var(--accent-cyan);
+  --ts-blue: var(--accent-blue);
+  --ts-card: var(--bg-card);
+  --ts-border: var(--border-soft);
+  --ts-glow: var(--glow-cyan);
+  --ts-text: var(--text-primary);
+  --ts-muted: var(--text-muted);
+  --ts-red: var(--accent-red);
+  --ts-green: var(--accent-green);
+  --ts-amber: var(--accent-orange);
+
+  /* Platform Settings */
+  --ps-cyan: var(--accent-cyan);
+  --ps-card: var(--bg-card);
+  --ps-border: var(--border-soft);
+  --ps-glow: var(--glow-cyan);
+  --ps-text: var(--text-primary);
+  --ps-muted: var(--text-muted);
+  --ps-ok: var(--accent-green);
+  --ps-warn: var(--accent-orange);
+  --ps-err: var(--accent-red);
+}
+
+html[data-theme="light"] .violations-page {
+  --tv-cyan: var(--accent-cyan);
+  --tv-blue: var(--accent-blue);
+  --tv-navy: var(--bg-main);
+  --tv-card: var(--bg-card);
+  --tv-border: var(--border-soft);
+  --tv-glow: var(--glow-cyan);
+  --tv-red: var(--accent-red);
+}
+
+html[data-theme="light"] .rd-page,
+html[data-theme="light"] body.road-damage-sc {
+  --rd-cyan: var(--accent-cyan);
+  --rd-blue: var(--accent-blue);
+  --rd-teal: var(--accent-green);
+  --rd-card: var(--bg-card);
+  --rd-border: var(--border-soft);
+  --rd-glow: var(--glow-cyan);
+  --rd-crit: var(--accent-red);
+  --rd-warn: var(--accent-orange);
+  --rd-ok: var(--accent-green);
+}
+
+html[data-theme="light"] .fc-camera-dashboard {
+  --fc-cyan: var(--accent-cyan);
+  --fc-blue: var(--accent-blue);
+  --fc-glass: var(--bg-card);
+  --fc-border: var(--border-soft);
+  --fc-glow: var(--glow-cyan);
+  --fc-text: var(--text-primary);
+  --fc-muted: var(--text-muted);
+  --fc-ok: var(--accent-green);
+  --fc-warn: var(--accent-orange);
+  --fc-bad: var(--accent-red);
+}
+
+html[data-theme="light"] .holo-city-wrap {
+  --holo-cyan: var(--accent-cyan);
+  --holo-glow: var(--glow-cyan);
+  --holo-glass: var(--holo-bg);
+  --holo-glass-border: var(--border-strong);
+}
+
+/* Page ambient backgrounds — force light crystal gradient */
+html[data-theme="light"] .surv-page__bg,
+html[data-theme="light"] .fd-page__bg,
+html[data-theme="light"] .ws-page__bg,
+html[data-theme="light"] .uav-page__bg,
+html[data-theme="light"] .ts-page__bg,
+html[data-theme="light"] .ps-page__bg,
+html[data-theme="light"] .rd-page__bg,
+html[data-theme="light"] .violations-page__bg,
+html[data-theme="light"] .fc-page__bg {
+  background: var(--bg-page-gradient) !important;
+  background-size: auto, auto, 42px 42px, 42px 42px, auto !important;
+}
+
+html[data-theme="light"] .surv-page__grid,
+html[data-theme="light"] .fd-page__grid,
+html[data-theme="light"] .ws-page__grid,
+html[data-theme="light"] .uav-page__grid,
+html[data-theme="light"] .ts-page__grid,
+html[data-theme="light"] .ps-page__grid,
+html[data-theme="light"] .rd-page__grid,
+html[data-theme="light"] .violations-page__grid,
+html[data-theme="light"] .fc-page__grid {
+  opacity: 0.4 !important;
+  background-image:
+    linear-gradient(var(--grid-color) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-color) 1px, transparent 1px) !important;
+}
+
+/* Hologram SVG strokes — stronger visibility on light backgrounds */
+html[data-theme="light"] [class*="holo"] svg line,
+html[data-theme="light"] [class*="holo"] svg polyline,
+html[data-theme="light"] [class*="holo"] svg path,
+html[data-theme="light"] [class*="holo"] svg rect,
+html[data-theme="light"] [class*="holo"] svg circle,
+html[data-theme="light"] .surv-city-holo svg *,
+html[data-theme="light"] .ts-hero-holo svg *,
+html[data-theme="light"] .ps-hero-holo svg *,
+html[data-theme="light"] .fd-hero-holo svg *,
+html[data-theme="light"] .ws-hero-holo svg *,
+html[data-theme="light"] .uav-hero-holo svg *,
+html[data-theme="light"] .rd-hero-holo svg * {
+  stroke: var(--holo-line) !important;
+}
+
+html[data-theme="light"] [class*="holo"] svg text,
+html[data-theme="light"] .ps-holo-node + text {
+  fill: var(--holo-text) !important;
+}
+
+html[data-theme="light"] [class*="holo"] svg circle,
+html[data-theme="light"] [class*="holo"] svg rect {
+  fill: var(--holo-fill) !important;
+}
+
+/* Module hero titles */
+html[data-theme="light"] .surv-hero__title,
+html[data-theme="light"] .fd-hero__title,
+html[data-theme="light"] .ws-hero__title,
+html[data-theme="light"] .uav-hero__title,
+html[data-theme="light"] .ts-hero__title,
+html[data-theme="light"] .ps-hero__title,
+html[data-theme="light"] .rd-hero__title,
+html[data-theme="light"] .violations-hero__title,
+html[data-theme="light"] .fc-hero__title {
+  background: var(--hero-title-grad) !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  color: transparent !important;
+}
+
+html[data-theme="light"] .surv-hero__sub,
+html[data-theme="light"] .fd-hero__sub,
+html[data-theme="light"] .ws-hero__sub,
+html[data-theme="light"] .uav-hero__sub,
+html[data-theme="light"] .ts-hero__sub,
+html[data-theme="light"] .ps-hero__sub,
+html[data-theme="light"] .rd-hero__sub,
+html[data-theme="light"] .violations-hero__sub,
+html[data-theme="light"] .fc-hero__sub {
+  color: var(--text-secondary) !important;
+}
+
+/* Module cards & panels */
+html[data-theme="light"] [class*="module-card"],
+html[data-theme="light"] [class*="-card"]:not(.mm-status-card):not(.mm-nav-item),
+html[data-theme="light"] .surv-module-card,
+html[data-theme="light"] .surv-input-card,
+html[data-theme="light"] .fd-card,
+html[data-theme="light"] .ws-card,
+html[data-theme="light"] .uav-card,
+html[data-theme="light"] .ts-card,
+html[data-theme="light"] .ps-panel,
+html[data-theme="light"] .ps-nav,
+html[data-theme="light"] .rd-card,
+html[data-theme="light"] .violations-card,
+html[data-theme="light"] .fc-glass,
+html[data-theme="light"] .fc-panel {
+  background: var(--bg-card) !important;
+  border-color: var(--border-soft) !important;
+  color: var(--text-primary) !important;
+  box-shadow: var(--shadow-card) !important;
+}
+
+html[data-theme="light"] [class*="module-card"]:hover,
+html[data-theme="light"] .surv-module-card:hover,
+html[data-theme="light"] .fd-card:hover,
+html[data-theme="light"] .ws-card:hover,
+html[data-theme="light"] .ts-card:hover {
+  background: var(--bg-card-hover) !important;
+  border-color: var(--border-strong) !important;
+  box-shadow: var(--shadow-glow) !important;
+}
+
+/* Tables across modules */
+html[data-theme="light"] .surv-table-wrap,
+html[data-theme="light"] .fd-table-wrap,
+html[data-theme="light"] .ws-table-wrap,
+html[data-theme="light"] .uav-history,
+html[data-theme="light"] .ts-history,
+html[data-theme="light"] .violations-table-wrap,
+html[data-theme="light"] .rd-cases-table,
+html[data-theme="light"] .fc-table-wrap {
+  background: var(--bg-card) !important;
+  border-color: var(--border-soft) !important;
+}
+
+html[data-theme="light"] table thead th {
+  color: var(--text-muted) !important;
+  background: var(--bg-card-hover) !important;
+}
+
+html[data-theme="light"] table tbody td {
+  color: var(--text-secondary) !important;
+}
+
+html[data-theme="light"] table tbody tr:hover {
+  background: color-mix(in srgb, var(--accent-blue) 8%, transparent) !important;
+}
+
+/* Platform settings nav */
+html[data-theme="light"] .ps-nav__item {
+  color: var(--text-secondary) !important;
+}
+
+html[data-theme="light"] .ps-nav__item.is-active {
+  color: var(--accent-blue) !important;
+  background: linear-gradient(135deg, rgba(0, 174, 218, 0.16), rgba(37, 99, 235, 0.12)) !important;
+  border-color: var(--border-strong) !important;
+}
+
+html[data-theme="light"] .ps-field__input,
+html[data-theme="light"] .ps-field select,
+html[data-theme="light"] .ps-field textarea {
+  background: var(--bg-input) !important;
+  color: var(--text-primary) !important;
+  border-color: var(--border-soft) !important;
+}
+
+html[data-theme="light"] .ps-health-card {
+  background: var(--bg-card) !important;
+  border-color: var(--border-soft) !important;
+}
+
+html[data-theme="light"] .ps-health-card__label {
+  color: var(--text-muted) !important;
+}
+
+html[data-theme="light"] .ps-health-card__value {
+  color: var(--text-primary) !important;
+}
+
+/* Fusion hub legacy */
+html[data-theme="light"] body.fusion-hub-sc {
+  --color-bg: var(--bg-main);
+  --color-surface: var(--bg-secondary);
+  --color-surface-elevated: var(--bg-card);
+  --fh-glass: var(--bg-card);
+  --fh-border: var(--border-soft);
+  --fh-cyan: var(--accent-cyan);
+  --fh-text: var(--text-primary);
+  --fh-muted: var(--text-muted);
+}
+
+html[data-theme="light"] .fight-label,
+html[data-theme="light"] .fight-url-input,
+html[data-theme="light"] .fight-model-select {
+  color: var(--text-primary) !important;
+}
+
+html[data-theme="light"] .fusion-side-panel,
+html[data-theme="light"] .fusion-intel-panel {
+  background: var(--bg-card) !important;
+  border-color: var(--border-soft) !important;
+}
+
+/* Road damage scoped legacy */
+html[data-theme="light"] body.road-damage-sc {
+  --rd-bg: var(--bg-main);
+  --navy: var(--bg-main);
+  --card: var(--bg-card);
+  --text: var(--text-primary);
+  --muted: var(--text-muted);
+}
+
+/* Traffic nexus / legacy dashboards */
+html[data-theme="light"] .traffic-nexus-page,
+html[data-theme="light"] .dashboard-page {
+  background: transparent !important;
+  color: var(--text-primary) !important;
+}

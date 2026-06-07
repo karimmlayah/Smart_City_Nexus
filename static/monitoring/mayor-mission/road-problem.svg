@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 480">
+  <rect width="800" height="480" fill="#1e293b"/>
+  <rect y="200" width="800" height="180" fill="#334155"/>
+  <line x1="0" y1="290" x2="800" y2="290" stroke="#eab308" stroke-width="4" stroke-dasharray="40 30"/>
+  <!-- potholes -->
+  <ellipse cx="280" cy="310" rx="55" ry="30" fill="#0f172a"/>
+  <ellipse cx="290" cy="315" rx="35" ry="18" fill="#1e1e2e"/>
+  <ellipse cx="520" cy="320" rx="70" ry="35" fill="#0f172a"/>
+  <ellipse cx="530" cy="328" rx="45" ry="22" fill="#1e1e2e"/>
+  <!-- crack lines -->
+  <path d="M240 340 L320 360 L400 350 L480 370" stroke="#475569" stroke-width="3" fill="none"/>
+  <path d="M500 340 L580 355 L660 345" stroke="#475569" stroke-width="3" fill="none"/>
+  <rect x="600" y="250" width="80" height="40" rx="4" fill="#64748b" transform="rotate(-20 640 270)"/>
+  <text x="400" y="60" text-anchor="middle" fill="#00aeda" font-size="22" font-family="sans-serif" font-weight="bold">ROAD DAMAGE</text>
+  <text x="400" y="90" text-anchor="middle" fill="#94a3b8" font-size="14" font-family="sans-serif">Pavement failure on emergency spine</text>
+  <circle cx="520" cy="320" r="50" fill="none" stroke="#f59e0b" stroke-width="2" stroke-dasharray="8 4"/>
+</svg>

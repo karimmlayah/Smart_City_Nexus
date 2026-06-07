@@ -7,6 +7,7 @@ from .models import (
     FacePersonProfile,
     FaceReferenceImage,
     FireCameraConfig,
+    SiteConfiguration,
     UavStructuralAnalysis,
     VideoSource,
     WasteReport,
@@ -126,3 +127,15 @@ class WasteReportAdmin(admin.ModelAdmin):
     list_filter = ("severity", "sms_status", "email_status", "created_at")
     readonly_fields = ("created_at",)
     search_fields = ("city", "address", "location", "notes", "sms_twilio_sid")
+
+
+@admin.register(SiteConfiguration)
+class SiteConfigurationAdmin(admin.ModelAdmin):
+    list_display = ("platform_name", "organization_name", "updated_at")
+    readonly_fields = ("updated_at",)
+
+    def has_add_permission(self, request):
+        return not SiteConfiguration.objects.exists()
+
+    def has_delete_permission(self, request, obj=None):
+        return False

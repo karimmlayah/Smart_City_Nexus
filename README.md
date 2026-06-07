@@ -92,6 +92,7 @@ smartcity/
 |- hazemproj/Smart city/        # module externe infractions trafic
 |- requirements.txt
 |- .env.example
+|- docs/                        # Documentation (architecture, install, demo jury)
 |- manage.py
 ```
 
@@ -136,6 +137,14 @@ python manage.py runserver
 ```
 
 Application disponible sur: [http://127.0.0.1:8000/](http://127.0.0.1:8000/)
+
+Documentation détaillée : voir le dossier [docs/](docs/) (architecture, installation, guide demo jury).
+
+### Mission Mayor (demo jury)
+
+- **URL**: [http://127.0.0.1:8000/mayor-mission/](http://127.0.0.1:8000/mayor-mission/)
+- Jeu interactif : scan maire, crises reelles, choix Classic vs MedinaMind, modeles IA reels.
+- Guide complet : [docs/guide-demo-jury.md](docs/guide-demo-jury.md)
 
 ## Operational Scenario (End-to-End)
 

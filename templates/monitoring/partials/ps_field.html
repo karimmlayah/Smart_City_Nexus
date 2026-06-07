@@ -1,0 +1,8 @@
+<div class="ps-field{% if full %} ps-field--full{% endif %}">
+  <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+  {{ field }}
+  {% if field.help_text %}<span class="ps-field__hint" style="font-size:0.62rem;color:var(--ps-muted)">{{ field.help_text }}</span>{% endif %}
+  {% if field.errors %}
+    <ul class="ps-field__errors">{% for e in field.errors %}<li>{{ e }}</li>{% endfor %}</ul>
+  {% endif %}
+</div>

@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 480">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#2a1520"/>
+      <stop offset="100%" stop-color="#150a10"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="480" fill="url(#sky)"/>
+  <rect width="800" height="480" fill="#ef4444" opacity="0.15"/>
+  <rect y="280" width="800" height="200" fill="#1a1a22"/>
+  <rect x="200" y="290" width="400" height="80" rx="4" fill="#450a0a" opacity="0.5"/>
+  <!-- pileup -->
+  <rect x="180" y="300" width="80" height="40" rx="4" fill="#7f1d1d" transform="rotate(-15 220 320)"/>
+  <rect x="260" y="310" width="80" height="40" rx="4" fill="#991b1b" transform="rotate(8 300 330)"/>
+  <rect x="340" y="305" width="80" height="40" rx="4" fill="#7f1d1d" transform="rotate(-5 380 325)"/>
+  <rect x="420" y="315" width="80" height="40" rx="4" fill="#991b1b"/>
+  <rect x="500" y="300" width="80" height="40" rx="4" fill="#7f1d1d" transform="rotate(12 540 320)"/>
+  <!-- smoke -->
+  <ellipse cx="380" cy="200" rx="120" ry="60" fill="#64748b" opacity="0.4"/>
+  <ellipse cx="420" cy="170" rx="80" ry="40" fill="#94a3b8" opacity="0.3"/>
+  <text x="400" y="60" text-anchor="middle" fill="#ef4444" font-size="24" font-family="sans-serif" font-weight="bold">COLLISION ESCALATION</text>
+  <text x="400" y="90" text-anchor="middle" fill="#fca5a5" font-size="14" font-family="sans-serif">Delayed response — gridlock spreading</text>
+  <text x="400" y="450" text-anchor="middle" fill="#ef4444" font-size="16" font-family="sans-serif">+32 min delay · 1,240 citizens impacted</text>
+</svg>

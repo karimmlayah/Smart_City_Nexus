@@ -1,0 +1,27 @@
+{# TeamSection — Meet Our Team #}
+{% load static %}
+<section class="mm-team-section" aria-labelledby="mm-team-title">
+  <div class="mm-team-section__head">
+    <span class="mm-home-section__kicker">Our Team</span>
+    <h2 class="mm-team-section__title" id="mm-team-title">Meet Our Team</h2>
+    <p class="mm-team-section__subtitle">The people behind MedinaMind</p>
+  </div>
+
+  <div class="mm-team-grid">
+    {% for member in team_members %}
+    <article class="mm-team-card">
+      <div class="mm-team-card__photo-wrap">
+        <img
+          src="{% static member.image %}"
+          alt="{{ member.name }}"
+          class="mm-team-card__photo"
+          width="280"
+          height="320"
+          loading="lazy"
+        >
+      </div>
+      <h3 class="mm-team-card__name">{{ member.name }}</h3>
+    </article>
+    {% endfor %}
+  </div>
+</section>

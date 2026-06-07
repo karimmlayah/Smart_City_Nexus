@@ -1,0 +1,997 @@
+/**
+ * City Safety Intelligence Center — jury-ready smart-city surveillance UI
+ */
+
+:root {
+  --surv-cyan: #00d5ff;
+  --surv-teal: #5ec8ff;
+  --surv-card: rgba(6, 18, 40, 0.92);
+  --surv-border: rgba(0, 213, 255, 0.16);
+  --surv-glow: rgba(0, 213, 255, 0.28);
+  --surv-text: #e8f1ff;
+  --surv-muted: #8aa4c9;
+  --surv-alert: #ff4d6d;
+  --surv-warn: #fb923c;
+  --surv-ok: #34d399;
+  --surv-purple: rgba(124, 58, 237, 0.35);
+}
+
+body.surveillance-sc .app-shell > .mm-topbar {
+  position: relative;
+  z-index: 30;
+  margin-bottom: 0.65rem;
+  flex-shrink: 0;
+}
+
+body.surveillance-sc .fusion-hub-form {
+  position: relative;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+body.surveillance-sc .fh-root {
+  position: relative;
+  isolation: isolate;
+  background: transparent !important;
+}
+
+.surv-page__bg,
+.surv-page__grid,
+.surv-page__particles {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  border-radius: inherit;
+}
+
+.surv-page__bg {
+  background:
+    radial-gradient(ellipse 55% 35% at 12% 0%, rgba(0, 213, 255, 0.06), transparent 55%),
+    radial-gradient(ellipse 40% 28% at 92% 6%, rgba(255, 77, 109, 0.04), transparent 50%),
+    linear-gradient(180deg, #030810 0%, #061428 55%, #030810 100%);
+}
+
+.surv-page__grid {
+  opacity: 0.14;
+  background-image:
+    linear-gradient(rgba(0, 213, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 213, 255, 0.035) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+
+.surv-page__particles span {
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: rgba(0, 213, 255, 0.35);
+  animation: survFloat 14s ease-in-out infinite;
+}
+
+.surv-page__particles span:nth-child(1) { left: 7%; top: 18%; }
+.surv-page__particles span:nth-child(2) { left: 84%; top: 12%; animation-delay: 1.2s; }
+.surv-page__particles span:nth-child(3) { left: 44%; top: 72%; animation-delay: 0.6s; }
+.surv-page__particles span:nth-child(4) { left: 68%; top: 48%; animation-delay: 2s; background: rgba(255, 77, 109, 0.3); }
+
+.fh-root > *:not(.surv-page__bg):not(.surv-page__grid):not(.surv-page__particles) {
+  position: relative;
+  z-index: 1;
+}
+
+/* Hero — compact 3-column layout */
+.surv-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 0.75fr) minmax(0, 1.1fr);
+  gap: 24px;
+  align-items: center;
+  margin: 0 0.85rem 0.65rem;
+  padding: 24px 28px;
+  min-height: 0;
+  border-radius: 14px;
+  border: 1px solid var(--surv-border);
+  background: var(--surv-card);
+  backdrop-filter: blur(14px);
+  overflow: hidden;
+  animation: survSoftRise 0.45s ease-out;
+}
+
+.surv-hero__sweep {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(105deg, transparent 40%, rgba(0, 213, 255, 0.04) 50%, transparent 60%);
+  animation: survHoloSweep 7s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.surv-hero__copy {
+  min-width: 0;
+}
+
+.surv-hero__title {
+  margin: 0;
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 1.1rem;
+  font-weight: 700;
+  line-height: 1.25;
+  color: #f5f9ff;
+}
+
+.surv-hero__sub {
+  margin: 10px 0 0;
+  font-size: 0.7rem;
+  line-height: 1.45;
+  color: var(--surv-muted);
+  max-width: 38ch;
+}
+
+.surv-hero__badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin-top: 14px;
+}
+
+.surv-hero-badge {
+  font-size: 0.52rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 0.16rem 0.4rem;
+  border-radius: 999px;
+  color: var(--surv-cyan);
+  border: 1px solid rgba(0, 213, 255, 0.3);
+  background: rgba(0, 213, 255, 0.08);
+  animation: survPulseGlow 2.5s ease-in-out infinite;
+}
+
+.surv-hero-badge--alert {
+  color: #ffb088;
+  border-color: rgba(255, 107, 53, 0.35);
+  background: rgba(255, 107, 53, 0.1);
+}
+
+/* Safety workflow cards (center column) */
+.surv-hero__workflow {
+  min-width: 0;
+}
+
+.surv-hero__workflow-kicker {
+  margin: 0 0 8px;
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--surv-cyan);
+  opacity: 0.85;
+}
+
+.surv-hero__cards {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.surv-workflow-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  padding: 7px 9px;
+  border-radius: 8px;
+  border: 1px solid rgba(0, 213, 255, 0.18);
+  background: rgba(0, 0, 0, 0.28);
+  transition: border-color 0.2s, box-shadow 0.2s, transform 0.15s;
+}
+
+.surv-workflow-card:hover {
+  border-color: rgba(0, 213, 255, 0.35);
+  box-shadow: 0 0 14px rgba(0, 213, 255, 0.12);
+  transform: translateY(-1px);
+}
+
+.surv-workflow-card__icon {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  color: var(--surv-cyan);
+  background: rgba(0, 213, 255, 0.08);
+  border: 1px solid rgba(0, 213, 255, 0.15);
+}
+
+.surv-workflow-card__text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.surv-workflow-card__title {
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 0.66rem;
+  font-weight: 600;
+  color: var(--surv-text);
+  line-height: 1.2;
+}
+
+.surv-workflow-card__desc {
+  font-size: 0.58rem;
+  line-height: 1.35;
+  color: var(--surv-muted);
+}
+
+/* City surveillance hologram (right column) */
+.surv-city-holo {
+  position: relative;
+  min-width: 0;
+  height: 100%;
+  max-height: 210px;
+  border-radius: 10px;
+  border: 1px solid rgba(0, 213, 255, 0.22);
+  background:
+    radial-gradient(ellipse at 70% 30%, var(--surv-purple), transparent 55%),
+    rgba(0, 213, 255, 0.04);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  box-shadow: inset 0 0 32px rgba(0, 213, 255, 0.06);
+}
+
+.surv-city-holo__svg {
+  width: 100%;
+  height: auto;
+  max-height: 130px;
+  display: block;
+  flex-shrink: 0;
+}
+
+.surv-city-holo__sweep {
+  transform-origin: 180px 72px;
+  animation: survRadarSweep 4s linear infinite;
+}
+
+.surv-city-holo__beam {
+  transform-origin: 180px 72px;
+  animation: survBeamRotate 4s linear infinite;
+}
+
+.surv-city-holo__cameras circle {
+  animation: survCamPulse 2.2s ease-in-out infinite;
+}
+
+.surv-city-holo__cameras circle:nth-child(2) { animation-delay: 0.4s; }
+.surv-city-holo__cameras circle:nth-child(3) { animation-delay: 0.8s; }
+.surv-city-holo__cameras circle:nth-child(4) { animation-delay: 1.2s; }
+.surv-city-holo__cameras circle:nth-child(5) { animation-delay: 1.6s; }
+
+.surv-city-holo__alert circle:first-child {
+  animation: survAlertRing 1.8s ease-out infinite;
+}
+
+.surv-city-holo__dot {
+  opacity: 0;
+  animation: survDataDot 3s ease-in-out infinite;
+}
+
+.surv-city-holo__dot--1 { animation-delay: 0s; }
+.surv-city-holo__dot--2 { animation-delay: 0.6s; }
+.surv-city-holo__dot--3 { animation-delay: 1.2s; }
+.surv-city-holo__dot--4 { animation-delay: 1.8s; }
+
+.surv-city-holo__route {
+  stroke-dashoffset: 0;
+  animation: survRouteDash 5s linear infinite;
+}
+
+.surv-city-holo__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  justify-content: center;
+  padding: 0.3rem 0.45rem 0.4rem;
+  font-size: 0.48rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+
+.surv-city-holo__tags span {
+  color: var(--surv-cyan);
+  padding: 0.1rem 0.3rem;
+  border-radius: 4px;
+  background: rgba(0, 213, 255, 0.1);
+  border: 1px solid rgba(0, 213, 255, 0.2);
+}
+
+/* Removed flow row — workflow cards carry the story in center column */
+
+/* Analyze section */
+body.surveillance-sc .surv-input-card {
+  margin: 0 0.85rem 0.65rem;
+  border-color: var(--surv-border);
+  background: var(--surv-card);
+  padding: 0.85rem 1rem;
+}
+
+.surv-analyze-header {
+  margin-bottom: 0.65rem;
+}
+
+body.surveillance-sc .fh-input-title--rail {
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 0.95rem !important;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  margin: 0.15rem 0 0;
+}
+
+.surv-modules-title {
+  margin: 0 0 0.5rem;
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--surv-muted);
+}
+
+.surv-modules-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.55rem;
+}
+
+.surv-module-card {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.6rem 0.65rem;
+  border-radius: 10px;
+  border: 1px solid rgba(0, 213, 255, 0.12);
+  cursor: pointer;
+  transition: box-shadow 0.2s, border-color 0.2s, transform 0.15s;
+}
+
+.surv-module-card:hover {
+  border-color: rgba(0, 213, 255, 0.28);
+  box-shadow: 0 0 18px rgba(0, 213, 255, 0.1);
+  transform: translateY(-1px);
+}
+
+.surv-module-card.is-on {
+  border-color: rgba(0, 213, 255, 0.35);
+  box-shadow: 0 0 22px rgba(0, 213, 255, 0.14);
+}
+
+.surv-module-card--fight.is-on { border-color: rgba(255, 107, 53, 0.35); }
+.surv-module-card--weapon.is-on { border-color: rgba(255, 180, 80, 0.35); }
+.surv-module-card--chatapi.is-on { border-color: rgba(124, 58, 237, 0.35); }
+
+.surv-module-card__icon {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  color: var(--surv-cyan);
+  background: rgba(0, 213, 255, 0.08);
+  border: 1px solid rgba(0, 213, 255, 0.15);
+}
+
+.surv-module-card__body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.surv-module-card__name {
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--surv-text);
+  line-height: 1.2;
+}
+
+.surv-module-status {
+  font-size: 0.52rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  align-self: flex-start;
+  padding: 0.12rem 0.35rem;
+  border-radius: 999px;
+}
+
+.surv-module-status--ready {
+  color: var(--surv-ok);
+  border: 1px solid rgba(52, 211, 153, 0.35);
+  background: rgba(52, 211, 153, 0.1);
+}
+
+.surv-module-status--opt {
+  color: var(--surv-muted);
+  border: 1px solid rgba(138, 164, 201, 0.25);
+  background: rgba(138, 164, 201, 0.08);
+}
+
+.surv-module-card .fusion-model-toggle {
+  flex-shrink: 0;
+}
+
+.surv-module-card .fusion-model-check {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--surv-cyan);
+}
+
+/* Advanced model details — collapsed by default */
+.surv-advanced-details {
+  margin: 0.65rem 0;
+  border-radius: 8px;
+  border: 1px solid rgba(0, 213, 255, 0.1);
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.surv-advanced-details__summary {
+  padding: 0.5rem 0.65rem;
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--surv-muted);
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+}
+
+.surv-advanced-details__summary::-webkit-details-marker { display: none; }
+
+.surv-advanced-details__summary::before {
+  content: "▸";
+  display: inline-block;
+  margin-right: 0.35rem;
+  transition: transform 0.2s;
+  color: var(--surv-cyan);
+}
+
+.surv-advanced-details[open] .surv-advanced-details__summary::before {
+  transform: rotate(90deg);
+}
+
+.surv-advanced-details__body {
+  padding: 0 0.65rem 0.65rem;
+  border-top: 1px solid rgba(0, 213, 255, 0.08);
+}
+
+.surv-advanced-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.35rem;
+  padding: 0.4rem 0;
+  font-size: 0.65rem;
+  border-bottom: 1px solid rgba(0, 213, 255, 0.06);
+}
+
+.surv-advanced-row:last-of-type { border-bottom: none; }
+
+.surv-advanced-label {
+  color: var(--surv-muted);
+}
+
+.surv-advanced-value {
+  color: #b8d4f0;
+  font-size: 0.62rem;
+}
+
+.surv-advanced-value code {
+  font-size: 0.6rem;
+  color: #9ec8e8;
+  background: rgba(0, 0, 0, 0.35);
+  padding: 0.1rem 0.3rem;
+  border-radius: 4px;
+}
+
+.surv-advanced-selects {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.55rem;
+  margin-top: 0.55rem;
+}
+
+.surv-advanced-selects .fight-label {
+  font-size: 0.65rem;
+  color: var(--surv-muted);
+  margin-bottom: 0.2rem;
+  display: block;
+}
+
+.surv-field-hint,
+.surv-input-hint {
+  color: var(--surv-muted) !important;
+  margin: 0.2rem 0 0 !important;
+  font-size: 0.72rem !important;
+}
+
+.surv-analyze-actions {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+body.surveillance-sc .fh-btn-primary {
+  background: linear-gradient(135deg, rgba(0, 213, 255, 0.45), rgba(47, 128, 237, 0.55));
+  border: 1px solid rgba(0, 213, 255, 0.4);
+  box-shadow: 0 0 16px rgba(0, 213, 255, 0.2);
+  transition: box-shadow 0.2s, transform 0.15s;
+}
+
+body.surveillance-sc .fh-btn-primary:hover {
+  box-shadow: 0 0 22px var(--surv-glow);
+  transform: translateY(-1px);
+}
+
+/* Main grid — live view dominant */
+body.surveillance-sc .fh-main-grid {
+  grid-template-columns: minmax(260px, 0.88fr) minmax(380px, 1.45fr) minmax(250px, 0.82fr);
+  gap: 0.75rem;
+  padding-bottom: 0.85rem;
+}
+
+body.surveillance-sc .fh-panel-title {
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  color: #f0f8ff;
+}
+
+body.surveillance-sc .fh-kicker {
+  color: var(--surv-cyan);
+}
+
+body.surveillance-sc .fh-threat-list {
+  min-height: 140px;
+}
+
+body.surveillance-sc .fh-threat-card {
+  transition: transform 0.15s, box-shadow 0.2s;
+}
+
+body.surveillance-sc .fh-threat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 16px rgba(0, 213, 255, 0.1);
+}
+
+/* Premium empty states */
+.surv-empty-premium {
+  position: relative;
+  text-align: center;
+  padding: 1.25rem 0.85rem;
+  border-radius: 10px;
+  border: 1px dashed rgba(0, 213, 255, 0.15);
+  background: rgba(0, 0, 0, 0.25);
+  overflow: hidden;
+}
+
+.surv-empty-premium::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  box-shadow: inset 0 0 24px rgba(0, 213, 255, 0.04);
+  animation: survEmptyBorder 3s ease-in-out infinite;
+}
+
+.surv-empty-premium--incident::after,
+.surv-empty-premium--faces::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--surv-cyan), transparent);
+  animation: survScanLine 4s ease-in-out infinite;
+  opacity: 0.35;
+  pointer-events: none;
+}
+
+.surv-empty-premium__ico {
+  font-size: 1.75rem;
+  opacity: 0.35;
+  margin-bottom: 0.45rem;
+  position: relative;
+  z-index: 1;
+}
+
+.surv-empty-premium__title {
+  margin: 0;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--surv-text);
+  position: relative;
+  z-index: 1;
+}
+
+.surv-empty-premium__hint {
+  margin: 0.35rem 0 0;
+  font-size: 0.68rem;
+  color: var(--surv-muted);
+  line-height: 1.45;
+  position: relative;
+  z-index: 1;
+}
+
+/* Live feed holographic placeholder */
+.surv-empty-premium--feed {
+  min-height: 280px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background:
+    radial-gradient(ellipse at center, rgba(0, 213, 255, 0.06), transparent 65%),
+    rgba(2, 8, 16, 0.85);
+}
+
+.surv-feed-placeholder {
+  position: relative;
+  width: 120px;
+  height: 80px;
+  margin-bottom: 0.75rem;
+  border-radius: 8px;
+  border: 1px solid rgba(0, 213, 255, 0.2);
+  background: rgba(0, 0, 0, 0.4);
+  overflow: hidden;
+}
+
+.surv-feed-placeholder__grid {
+  position: absolute;
+  inset: 0;
+  opacity: 0.4;
+  background-image:
+    linear-gradient(rgba(0, 213, 255, 0.15) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 213, 255, 0.15) 1px, transparent 1px);
+  background-size: 12px 12px;
+}
+
+.surv-feed-placeholder__scan {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--surv-cyan), transparent);
+  animation: survScanLine 2.5s ease-in-out infinite;
+}
+
+.surv-feed-placeholder__cam {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  opacity: 0.45;
+}
+
+body.surveillance-sc .stage-empty-kicker {
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #f0f8ff;
+  margin-bottom: 0.35rem;
+}
+
+/* Operations status */
+body.surveillance-sc .fh-sys-card {
+  border-radius: 10px;
+  border: 1px solid rgba(0, 213, 255, 0.1);
+  background: rgba(0, 0, 0, 0.22);
+  margin: 0 0.55rem 0.55rem;
+  padding: 0.55rem 0.65rem;
+}
+
+body.surveillance-sc .fh-sys-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.35rem 0;
+  font-size: 0.72rem;
+  border-bottom: 1px solid rgba(0, 213, 255, 0.06);
+}
+
+body.surveillance-sc .fh-sys-row:last-child { border-bottom: none; }
+
+body.surveillance-sc .fh-sys-ok,
+body.surveillance-sc .fh-sys-warn {
+  font-size: 0.58rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 0.15rem 0.4rem;
+  border-radius: 999px;
+}
+
+body.surveillance-sc .fh-sys-ok {
+  color: var(--surv-ok);
+  border: 1px solid rgba(52, 211, 153, 0.35);
+  background: rgba(52, 211, 153, 0.1);
+  animation: survPulseGlow 2s ease-in-out infinite;
+}
+
+body.surveillance-sc .fh-sys-warn {
+  color: var(--surv-warn);
+  border: 1px solid rgba(251, 146, 60, 0.35);
+  background: rgba(251, 146, 60, 0.1);
+}
+
+body.surveillance-sc .fusion-source-seg { gap: 0.35rem; }
+
+body.surveillance-sc .fusion-source-tab {
+  border-radius: 8px;
+  transition: box-shadow 0.2s, background 0.2s;
+}
+
+body.surveillance-sc .fusion-source-tab-active {
+  box-shadow: 0 0 14px rgba(0, 213, 255, 0.15);
+}
+
+/* Live monitoring centerpiece */
+body.surveillance-sc .fh-col-center .fh-live-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.35rem 0.55rem 0.25rem;
+}
+
+body.surveillance-sc .fh-city-canvas {
+  min-height: min(52vh, 480px);
+  border-color: rgba(0, 213, 255, 0.22);
+  box-shadow: 0 0 28px rgba(0, 213, 255, 0.08);
+}
+
+body.surveillance-sc .video-corners {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 5;
+}
+
+body.surveillance-sc .video-corners::before,
+body.surveillance-sc .video-corners::after {
+  content: "";
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border-color: var(--surv-cyan);
+  border-style: solid;
+  opacity: 0.55;
+}
+
+body.surveillance-sc .video-corners::before {
+  top: 8px;
+  left: 8px;
+  border-width: 2px 0 0 2px;
+}
+
+body.surveillance-sc .video-corners::after {
+  bottom: 8px;
+  right: 8px;
+  border-width: 0 2px 2px 0;
+}
+
+.surv-live-scan {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--surv-cyan), transparent);
+  animation: survScanLine 3s ease-in-out infinite;
+  z-index: 4;
+  pointer-events: none;
+  opacity: 0.4;
+}
+
+body.surveillance-sc .fh-chip-live {
+  animation: survPulseGlow 1.8s ease-in-out infinite;
+}
+
+body.surveillance-sc .fh-chip-live-dot {
+  animation: survStatusDot 1.5s ease-in-out infinite;
+}
+
+body.surveillance-sc .fusion-stage-empty,
+body.surveillance-sc .fusion-cam-placeholder {
+  min-height: 280px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background:
+    radial-gradient(ellipse at center, rgba(0, 213, 255, 0.06), transparent 65%),
+    rgba(2, 8, 16, 0.85);
+  border: 1px dashed rgba(0, 213, 255, 0.15);
+  border-radius: 10px;
+  margin: 0.5rem;
+}
+
+body.surveillance-sc .fh-dock-btn,
+body.surveillance-sc .stage-icon-btn {
+  border-radius: 8px;
+  border: 1px solid rgba(0, 213, 255, 0.2);
+  background: rgba(0, 0, 0, 0.4);
+  transition: box-shadow 0.2s, transform 0.15s;
+}
+
+body.surveillance-sc .fh-dock-btn:hover,
+body.surveillance-sc .stage-icon-btn:hover:not(:disabled) {
+  box-shadow: 0 0 12px rgba(0, 213, 255, 0.2);
+  transform: translateY(-1px);
+}
+
+body.surveillance-sc .fusion-intel-panel {
+  border-color: var(--surv-border);
+}
+
+body.surveillance-sc .fh-face-panel-sub {
+  font-size: 0.65rem !important;
+  line-height: 1.45 !important;
+  padding: 0 0.65rem 0.35rem !important;
+}
+
+body.surveillance-sc .fh-bio-scanner-card,
+body.surveillance-sc .fh-face-scan-card {
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+body.surveillance-sc .fh-bio-scanner-card:hover {
+  box-shadow: 0 0 14px rgba(0, 213, 255, 0.1);
+}
+
+body.surveillance-sc .fh-quick-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+body.surveillance-sc .fh-quick-actions .fh-btn-primary {
+  font-weight: 700;
+}
+
+body.surveillance-sc .fh-quick-actions .fh-btn-danger {
+  background: rgba(255, 77, 109, 0.15);
+  border-color: rgba(255, 77, 109, 0.4);
+  color: #ffc9d4;
+  box-shadow: 0 0 12px rgba(255, 77, 109, 0.12);
+}
+
+body.surveillance-sc .fh-quick-actions .fh-btn-danger:hover {
+  box-shadow: 0 0 20px rgba(255, 77, 109, 0.25);
+}
+
+@keyframes survFloat {
+  0%, 100% { transform: translateY(0); opacity: 0.3; }
+  50% { transform: translateY(-6px); opacity: 0.65; }
+}
+
+@keyframes survSoftRise {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes survHoloSweep {
+  0%, 100% { transform: translateX(-25%); opacity: 0; }
+  50% { transform: translateX(25%); opacity: 1; }
+}
+
+@keyframes survScanLine {
+  0% { top: 8%; opacity: 0; }
+  15% { opacity: 0.7; }
+  85% { opacity: 0.7; }
+  100% { top: 92%; opacity: 0; }
+}
+
+@keyframes survPulseGlow {
+  0%, 100% { opacity: 0.75; }
+  50% { opacity: 1; }
+}
+
+@keyframes survRadarSweep {
+  from { transform: rotate(0deg); opacity: 0.35; }
+  to { transform: rotate(360deg); opacity: 0.35; }
+}
+
+@keyframes survBeamRotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes survCamPulse {
+  0%, 100% { stroke-opacity: 0.6; }
+  50% { stroke-opacity: 1; stroke-width: 2; }
+}
+
+@keyframes survAlertRing {
+  0% { r: 6; opacity: 0.9; }
+  100% { r: 18; opacity: 0; }
+}
+
+@keyframes survDataDot {
+  0%, 100% { opacity: 0; transform: translateY(0); }
+  30%, 70% { opacity: 1; }
+  50% { transform: translateY(-4px); }
+}
+
+@keyframes survRouteDash {
+  to { stroke-dashoffset: -40; }
+}
+
+@keyframes survEmptyBorder {
+  0%, 100% { box-shadow: inset 0 0 24px rgba(0, 213, 255, 0.04); }
+  50% { box-shadow: inset 0 0 32px rgba(0, 213, 255, 0.08); }
+}
+
+@keyframes survStatusDot {
+  0%, 100% { opacity: 0.6; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.15); }
+}
+
+@media (max-width: 1200px) {
+  .surv-hero {
+    grid-template-columns: 1fr 1fr;
+    grid-template-areas:
+      "copy copy"
+      "workflow holo";
+    gap: 20px;
+    padding: 22px 24px;
+  }
+
+  .surv-hero__copy { grid-area: copy; }
+  .surv-hero__workflow { grid-area: workflow; }
+  .surv-city-holo { grid-area: holo; max-height: 200px; }
+
+  .surv-hero__sub { max-width: none; }
+
+  .surv-modules-grid { grid-template-columns: 1fr; }
+  .surv-advanced-selects { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 768px) {
+  .surv-hero {
+    grid-template-columns: 1fr;
+    grid-template-areas: none;
+    padding: 20px;
+    gap: 16px;
+  }
+
+  .surv-hero__copy,
+  .surv-hero__workflow,
+  .surv-city-holo { grid-area: auto; }
+
+  .surv-city-holo {
+    max-height: 160px;
+  }
+
+  .surv-city-holo__svg {
+    max-height: 100px;
+  }
+
+  .surv-hero__cards {
+    gap: 6px;
+  }
+}
+
+@media (max-width: 820px) {
+  body.surveillance-sc .fh-main-grid { grid-template-columns: 1fr; }
+}

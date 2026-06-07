@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 480">
+  <rect width="800" height="480" fill="#0f1a28"/>
+  <!-- river -->
+  <path d="M0 350 Q200 300 400 360 T800 340 L800 480 L0 480 Z" fill="#1e3a5f"/>
+  <!-- bridge -->
+  <rect x="150" y="280" width="500" height="20" fill="#64748b"/>
+  <rect x="200" y="260" width="15" height="60" fill="#475569"/>
+  <rect x="400" y="250" width="15" height="70" fill="#475569"/>
+  <rect x="600" y="260" width="15" height="60" fill="#475569"/>
+  <!-- crack on bridge -->
+  <path d="M380 280 L420 300 L400 320 L440 340" stroke="#ef4444" stroke-width="3" fill="none"/>
+  <circle cx="410" cy="310" r="25" fill="none" stroke="#f59e0b" stroke-width="2" stroke-dasharray="6 3"/>
+  <!-- drone -->
+  <ellipse cx="650" cy="100" rx="40" ry="12" fill="#334155"/>
+  <line x1="610" y1="100" x2="580" y2="80" stroke="#64748b" stroke-width="2"/>
+  <line x1="690" y1="100" x2="720" y2="80" stroke="#64748b" stroke-width="2"/>
+  <text x="400" y="60" text-anchor="middle" fill="#00aeda" font-size="22" font-family="sans-serif" font-weight="bold">STRUCTURAL STRESS</text>
+  <text x="400" y="90" text-anchor="middle" fill="#94a3b8" font-size="14" font-family="sans-serif">UAV detects bridge damage risk</text>
+</svg>

@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 480">
+  <rect width="800" height="480" fill="#1a1520"/>
+  <!-- buildings -->
+  <rect x="100" y="180" width="120" height="200" fill="#2a2535"/>
+  <rect x="280" y="150" width="140" height="230" fill="#322d40"/>
+  <rect x="480" y="170" width="110" height="210" fill="#2a2535"/>
+  <rect x="640" y="190" width="100" height="190" fill="#322d40"/>
+  <!-- smoke -->
+  <ellipse cx="350" cy="120" rx="80" ry="50" fill="#64748b" opacity="0.5"/>
+  <ellipse cx="380" cy="90" rx="60" ry="35" fill="#94a3b8" opacity="0.4"/>
+  <ellipse cx="320" cy="70" rx="40" ry="25" fill="#cbd5e1" opacity="0.3"/>
+  <!-- small fire glow -->
+  <ellipse cx="350" cy="200" rx="30" ry="20" fill="#f97316" opacity="0.7"/>
+  <ellipse cx="350" cy="195" rx="15" ry="10" fill="#fbbf24" opacity="0.9"/>
+  <text x="400" y="60" text-anchor="middle" fill="#00aeda" font-size="22" font-family="sans-serif" font-weight="bold">SMOKE DETECTED</text>
+  <text x="400" y="90" text-anchor="middle" fill="#94a3b8" font-size="14" font-family="sans-serif">Urban block — fire spread risk</text>
+  <circle cx="350" cy="150" r="55" fill="none" stroke="#ef4444" stroke-width="2" stroke-dasharray="8 4"/>
+</svg>

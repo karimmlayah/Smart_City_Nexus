@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 480">
+  <rect width="800" height="480" fill="#150a08"/>
+  <rect width="800" height="480" fill="#ef4444" opacity="0.2"/>
+  <!-- buildings -->
+  <rect x="100" y="180" width="120" height="200" fill="#1a1010"/>
+  <rect x="280" y="150" width="140" height="230" fill="#221010"/>
+  <rect x="480" y="170" width="110" height="210" fill="#1a1010"/>
+  <!-- major fire -->
+  <ellipse cx="350" cy="220" rx="70" ry="50" fill="#ef4444" opacity="0.8"/>
+  <ellipse cx="350" cy="200" rx="45" ry="35" fill="#f97316" opacity="0.9"/>
+  <ellipse cx="350" cy="185" rx="25" ry="20" fill="#fbbf24"/>
+  <!-- heavy smoke -->
+  <ellipse cx="350" cy="80" rx="150" ry="70" fill="#475569" opacity="0.6"/>
+  <ellipse cx="400" cy="50" rx="100" ry="45" fill="#64748b" opacity="0.5"/>
+  <ellipse cx="300" cy="40" rx="70" ry="30" fill="#94a3b8" opacity="0.4"/>
+  <text x="400" y="420" text-anchor="middle" fill="#ef4444" font-size="24" font-family="sans-serif" font-weight="bold">FIRE SPREADING</text>
+  <text x="400" y="450" text-anchor="middle" fill="#fca5a5" font-size="14" font-family="sans-serif">+19 min delay · 980 citizens at risk</text>
+</svg>

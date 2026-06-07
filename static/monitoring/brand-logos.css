@@ -1,0 +1,525 @@
+/**
+ * MedinaMind + Nexus — reusable brand logo components
+ */
+
+/* ── Generic logo mark (navbar, topbar) ─────────────────────────────────── */
+.logo-mark {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  border-radius: 14px;
+  border: 1px solid var(--border-soft);
+  background: rgba(0, 213, 255, 0.06);
+  overflow: hidden;
+  transition: box-shadow 0.25s ease, border-color 0.25s ease, background 0.25s ease;
+}
+
+.logo-mark--nav {
+  width: 42px;
+  height: 42px;
+  padding: 4px;
+  border-radius: 14px;
+}
+
+.logo-mark--xs {
+  width: 32px;
+  height: 32px;
+  padding: 3px;
+  border-radius: 10px;
+}
+
+.brand-logo {
+  display: block;
+  object-fit: contain;
+  object-position: center;
+  flex-shrink: 0;
+}
+
+.logo-mark--nav .brand-logo,
+.brand-logo--nav {
+  width: 34px;
+  height: 34px;
+  max-width: 34px;
+  max-height: 34px;
+}
+
+.logo-mark--xs .brand-logo,
+.brand-logo--xs {
+  width: 26px;
+  height: 26px;
+  max-width: 26px;
+  max-height: 26px;
+}
+
+.brand-logo--footer {
+  width: 40px;
+  height: 40px;
+  max-width: 40px;
+  max-height: 40px;
+}
+
+/* Dark themes — subtle cyan glow */
+html[data-theme="blue-dark"] .logo-glow.logo-mark,
+html[data-theme="dark"] .logo-glow.logo-mark,
+html:not([data-theme]) .logo-glow.logo-mark {
+  box-shadow: 0 0 20px rgba(0, 213, 255, 0.18);
+  border-color: rgba(0, 213, 255, 0.28);
+}
+
+html[data-theme="light"] .logo-mark {
+  background: var(--bg-card);
+  border-color: var(--border-soft);
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.1);
+}
+
+html[data-theme="light"] .logo-glow.logo-mark {
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.1);
+}
+
+/* ── Sidebar brand logo ───────────────────────────────────────────────────── */
+.mm-sidebar__brand {
+  gap: 12px;
+  padding: 16px 14px;
+}
+
+.mm-sidebar__logo-link.sidebar-brand-logo {
+  display: grid;
+  place-items: center;
+  width: 54px;
+  height: 54px;
+  padding: 5px;
+  border-radius: 18px;
+  flex: 0 0 auto;
+  text-decoration: none;
+  background: linear-gradient(135deg, rgba(0, 213, 255, 0.16), rgba(47, 128, 237, 0.12));
+  border: 1px solid rgba(0, 213, 255, 0.28);
+  box-shadow: 0 0 28px rgba(0, 213, 255, 0.16);
+  overflow: hidden;
+  transition: box-shadow 0.25s ease, border-color 0.25s ease;
+}
+
+.mm-sidebar__logo-link.sidebar-brand-logo img,
+.sidebar-brand-logo__img {
+  width: 44px;
+  height: 44px;
+  max-width: 44px;
+  max-height: 44px;
+  object-fit: contain;
+  object-position: center;
+  display: block;
+}
+
+html[data-theme="light"] .mm-sidebar__logo-link.sidebar-brand-logo {
+  background: var(--bg-card);
+  border-color: var(--border-strong);
+  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.1);
+}
+
+.mm-sidebar__brand-name {
+  font-size: 1.12rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.mm-sidebar__brand-badge {
+  margin-top: 4px;
+  padding: 3px 8px;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+/* Collapsed sidebar — compact icon rail logo */
+html.mm-sidebar-collapsed .mm-sidebar__brand,
+body.mm-sidebar-collapsed .mm-sidebar__brand {
+  justify-content: center;
+  padding: 10px 8px 8px;
+  position: relative;
+}
+
+html.mm-sidebar-collapsed .mm-sidebar__logo-link.sidebar-brand-logo,
+body.mm-sidebar-collapsed .mm-sidebar__logo-link.sidebar-brand-logo {
+  width: 48px;
+  height: 48px;
+  padding: 4px;
+  margin: 0 auto;
+  border-radius: 14px;
+}
+
+html.mm-sidebar-collapsed .mm-sidebar__logo-link.sidebar-brand-logo img,
+body.mm-sidebar-collapsed .mm-sidebar__logo-link.sidebar-brand-logo img {
+  width: 38px;
+  height: 38px;
+  max-width: 38px;
+  max-height: 38px;
+}
+
+/* ── Watermarks (low opacity only) ────────────────────────────────────────── */
+.logo-watermark {
+  position: absolute;
+  pointer-events: none;
+  user-select: none;
+  object-fit: contain;
+  object-position: center;
+  z-index: 0;
+}
+
+.logo-watermark--hero {
+  inset: 50% auto auto 50%;
+  transform: translate(-50%, -50%);
+  width: min(72%, 340px);
+  max-width: 340px;
+  height: auto;
+  opacity: 0.09;
+}
+
+html[data-theme="blue-dark"] .logo-watermark--hero,
+html[data-theme="dark"] .logo-watermark--hero,
+html:not([data-theme]) .logo-watermark--hero {
+  mix-blend-mode: screen;
+  opacity: 0.08;
+}
+
+html[data-theme="light"] .logo-watermark--hero {
+  mix-blend-mode: multiply;
+  opacity: 0.07;
+}
+
+.logo-watermark--dash {
+  left: 1.5rem;
+  bottom: 1.25rem;
+  width: min(240px, 38%);
+  max-width: 280px;
+  height: auto;
+  opacity: 0.06;
+  z-index: 1;
+}
+
+html[data-theme="blue-dark"] .logo-watermark--dash,
+html[data-theme="dark"] .logo-watermark--dash,
+html:not([data-theme]) .logo-watermark--dash {
+  mix-blend-mode: screen;
+  opacity: 0.07;
+}
+
+html[data-theme="light"] .logo-watermark--dash {
+  mix-blend-mode: multiply;
+  opacity: 0.05;
+}
+
+.ai-globe-hero.mm-hero,
+.mm-home-hero__viz {
+  position: relative;
+}
+
+.ai-globe-hero__inner,
+.smart-city-hologram {
+  position: relative;
+  z-index: 2;
+}
+
+/* ── Team Nexus badge ─────────────────────────────────────────────────────── */
+.team-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
+  min-height: 46px;
+  border-radius: 999px;
+  background: rgba(15, 42, 74, 0.55);
+  border: 1px solid rgba(0, 213, 255, 0.28);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: 0 0 22px rgba(0, 213, 255, 0.12);
+  white-space: nowrap;
+  transition: background 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.team-badge--hero {
+  position: absolute;
+  right: 22px;
+  bottom: 22px;
+  z-index: 3;
+}
+
+/* Stage footer — caption + Nexus badge side by side (no overlap) */
+.mm-hero__stage-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-top: 0.65rem;
+  flex-wrap: wrap;
+}
+
+.mm-hero__stage-footer .ai-globe-hero__caption,
+.mm-hero__stage-footer .mm-hero__caption {
+  margin: 0;
+  flex: 1 1 auto;
+  min-width: 0;
+  text-align: left !important;
+}
+
+.team-badge--stage {
+  position: static;
+  flex: 0 0 auto;
+  margin-left: auto;
+}
+
+.team-badge img,
+.team-badge .nexus-logo {
+  width: 34px;
+  height: 34px;
+  min-width: 34px;
+  min-height: 34px;
+  max-width: 34px;
+  max-height: 34px;
+  object-fit: contain;
+  object-position: center;
+  flex: 0 0 auto;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.92);
+  padding: 3px;
+  box-sizing: content-box;
+  display: block;
+}
+
+.team-badge span {
+  font-size: 0.86rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--text-primary);
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+html[data-theme="light"] .team-badge {
+  background: rgba(224, 239, 249, 0.92);
+  border-color: var(--border-strong);
+  box-shadow: var(--shadow-soft);
+}
+
+html[data-theme="light"] .team-badge span {
+  color: var(--text-primary);
+}
+
+html[data-theme="light"] .team-badge img,
+html[data-theme="light"] .team-badge .nexus-logo {
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow: 0 2px 8px rgba(29, 78, 216, 0.1);
+}
+
+/* Nexus logo — standalone contexts (footer, about) */
+.nexus-logo {
+  display: block;
+  object-fit: contain;
+  object-position: center;
+  flex-shrink: 0;
+  border-radius: 8px;
+}
+
+.nexus-logo--sm {
+  width: 40px;
+  height: 40px;
+  max-width: 40px;
+  max-height: 40px;
+  padding: 4px;
+  background: rgba(255, 255, 255, 0.92);
+  box-sizing: content-box;
+}
+
+.nexus-logo--footer {
+  width: 40px;
+  height: 40px;
+  max-width: 40px;
+  max-height: 40px;
+  padding: 4px;
+  background: rgba(255, 255, 255, 0.92);
+  box-sizing: content-box;
+}
+
+html[data-theme="blue-dark"] .nexus-logo:not(.team-badge .nexus-logo),
+html[data-theme="dark"] .nexus-logo:not(.team-badge .nexus-logo),
+html:not([data-theme]) .nexus-logo:not(.team-badge .nexus-logo) {
+  filter: drop-shadow(0 0 8px rgba(0, 213, 255, 0.15));
+}
+
+/* ── Footer branding ──────────────────────────────────────────────────────── */
+.mm-footer-brand {
+  margin-top: 1rem;
+  margin-bottom: 2.5rem;
+  padding: 1.75rem 1.5rem;
+  border-radius: 20px;
+  border: 1px solid var(--border-soft);
+  background: var(--bg-panel);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: var(--shadow-soft);
+}
+
+.mm-footer-brand__inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.25rem 2rem;
+}
+
+.mm-footer-brand__block {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  min-width: 0;
+}
+
+.mm-footer-brand__text {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: var(--text-secondary);
+}
+
+.mm-footer-brand__text strong {
+  display: block;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 0.15rem;
+}
+
+.mm-footer-brand__divider {
+  width: 1px;
+  height: 40px;
+  background: var(--border-soft);
+  flex-shrink: 0;
+}
+
+.mm-footer-brand__block .logo-mark,
+.mm-footer-brand__block .brand-logo--footer {
+  width: 40px;
+  height: 40px;
+}
+
+/* ── About / Team Nexus block ───────────────────────────────────────────── */
+.mm-about-team {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 1.25rem 1.5rem;
+  align-items: start;
+  padding: 1.75rem 1.5rem;
+  border-radius: 22px;
+  border: 1px solid var(--border-soft);
+  background: var(--bg-card);
+  box-shadow: var(--shadow-soft);
+  margin-bottom: 2rem;
+}
+
+.mm-about-team__logo-wrap {
+  width: 64px;
+  height: 64px;
+  border-radius: 16px;
+  border: 1px solid var(--border-soft);
+  background: rgba(255, 255, 255, 0.92);
+  display: grid;
+  place-items: center;
+  padding: 6px;
+  flex-shrink: 0;
+}
+
+.mm-about-team__logo-wrap .nexus-logo {
+  width: 48px;
+  height: 48px;
+  max-width: 48px;
+  max-height: 48px;
+}
+
+.mm-about-team__title {
+  margin: 0 0 0.5rem;
+  font-family: var(--hp-display, var(--mm-display, "Space Grotesk", sans-serif));
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.mm-about-team__text {
+  margin: 0;
+  font-size: 0.92rem;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  max-width: 42rem;
+}
+
+html[data-theme="light"] .mm-footer-brand,
+html[data-theme="light"] .mm-about-team {
+  background: var(--bg-card);
+}
+
+html[data-theme="light"] .mm-about-team__logo-wrap {
+  background: rgba(255, 255, 255, 0.98);
+  border-color: var(--border-soft);
+}
+
+/* ── Dashboard topbar mini brand ──────────────────────────────────────────── */
+.mm-topbar__left {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.mm-topbar__brand-mini {
+  opacity: 0.9;
+}
+
+@media (max-width: 1100px) {
+  .mm-topbar__brand-mini {
+    display: none;
+  }
+}
+
+@media (max-width: 900px) {
+  .mm-hero__stage-footer {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .team-badge--stage {
+    margin-left: 0;
+  }
+
+  .team-badge--hero {
+    right: 14px;
+    bottom: 14px;
+    padding: 7px 12px;
+    gap: 8px;
+  }
+
+  .team-badge img,
+  .team-badge .nexus-logo {
+    width: 30px;
+    height: 30px;
+    min-width: 30px;
+    min-height: 30px;
+    max-width: 30px;
+    max-height: 30px;
+  }
+
+  .team-badge span {
+    font-size: 0.78rem;
+  }
+}
+
+@media (max-width: 700px) {
+  .mm-footer-brand__divider {
+    display: none;
+  }
+
+  .mm-footer-brand__inner {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .mm-about-team {
+    grid-template-columns: 1fr;
+  }
+}

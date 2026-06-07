@@ -1,0 +1,262 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block body_class %}cockpit mm-dash-body mayor-mission-sc{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'monitoring/mayor-mission.css' %}?v=4">
+{% endblock %}
+
+{% block topbar %}{% include "monitoring/partials/mm_topbar.html" %}{% endblock %}
+
+{% block content %}
+<div class="mm-mayor" id="mmMayorRoot"
+     data-challenges-url="{{ challenges_url }}"
+     data-classic-url="{{ classic_url }}"
+     data-medinamind-url="{{ medinamind_url }}"
+     data-finish-url="{{ finish_url }}"
+     data-certificate-url="{{ certificate_url }}"
+     data-total-rounds="{{ total_rounds }}"
+     data-round-seconds="{{ round_seconds }}">
+
+  <!-- HUD -->
+  <header class="mm-mayor-hud" id="mmMayorHud" hidden>
+    <div class="mm-mayor-hud__left">
+      <p class="mm-mayor-eyebrow">Mission Mayor</p>
+      <h1 class="mm-mayor-title">Save the City</h1>
+    </div>
+    <ol class="mm-mayor-steps" id="mmMayorSteps" aria-label="Mission progress">
+      <li data-step="welcome">Start</li>
+      <li data-step="face_scan">Scan</li>
+      <li data-step="mayor_ready">Mayor</li>
+      <li data-step="challenge_intro">Crisis</li>
+      <li data-step="decision">Choose</li>
+      <li data-step="consequence">Result</li>
+      <li data-step="final_result">Finish</li>
+    </ol>
+    <div class="mm-mayor-hud__stats">
+      <div class="mm-mayor-stat"><span>Round</span><strong id="mmHudRound">1 / {{ total_rounds }}</strong></div>
+      <div class="mm-mayor-stat mm-mayor-stat--timer" id="mmHudTimerWrap">
+        <span>Time</span>
+        <strong id="mmHudTimer">{{ round_seconds }}</strong>
+      </div>
+      <div class="mm-mayor-stat"><span>Score</span><strong id="mmHudScore">50</strong></div>
+      <div class="mm-mayor-stat mm-mayor-stat--health"><span>Health</span><strong id="mmHudHealth">70</strong></div>
+      <div class="mm-mayor-stars" id="mmHudStars" aria-label="Mission stars">★★★★★</div>
+      <button type="button" class="mm-mayor-mute" id="mmMayorMuteBtn" aria-pressed="false" title="Toggle sound">🔊</button>
+    </div>
+  </header>
+
+  <!-- Welcome -->
+  <section class="mm-mayor-screen is-visible" data-screen="welcome">
+    <div class="mm-mayor-welcome-card">
+      <div class="mm-mayor-welcome-glow" aria-hidden="true"></div>
+      <h2>Mission Mayor: Save the City</h2>
+      <p>You are the mayor. Face real city crises, choose your response, and protect MedinaMind in <strong>{{ total_rounds }} rounds</strong>.</p>
+      <ul class="mm-mayor-welcome-list">
+        <li>Scan your face to become mayor</li>
+        <li>Respond to real incident photos</li>
+        <li>Choose Classic or MedinaMind AI — every choice counts</li>
+        <li>Beat the clock before the situation worsens</li>
+      </ul>
+      <button type="button" class="mm-mayor-btn mm-mayor-btn--primary" id="mmMayorStartBtn">Start Mission</button>
+    </div>
+  </section>
+
+  <!-- Game layout -->
+  <div class="mm-mayor-game" id="mmMayorGame" hidden>
+
+    <!-- Left column -->
+    <aside class="mm-mayor-col mm-mayor-col--left">
+
+      <!-- Mayor Identity -->
+      <section class="mm-mayor-card mm-mayor-avatar-card" data-screen="face_scan mayor_ready challenge_intro decision consequence next_round">
+        <h3>Mayor Identity</h3>
+
+        <div class="mm-mayor-avatar-slot" id="mmAvatarSlot">
+          <div class="mm-mayor-avatar-display" id="mmAvatarFaceWrap" hidden>
+            <div class="mm-mayor-avatar-ring" aria-hidden="true"></div>
+            <img id="mmMayorAvatarImg" class="mm-mayor-avatar-img" alt="Mayor avatar">
+          </div>
+          <div class="mm-mayor-avatar-display" id="mmAvatarFallbackWrap">
+            <div class="mm-mayor-avatar-ring" aria-hidden="true"></div>
+            <div class="mm-mayor-avatar-fallback" id="mmMayorAvatarFallback">MM</div>
+          </div>
+        </div>
+
+        <p class="mm-mayor-avatar-title">Mayor of MedinaMind</p>
+        <span class="mm-mayor-badge mm-mayor-badge--ok" id="mmMayorIdentityBadge" hidden>Mayor identity confirmed</span>
+        <input type="text" class="mm-mayor-name-input" id="mmMayorNameInput" placeholder="Your name (optional)" maxlength="40">
+
+        <div class="mm-mayor-scan-wrap" id="mmMayorScanSection">
+          <video id="mmMayorVideo" class="mm-mayor-video" autoplay playsinline muted hidden></video>
+          <div class="mm-mayor-scan-placeholder" id="mmMayorScanPlaceholder">
+            <span class="mm-mayor-scan-ring"></span>
+            <p>Waiting for camera…</p>
+          </div>
+          <div class="mm-mayor-scan-actions">
+            <button type="button" class="mm-mayor-btn" id="mmMayorScanBtn">Scan Face</button>
+            <button type="button" class="mm-mayor-btn mm-mayor-btn--ghost" id="mmMayorSkipFaceBtn">Use Generic Avatar</button>
+            <button type="button" class="mm-mayor-btn mm-mayor-btn--ghost" id="mmMayorRetakeBtn" hidden>Retake Face</button>
+          </div>
+          <p class="mm-mayor-status" id="mmMayorScanStatus">Camera not started</p>
+        </div>
+      </section>
+
+      <!-- City Status -->
+      <section class="mm-mayor-card mm-mayor-gauge-card" data-screen="mayor_ready challenge_intro decision consequence next_round">
+        <h3>City Status</h3>
+        <div class="mm-mayor-gauge">
+          <div class="mm-mayor-gauge__bar"><div class="mm-mayor-gauge__fill" id="mmHealthGauge"></div></div>
+          <span class="mm-mayor-gauge__label">City Health <strong id="mmSideHealth">70</strong>%</span>
+        </div>
+        <div class="mm-mayor-side-metrics">
+          <div><span>Score</span><strong id="mmSideScore">50</strong></div>
+          <div><span>Stars</span><strong id="mmSideStars">★★☆☆☆</strong></div>
+          <div><span>Round Timer</span><strong id="mmSideTimer">{{ round_seconds }}s</strong></div>
+          <div><span>Citizens Protected</span><strong id="mmSideCitizens">0</strong></div>
+          <div><span>Citizens Impacted</span><strong id="mmSideImpacted">0</strong></div>
+          <div><span>Damage Avoided</span><strong id="mmSideDamage">0 TND</strong></div>
+          <div><span>Damage Cost</span><strong id="mmSideDamageCost">0 TND</strong></div>
+          <div><span>Time Saved</span><strong id="mmSideTime">0 min</strong></div>
+        </div>
+      </section>
+    </aside>
+
+    <!-- Center -->
+    <main class="mm-mayor-col mm-mayor-col--center">
+      <section class="mm-mayor-card mm-mayor-crisis-card" data-screen="challenge_intro decision consequence next_round simulating">
+        <div class="mm-mayor-crisis-alert" id="mmCrisisAlert" hidden>
+          <span class="mm-mayor-crisis-alert__pulse"></span>
+          CITY INCIDENT DETECTED
+        </div>
+        <div class="mm-mayor-crisis-media" id="mmCrisisMedia">
+          <img id="mmCrisisImg" class="mm-mayor-crisis-img" alt="Incident scene" hidden>
+          <div class="mm-mayor-crisis-placeholder" id="mmCrisisPlaceholder">Awaiting crisis…</div>
+          <div class="mm-mayor-crisis-overlay mm-mayor-crisis-overlay--damage" id="mmDamageOverlay" hidden></div>
+          <div class="mm-mayor-crisis-overlay mm-mayor-crisis-overlay--crack" id="mmCrackOverlay" hidden aria-hidden="true"></div>
+          <div class="mm-mayor-crisis-overlay mm-mayor-crisis-overlay--ai" id="mmAiOverlay" hidden></div>
+          <div class="mm-mayor-crisis-scan" id="mmCrisisScan" hidden></div>
+        </div>
+        <div class="mm-mayor-ai-result" id="mmAiResultPanel" hidden>
+          <p class="mm-mayor-ai-result__tag">Powered by real MedinaMind AI</p>
+          <div class="mm-mayor-ai-result__grid">
+            <div><span>Detected</span><strong id="mmAiDetected">—</strong></div>
+            <div><span>Confidence</span><strong id="mmAiConfidence">—</strong></div>
+            <div><span>Risk</span><strong id="mmAiSeverity">—</strong></div>
+            <div><span>Module</span><strong id="mmAiModule">—</strong></div>
+          </div>
+          <p class="mm-mayor-ai-result__rec" id="mmAiRecommendation">—</p>
+          <p class="mm-mayor-ai-result__fallback" id="mmAiFallback" hidden></p>
+        </div>
+        <div class="mm-mayor-classic-result" id="mmClassicResultPanel" hidden>
+          <p class="mm-mayor-classic-result__title">Classic response: slower coordination, more risk.</p>
+          <div class="mm-mayor-classic-result__grid">
+            <div><span>Delay</span><strong id="mmClassicDelay">—</strong></div>
+            <div><span>Citizens impacted</span><strong id="mmClassicCitizens">—</strong></div>
+            <div><span>Damage cost</span><strong id="mmClassicDamage">—</strong></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="mm-mayor-card mm-mayor-map-card" data-screen="challenge_intro decision consequence next_round">
+        <h3>City Map</h3>
+        <div class="mm-mayor-map" id="mmMayorMap">
+          <svg viewBox="0 0 800 480" class="mm-mayor-map-svg" aria-hidden="true">
+            <defs>
+              <linearGradient id="mmMapGrid" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stop-color="#00aeda" stop-opacity="0.15"/>
+                <stop offset="100%" stop-color="#6366f1" stop-opacity="0.08"/>
+              </linearGradient>
+            </defs>
+            <rect width="800" height="480" fill="url(#mmMapGrid)"/>
+            <path d="M0 80 H800 M0 160 H800 M0 240 H800 M0 320 H800 M0 400 H800 M80 0 V480 M160 0 V480 M240 0 V480 M320 0 V480 M400 0 V480 M480 0 V480 M560 0 V480 M640 0 V480 M720 0 V480" stroke="rgba(0,174,218,0.12)" fill="none"/>
+            <path d="M80 240 H720" class="mm-mayor-road mm-mayor-road--main"/>
+            <path d="M400 60 V420" class="mm-mayor-road mm-mayor-road--cross"/>
+            <circle cx="400" cy="240" r="120" class="mm-mayor-map-hub"/>
+          </svg>
+          <div class="mm-mayor-map-markers" id="mmMayorMapMarkers"></div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Right column -->
+    <aside class="mm-mayor-col mm-mayor-col--right">
+      <section class="mm-mayor-card mm-mayor-challenge-card" data-screen="challenge_intro decision consequence next_round">
+        <p class="mm-mayor-eyebrow">Crisis Briefing</p>
+        <h3 id="mmChallengeTitle">—</h3>
+        <p id="mmChallengeStory">—</p>
+        <div class="mm-mayor-challenge-meta">
+          <span id="mmChallengeZone">—</span>
+          <span id="mmChallengeSeverity" class="mm-mayor-severity">—</span>
+        </div>
+      </section>
+
+      <section class="mm-mayor-decision-section" data-screen="decision simulating">
+        <h3 class="mm-mayor-decision-heading">Your Decision</h3>
+        <button type="button" class="mm-mayor-decision mm-mayor-decision--classic" id="mmClassicBtn" disabled>
+          <span class="mm-mayor-decision-icon">⚠</span>
+          <span class="mm-mayor-decision-label">Classic Method</span>
+          <span class="mm-mayor-decision-desc">Manual response — slower coordination, more risk.</span>
+          <ul class="mm-mayor-decision-risks">
+            <li>Slow response</li>
+            <li>Higher cost</li>
+            <li>More damage</li>
+          </ul>
+          <span class="mm-mayor-decision-cta">Use Classic Method</span>
+        </button>
+        <button type="button" class="mm-mayor-decision mm-mayor-decision--ai" id="mmAiBtn" disabled>
+          <span class="mm-mayor-decision-icon">✦</span>
+          <span class="mm-mayor-decision-label">MedinaMind AI Solution</span>
+          <span class="mm-mayor-decision-desc">Real AI analysis — instant prioritization and smart response.</span>
+          <ul class="mm-mayor-decision-benefits">
+            <li>Real AI model</li>
+            <li>Instant action</li>
+            <li>Damage avoided</li>
+          </ul>
+          <span class="mm-mayor-decision-cta">Use MedinaMind</span>
+        </button>
+      </section>
+
+      <section class="mm-mayor-card mm-mayor-round-summary" id="mmRoundSummary" hidden>
+        <h3>Round Summary</h3>
+        <ul id="mmRoundSummaryList"></ul>
+        <button type="button" class="mm-mayor-btn mm-mayor-btn--primary" id="mmNextRoundBtn">Next Crisis</button>
+      </section>
+    </aside>
+  </div>
+
+  <footer class="mm-mayor-history" id="mmMayorHistory" hidden>
+    <h3>Decision Timeline</h3>
+    <ol id="mmHistoryList"></ol>
+  </footer>
+
+  <div class="mm-mayor-overlay" id="mmConsequenceOverlay" hidden aria-live="assertive">
+    <div class="mm-mayor-overlay__inner" id="mmOverlayInner">
+      <h2 id="mmOverlayTitle">—</h2>
+      <ul class="mm-mayor-overlay__lines" id="mmOverlayLines"></ul>
+      <div class="mm-mayor-overlay__metrics" id="mmOverlayMetrics"></div>
+    </div>
+  </div>
+
+  <section class="mm-mayor-final" id="mmFinalScreen" hidden>
+    <div class="mm-mayor-confetti" id="mmConfetti" aria-hidden="true"></div>
+    <div class="mm-mayor-final__inner">
+      <div class="mm-mayor-trophy" id="mmTrophy" aria-hidden="true">🏆</div>
+      <img id="mmFinalAvatar" class="mm-mayor-final-avatar" alt="" hidden>
+      <h2 id="mmFinalTitle">—</h2>
+      <p id="mmFinalSubtitle">—</p>
+      <div class="mm-mayor-final-stars" id="mmFinalStars">★★★★★</div>
+      <ul class="mm-mayor-final-metrics" id="mmFinalMetrics"></ul>
+      <div class="mm-mayor-final-actions">
+        <button type="button" class="mm-mayor-btn" id="mmCertBtn">Download Mayor Certificate</button>
+        <button type="button" class="mm-mayor-btn mm-mayor-btn--ghost" id="mmRestartBtn">Restart Mission</button>
+      </div>
+    </div>
+  </section>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script type="module" src="{% static 'monitoring/mayor-mission.js' %}?v=4"></script>
+{% endblock %}

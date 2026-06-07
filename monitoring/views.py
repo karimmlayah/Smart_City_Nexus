@@ -2965,6 +2965,17 @@ def stream_page(request, pk):
     return redirect("monitoring:surveillance_dashboard")
 
 
+def homepage(request):
+    """MedinaMind landing page — Smart City platform introduction."""
+    from .team_data import TEAM_MEMBERS
+
+    return render(
+        request,
+        "monitoring/homepage.html",
+        {"team_members": TEAM_MEMBERS},
+    )
+
+
 @ensure_csrf_cookie
 def ai_dashboard(request):
     """Central analytics dashboard for AI model usage (demo data via JSON API)."""
@@ -2991,11 +3002,11 @@ def ai_dashboard_api_summary(request):
 
 
 _AI_DASH_CHAT_SYSTEM = (
-    "Tu es l'assistant du tableau de bord « AI Command Center » d'une plateforme Smart City "
-    "(observabilité IA, surveillance, déchets, UAV, trafic, détection incendie). "
-    "Réponds en français, de façon claire et professionnelle. "
-    "Tu n'as pas accès aux flux capteurs en direct ni aux bases internes : si l'utilisateur demande "
-    "des données live, explique-le et propose des pistes générales ou des bonnes pratiques."
+    "You are the MedinaMind Smart City dashboard assistant. "
+    "Help users understand city monitoring, safety, traffic, roads, waste, drones, and alerts. "
+    "Reply in clear, professional English. "
+    "You do not have access to live sensor feeds or internal databases — if asked for live data, "
+    "explain that and offer general guidance or best practices."
 )
 
 
@@ -3007,17 +3018,17 @@ def ai_dashboard_chatbot(request):
     if not api_key:
         return JsonResponse(
             {
-                "error": "OPENAI_API_KEY manquante : ajoutez-la au fichier .env à la racine du projet Django.",
+                "error": "OpenAI API key is missing. Add OPENAI_API_KEY to the project .env file.",
             },
             status=503,
         )
     try:
         body = json.loads(request.body.decode("utf-8") or "{}")
     except json.JSONDecodeError:
-        return JsonResponse({"error": "Corps JSON invalide."}, status=400)
+        return JsonResponse({"error": "Invalid JSON body."}, status=400)
     raw_messages = body.get("messages")
     if not isinstance(raw_messages, list) or not raw_messages:
-        return JsonResponse({"error": "Le champ « messages » (liste) est requis."}, status=400)
+        return JsonResponse({"error": "The messages field (list) is required."}, status=400)
 
     cleaned: list[dict[str, str]] = []
     for item in raw_messages[-32:]:
@@ -3029,7 +3040,7 @@ def ai_dashboard_chatbot(request):
             continue
         cleaned.append({"role": role, "content": content[:12000]})
     if not cleaned:
-        return JsonResponse({"error": "Aucun message utilisateur ou assistant valide."}, status=400)
+        return JsonResponse({"error": "No valid user or assistant message."}, status=400)
 
     model = (getattr(django_settings, "OPENAI_CHAT_MODEL", None) or "gpt-4o-mini").strip()
     api_messages = [{"role": "system", "content": _AI_DASH_CHAT_SYSTEM}] + cleaned
@@ -3052,7 +3063,7 @@ def ai_dashboard_chatbot(request):
     except requests.RequestException as exc:
         logger.warning("OpenAI chat request failed: %s", exc)
         return JsonResponse(
-            {"error": "Impossible de joindre l'API OpenAI. Réessayez dans un instant."},
+            {"error": "Unable to reach OpenAI. Please try again shortly."},
             status=502,
         )
 
@@ -3069,7 +3080,7 @@ def ai_dashboard_chatbot(request):
         elif isinstance(err_raw, str):
             msg = err_raw.strip()
         if not msg:
-            msg = resp.text[:500] if resp.text else "Erreur API OpenAI."
+            msg = resp.text[:500] if resp.text else "OpenAI service error."
         logger.warning("OpenAI chat HTTP %s: %s", resp.status_code, msg)
         return JsonResponse({"error": msg}, status=min(resp.status_code, 502) or 502)
 
@@ -3089,3 +3100,24 @@ def ai_dashboard_chatbot(request):
 def introduction_page(request):
     """MedinaMind interactive introduction page with webcam + hologram city."""
     return render(request, "monitoring/introduction.html", {})
+
+
+def ar_live_stats(request):
+    """GET /api/ar/live-stats/ — city stats for AR left panel."""
+    from monitoring.ar_api import build_ar_live_stats
+
+    return JsonResponse(build_ar_live_stats())
+
+
+def ar_live_info(request):
+    """GET /api/ar/live-info/ — time, date, weather for AR panel."""
+    from monitoring.ar_api import build_ar_live_info
+
+    return JsonResponse(build_ar_live_info())
+
+
+def ar_modules(request):
+    """GET /api/ar/modules/ — smart city module list."""
+    from monitoring.ar_api import build_ar_modules
+
+    return JsonResponse(build_ar_modules())

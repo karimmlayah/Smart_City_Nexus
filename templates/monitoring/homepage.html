@@ -1,0 +1,261 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MedinaMind — Smart City AI Platform</title>
+  <meta name="description" content="MedinaMind — AI-powered urban intelligence for safer, cleaner, and smarter cities.">
+  {% include "monitoring/partials/theme_boot_script.html" %}
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'monitoring/theme-tokens.css' %}?v=4">
+  <link rel="stylesheet" href="{% static 'monitoring/theme-global.css' %}?v=1">
+  <link rel="stylesheet" href="{% static 'monitoring/homepage-modern.css' %}?v=2">
+  <link rel="stylesheet" href="{% static 'monitoring/smart-city-hologram.css' %}?v=2">
+  <link rel="stylesheet" href="{% static 'monitoring/theme-modules-light.css' %}?v=1">
+  <link rel="stylesheet" href="{% static 'monitoring/theme-light-overrides.css' %}?v=5">
+  <link rel="stylesheet" href="{% static 'monitoring/brand-logos.css' %}?v=3">
+  <link rel="stylesheet" href="{% static 'monitoring/ai_orb.css' %}?v=5">
+</head>
+<body class="mm-home">
+
+  <nav class="mm-home-nav" id="mmHomeNav" aria-label="Main navigation">
+    <div class="mm-home-nav__inner">
+      <a href="{% url 'monitoring:home' %}" class="mm-home-nav__brand">
+        <span class="mm-home-nav__logo logo-mark logo-mark--nav logo-glow">
+          <img src="{% static 'images/medinamind-logo.png' %}" alt="MedinaMind" class="brand-logo brand-logo--nav" width="34" height="34">
+        </span>
+        <span class="mm-home-nav__title">MedinaMind</span>
+        <span class="mm-home-nav__badge">AI City OS</span>
+      </a>
+
+      <div class="mm-home-nav__links">
+        <a href="{% url 'monitoring:home' %}" class="mm-home-nav__link is-active">Home</a>
+        <a href="#features" class="mm-home-nav__link">Features</a>
+        <a href="#modules" class="mm-home-nav__link">Live Modules</a>
+        <a href="{% url 'monitoring:ai_dashboard' %}" class="mm-home-nav__link">Dashboard</a>
+        <a href="#about" class="mm-home-nav__link">About</a>
+      </div>
+
+      <div class="mm-home-nav__actions">
+        <button type="button" class="mm-theme-toggle" data-theme-toggle aria-label="Switch theme" title="Switch theme">
+          <svg class="mm-theme-toggle__icon mm-theme-toggle__icon--blue" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="7" stroke="currentColor" stroke-width="1.75"/><ellipse cx="12" cy="12" rx="10" ry="3.5" stroke="currentColor" stroke-width="1.25" opacity="0.7"/><circle cx="16" cy="8" r="1.25" fill="currentColor"/></svg>
+          <svg class="mm-theme-toggle__icon mm-theme-toggle__icon--sun" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="2"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          <svg class="mm-theme-toggle__icon mm-theme-toggle__icon--moon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <a href="{% url 'monitoring:introduction' %}" class="mm-home-btn mm-home-btn--ghost">View Demo</a>
+        <a href="{% url 'monitoring:ai_dashboard' %}" class="mm-home-btn mm-home-btn--primary">Open Dashboard</a>
+      </div>
+
+      <button type="button" class="mm-home-nav__burger" id="mmHomeBurger" aria-label="Open menu" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </nav>
+
+  <div class="mm-home__wrap">
+    <header class="mm-home-hero mm-home__container">
+      <div class="mm-home-hero__grid">
+        <div class="mm-home-hero__copy">
+          <p class="mm-home-hero__eyebrow">
+            <span class="mm-home-hero__dot" aria-hidden="true"></span>
+            Smart City Intelligence Platform
+          </p>
+          <h1 class="mm-home-hero__title">MedinaMind</h1>
+          <p class="mm-home-hero__subtitle">AI-powered urban intelligence for safer, cleaner, and smarter cities.</p>
+          <p class="mm-home-hero__desc">MedinaMind brings traffic monitoring, road analysis, waste detection, safety alerts, and city insights into one intelligent platform.</p>
+          <div class="mm-home-hero__actions">
+            <a href="{% url 'monitoring:ai_dashboard' %}" class="mm-home-btn mm-home-btn--primary mm-home-btn--lg">Open AI Dashboard</a>
+            <a href="#features" class="mm-home-btn mm-home-btn--ghost mm-home-btn--lg">Explore Features</a>
+          </div>
+        </div>
+
+        <div class="mm-home-hero__viz">
+          <img src="{% static 'images/medinamind-logo.png' %}" alt="" class="logo-watermark logo-watermark--hero" aria-hidden="true">
+          {% include "monitoring/partials/smart_city_hologram.html" %}
+        </div>
+      </div>
+    </header>
+
+    <section class="mm-home-section mm-home__container" id="features">
+      <div class="mm-home-section__head">
+        <span class="mm-home-section__kicker">Capabilities</span>
+        <h2 class="mm-home-section__title">One Platform. Multiple City Intelligence Modules.</h2>
+      </div>
+      <div class="mm-home-features">
+        <article class="mm-home-card">
+          <div class="mm-home-card__icon" aria-hidden="true">🚦</div>
+          <h3 class="mm-home-card__title">Traffic Monitoring</h3>
+          <p class="mm-home-card__text">Analyze traffic flow and detect congestion in real time.</p>
+        </article>
+        <article class="mm-home-card">
+          <div class="mm-home-card__icon" aria-hidden="true">🛣</div>
+          <h3 class="mm-home-card__title">Road Damage Detection</h3>
+          <p class="mm-home-card__text">Identify potholes and damaged roads using AI vision.</p>
+        </article>
+        <article class="mm-home-card">
+          <div class="mm-home-card__icon" aria-hidden="true">♻</div>
+          <h3 class="mm-home-card__title">Waste Detection</h3>
+          <p class="mm-home-card__text">Spot street waste and help improve city cleanliness.</p>
+        </article>
+        <article class="mm-home-card">
+          <div class="mm-home-card__icon" aria-hidden="true">🔥</div>
+          <h3 class="mm-home-card__title">Fire &amp; Smoke Detection</h3>
+          <p class="mm-home-card__text">Detect fire and smoke alerts from camera feeds.</p>
+        </article>
+        <article class="mm-home-card">
+          <div class="mm-home-card__icon" aria-hidden="true">🛡</div>
+          <h3 class="mm-home-card__title">Safety Monitoring</h3>
+          <p class="mm-home-card__text">Recognize dangerous situations and support faster response.</p>
+        </article>
+        <article class="mm-home-card">
+          <div class="mm-home-card__icon" aria-hidden="true">🛰</div>
+          <h3 class="mm-home-card__title">Drone Monitoring</h3>
+          <p class="mm-home-card__text">Use aerial views for inspection and urban supervision.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="mm-home-section mm-home__container" id="modules">
+      <div class="mm-home-section__head">
+        <span class="mm-home-section__kicker">Platform</span>
+        <h2 class="mm-home-section__title">Live Smart City Modules</h2>
+      </div>
+      <div class="mm-home-modules">
+        <a href="{% url 'monitoring:ai_dashboard' %}" class="mm-home-module mm-home-module--featured">
+          <span class="mm-home-module__label">AI Dashboard</span>
+          <span class="mm-home-module__hint">Central control center</span>
+          <span class="mm-home-module__arrow">Open →</span>
+        </a>
+        <a href="{% url 'monitoring:camera_settings' %}" class="mm-home-module">
+          <span class="mm-home-module__label">Smart Camera</span>
+          <span class="mm-home-module__hint">Edge device monitoring</span>
+          <span class="mm-home-module__arrow">Open →</span>
+        </a>
+        <a href="{% url 'monitoring:traffic_nexus_dashboard' %}" class="mm-home-module">
+          <span class="mm-home-module__label">Traffic Control</span>
+          <span class="mm-home-module__hint">Flow and congestion</span>
+          <span class="mm-home-module__arrow">Open →</span>
+        </a>
+        <a href="{% url 'monitoring:road_damage_test' %}" class="mm-home-module">
+          <span class="mm-home-module__label">Road Analysis</span>
+          <span class="mm-home-module__hint">Damage detection</span>
+          <span class="mm-home-module__arrow">Open →</span>
+        </a>
+        <a href="{% url 'monitoring:waste_street_detection' %}" class="mm-home-module">
+          <span class="mm-home-module__label">Waste Detection</span>
+          <span class="mm-home-module__hint">Street cleanliness</span>
+          <span class="mm-home-module__arrow">Open →</span>
+        </a>
+        <a href="{% url 'monitoring:fire_camera_detect' %}" class="mm-home-module">
+          <span class="mm-home-module__label">Fire &amp; Smoke</span>
+          <span class="mm-home-module__hint">Early alerts</span>
+          <span class="mm-home-module__arrow">Open →</span>
+        </a>
+        <a href="{% url 'monitoring:surveillance_dashboard' %}" class="mm-home-module">
+          <span class="mm-home-module__label">Safety Alerts</span>
+          <span class="mm-home-module__hint">City monitoring</span>
+          <span class="mm-home-module__arrow">Open →</span>
+        </a>
+        <a href="/admin/" class="mm-home-module">
+          <span class="mm-home-module__label">Administration</span>
+          <span class="mm-home-module__hint">Platform settings</span>
+          <span class="mm-home-module__arrow">Open →</span>
+        </a>
+      </div>
+    </section>
+
+    <section class="mm-home-section mm-home__container" id="why">
+      <div class="mm-home-section__head">
+        <span class="mm-home-section__kicker">Impact</span>
+        <h2 class="mm-home-section__title">Built for Real Urban Impact</h2>
+      </div>
+      <div class="mm-home-why">
+        <article class="mm-home-card">
+          <div class="mm-home-card__icon" aria-hidden="true">⚡</div>
+          <h3 class="mm-home-card__title">Faster Decisions</h3>
+          <p class="mm-home-card__text">Centralized insights help teams understand city issues quickly.</p>
+        </article>
+        <article class="mm-home-card">
+          <div class="mm-home-card__icon" aria-hidden="true">🛡</div>
+          <h3 class="mm-home-card__title">Better Safety</h3>
+          <p class="mm-home-card__text">AI alerts support faster detection of risks and emergencies.</p>
+        </article>
+        <article class="mm-home-card">
+          <div class="mm-home-card__icon" aria-hidden="true">🌿</div>
+          <h3 class="mm-home-card__title">Cleaner Cities</h3>
+          <p class="mm-home-card__text">Smart monitoring helps improve road quality, waste response, and public services.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="mm-home-section mm-home__container" id="stats">
+      <div class="mm-home-stats">
+        <div class="mm-home-stat">
+          <div class="mm-home-stat__value">21</div>
+          <div class="mm-home-stat__label">Connected Services</div>
+        </div>
+        <div class="mm-home-stat">
+          <div class="mm-home-stat__value">Live</div>
+          <div class="mm-home-stat__label">Real-time Monitoring</div>
+        </div>
+        <div class="mm-home-stat">
+          <div class="mm-home-stat__value">Multi</div>
+          <div class="mm-home-stat__label">Multi-domain AI</div>
+        </div>
+        <div class="mm-home-stat">
+          <div class="mm-home-stat__value">Ready</div>
+          <div class="mm-home-stat__label">Smart City Ready</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="mm-home-section mm-home__container" id="about">
+      <div class="mm-about-team">
+        <div class="mm-about-team__logo-wrap">
+          <img src="{% static 'images/nexus-logo.png' %}" alt="Team Nexus" class="nexus-logo nexus-logo--sm">
+        </div>
+        <div>
+          <h2 class="mm-about-team__title">Created by Team Nexus</h2>
+          <p class="mm-about-team__text">MedinaMind is developed by Team Nexus at ESPRIT as a smart city platform combining AI monitoring, connected devices, and real-time urban insights.</p>
+        </div>
+      </div>
+
+      {% include "monitoring/partials/team_section.html" %}
+      <div class="mm-home-cta">
+        <h2 class="mm-home-cta__title">Ready to explore the control center?</h2>
+        <p class="mm-home-cta__text">Open the AI dashboard and see MedinaMind in action.</p>
+        <a href="{% url 'monitoring:ai_dashboard' %}" class="mm-home-btn mm-home-btn--primary mm-home-btn--lg">Launch Dashboard</a>
+      </div>
+    </section>
+
+    <footer class="mm-footer-brand mm-home__container">
+      <div class="mm-footer-brand__inner">
+        <div class="mm-footer-brand__block">
+          <img src="{% static 'images/medinamind-logo.png' %}" alt="MedinaMind" class="brand-logo brand-logo--footer logo-glow">
+          <p class="mm-footer-brand__text">
+            <strong>MedinaMind</strong>
+            Real-time Urban Intelligence Platform
+          </p>
+        </div>
+        <span class="mm-footer-brand__divider" aria-hidden="true"></span>
+        <div class="mm-footer-brand__block">
+          <img src="{% static 'images/nexus-logo.png' %}" alt="Team Nexus" class="nexus-logo brand-logo--footer">
+          <p class="mm-footer-brand__text">
+            <strong>Team Nexus</strong>
+            Developed by Team Nexus
+          </p>
+        </div>
+      </div>
+    </footer>
+  </div>
+
+  {% include "monitoring/partials/ai_orb.html" %}
+  <script src="{% static 'monitoring/clap_detector.js' %}?v=5"></script>
+  <script src="{% static 'monitoring/ai_orb.js' %}?v=12"></script>
+  <script src="{% static 'monitoring/theme-toggle.js' %}?v=4"></script>
+  <script src="{% static 'monitoring/homepage-modern.js' %}"></script>
+</body>
+</html>

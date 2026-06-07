@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 480">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1a2744"/>
+      <stop offset="100%" stop-color="#0d1525"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="480" fill="url(#sky)"/>
+  <rect y="280" width="800" height="200" fill="#2a3344"/>
+  <rect y="300" width="800" height="8" fill="#f59e0b" opacity="0.6"/>
+  <rect y="360" width="800" height="4" fill="#fff" opacity="0.3"/>
+  <!-- cars jam -->
+  <rect x="40" y="310" width="90" height="45" rx="6" fill="#ef4444"/>
+  <rect x="150" y="310" width="90" height="45" rx="6" fill="#f97316"/>
+  <rect x="260" y="310" width="90" height="45" rx="6" fill="#eab308"/>
+  <rect x="370" y="310" width="90" height="45" rx="6" fill="#ef4444"/>
+  <rect x="480" y="310" width="90" height="45" rx="6" fill="#f97316"/>
+  <rect x="590" y="310" width="90" height="45" rx="6" fill="#eab308"/>
+  <rect x="700" y="310" width="70" height="45" rx="6" fill="#ef4444"/>
+  <!-- ambulance blocked -->
+  <rect x="320" y="380" width="120" height="50" rx="8" fill="#fff" stroke="#ef4444" stroke-width="3"/>
+  <text x="380" y="412" text-anchor="middle" fill="#ef4444" font-size="14" font-family="sans-serif" font-weight="bold">AMBULANCE</text>
+  <circle cx="380" cy="250" r="40" fill="none" stroke="#ef4444" stroke-width="3" opacity="0.8"/>
+  <text x="380" y="255" text-anchor="middle" fill="#ef4444" font-size="28">!</text>
+  <text x="400" y="60" text-anchor="middle" fill="#00aeda" font-size="22" font-family="sans-serif" font-weight="bold">TRAFFIC CRISIS</text>
+  <text x="400" y="90" text-anchor="middle" fill="#94a3b8" font-size="14" font-family="sans-serif">Emergency route blocked</text>
+</svg>

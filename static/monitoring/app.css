@@ -34,6 +34,10 @@ body.cockpit {
   min-height: 100vh;
 }
 
+body:has(.mm-sidebar) .rail {
+  display: none !important;
+}
+
 .glass {
   background: var(--glass);
   backdrop-filter: blur(14px);

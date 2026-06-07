@@ -5,21 +5,6 @@
 
 {% block content %}
 <div class="live-rt-wrap fight-rt-wrap weapon-test-wrap">
-  <header class="live-rt-header glass">
-    <div class="cockpit-brand">
-      <span class="cockpit-logo">🔫</span>
-      <div>
-        <h1 class="cockpit-title">{{ page_title|default:"Weapon Test" }}</h1>
-        <p class="cockpit-sub">
-          YOLOv8 direct · detection knife · modele <strong>{{ weapon_model_name }}</strong>
-        </p>
-      </div>
-    </div>
-    <div class="live-rt-header-actions">
-      <a href="{% url 'monitoring:dashboard' %}" class="btn-ghost-xl">Tableau de bord</a>
-    </div>
-  </header>
-
   <div class="live-rt-body fight-rt-body weapon-test-body">
     <aside class="glass live-rt-sources fight-panel">
       <h2 class="panel-title">Analyse knife</h2>

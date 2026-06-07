@@ -214,8 +214,13 @@ def run_yolo_detection(
     track_state: dict[str, Any] | None = None,
     vehicle_labels_csv: str | None = None,
     custom_model_path: str | None = None,
+    overlay_on_client: bool = False,
 ) -> tuple[Optional[ZoneDetection], Optional[dict[str, Any]]]:
     global _last_model_config_diag
+
+    draw_boxes = not overlay_on_client or (display_mode or "").strip().lower() in (
+        "congestion_heatmap",
+    )
 
     defaults = getattr(settings, "TRAFFIC_NEXUS_MODEL_PATHS", {}) or {}
     mode_norm = (mode or "vehicle").strip().lower()
@@ -273,6 +278,7 @@ def run_yolo_detection(
             display_mode=display_mode,
             show_speed_overlays=show_speed_overlays,
             track_state=track_state,
+            draw_boxes=draw_boxes,
         )
         det.model_config = {
             "selected_mode": str(mode or "vehicle"),
@@ -305,6 +311,7 @@ def run_yolo_detection(
         display_mode=display_mode,
         show_speed_overlays=show_speed_overlays,
         track_state=track_state,
+        draw_boxes=draw_boxes,
     )
     det.model_config = {
         "selected_mode": str(mode or "vehicle"),
@@ -324,6 +331,7 @@ def finalize_analysis(
     esp32_sim_zone: int = 0,
     esp32_confirm_state: dict[str, Any] | None = None,
     now_s: float | None = None,
+    overlay_on_client: bool = False,
 ) -> dict[str, Any]:
     polygons = roi_polygons if roi_polygons else []
     zone_areas = [polygon_area(p) for p in polygons] if polygons else [float(frame_bgr.shape[0] * frame_bgr.shape[1])]
@@ -385,7 +393,11 @@ def finalize_analysis(
     global_level = max((d.congestion_level for d in decisions), default="low")
     global_criticality = int(np.mean([d.traffic_criticality_score for d in decisions])) if decisions else 0
 
-    _, buf = cv2.imencode(".jpg", det.processed_frame, [int(cv2.IMWRITE_JPEG_QUALITY), 88])
+    _, buf = cv2.imencode(
+        ".jpg",
+        det.processed_frame,
+        [int(cv2.IMWRITE_JPEG_QUALITY), 76 if overlay_on_client else 88],
+    )
     out_b64 = base64.standard_b64encode(buf.tobytes()).decode("ascii")
 
     def _state_dict(zs: ZoneTrafficState) -> dict[str, Any]:
@@ -424,7 +436,9 @@ def finalize_analysis(
         },
         "display_state": {
             "track_state": det.track_state or {},
+            "vehicle_detections": det.vehicle_detections or [],
         },
+        "vehicle_detections": det.vehicle_detections or [],
         "model_config": det.model_config or {},
     }
 
@@ -451,6 +465,7 @@ def analyze_frame(
     esp32_sim_zone: int = 0,
     esp32_confirm_state: dict[str, Any] | None = None,
     now_s: float | None = None,
+    overlay_on_client: bool = False,
 ) -> dict[str, Any]:
     """Une passe détection + décision + XAI + agents (sans boucle vidéo)."""
     det, err = run_yolo_detection(
@@ -470,6 +485,7 @@ def analyze_frame(
         track_state=(display_state or {}).get("track_state") if isinstance(display_state, dict) else None,
         vehicle_labels_csv=vehicle_labels,
         custom_model_path=custom_model_path,
+        overlay_on_client=overlay_on_client,
     )
     if err:
         return err
@@ -482,6 +498,7 @@ def analyze_frame(
         esp32_sim_zone=esp32_sim_zone,
         esp32_confirm_state=esp32_confirm_state,
         now_s=now_s,
+        overlay_on_client=overlay_on_client,
     )
 
 
@@ -500,8 +517,10 @@ def analyze_from_candidates(
     display_state: dict[str, Any] | None = None,
     esp32_confirm_state: dict[str, Any] | None = None,
     now_s: float | None = None,
+    overlay_on_client: bool = False,
 ) -> dict[str, Any]:
     """Analyse à partir de détections précalculées (mode cache optimisé)."""
+    draw_boxes = not overlay_on_client or (display_mode or "").strip().lower() in ("congestion_heatmap",)
     det = detect_from_candidates(
         frame_bgr,
         candidates,
@@ -512,6 +531,7 @@ def analyze_from_candidates(
         display_mode=display_mode,
         show_speed_overlays=show_speed_overlays,
         track_state=(display_state or {}).get("track_state") if isinstance(display_state, dict) else None,
+        draw_boxes=draw_boxes,
     )
     return finalize_analysis(
         det,
@@ -521,4 +541,5 @@ def analyze_from_candidates(
         esp32_sim_zone=esp32_sim_zone,
         esp32_confirm_state=esp32_confirm_state,
         now_s=now_s,
+        overlay_on_client=overlay_on_client,
     )

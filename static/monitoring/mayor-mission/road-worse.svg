@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 480">
+  <rect width="800" height="480" fill="#1a1018"/>
+  <rect width="800" height="480" fill="#ef4444" opacity="0.12"/>
+  <rect y="200" width="800" height="180" fill="#1e1e28"/>
+  <!-- collapsed section -->
+  <path d="M200 380 L350 280 L500 380 Z" fill="#0f0f14"/>
+  <path d="M350 280 L500 380 L650 380 L550 260 Z" fill="#1a1a22"/>
+  <ellipse cx="400" cy="340" rx="100" ry="40" fill="#450a0a" opacity="0.6"/>
+  <!-- debris -->
+  <rect x="300" y="350" width="30" height="20" fill="#64748b" transform="rotate(25 315 360)"/>
+  <rect x="450" y="360" width="40" height="25" fill="#475569" transform="rotate(-15 470 372)"/>
+  <rect x="380" y="370" width="25" height="15" fill="#64748b"/>
+  <text x="400" y="60" text-anchor="middle" fill="#ef4444" font-size="24" font-family="sans-serif" font-weight="bold">ROAD COLLAPSE RISK</text>
+  <text x="400" y="90" text-anchor="middle" fill="#fca5a5" font-size="14" font-family="sans-serif">Manual inspection still pending</text>
+  <text x="400" y="450" text-anchor="middle" fill="#ef4444" font-size="16" font-family="sans-serif">+28 min delay · 890 citizens impacted</text>
+</svg>

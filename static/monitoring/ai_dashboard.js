@@ -54,12 +54,12 @@
   }
 
   function chartTextColors(root) {
-    var light = root.getAttribute("data-ai-theme") === "light";
+    var light = document.documentElement.getAttribute("data-theme") === "light";
     return {
       light: light,
-      tick: light ? "#64748b" : "#bae6fd",
-      grid: light ? "rgba(15,23,42,0.08)" : "rgba(56, 189, 248, 0.09)",
-      tooltipBorder: light ? "rgba(37, 99, 235, 0.35)" : "rgba(56, 189, 248, 0.5)",
+      tick: light ? "#475569" : "#a9c7dd",
+      grid: light ? "rgba(15,23,42,0.10)" : "rgba(148,163,184,0.15)",
+      tooltipBorder: light ? "rgba(37, 99, 235, 0.35)" : "rgba(0, 213, 255, 0.35)",
     };
   }
 
@@ -90,8 +90,8 @@
     var sem = data.semantic_palette || {};
     var ct = data.chart_theme || {};
     var lineTheme = ct.requests_line || {};
-    var lineBorder = lineTheme.borderColor || "rgba(56, 189, 248, 0.95)";
-    var lineFill = lineTheme.backgroundColor || "rgba(56, 189, 248, 0.14)";
+    var lineBorder = lineTheme.borderColor || "rgba(0, 213, 255, 0.9)";
+    var lineFill = lineTheme.backgroundColor || "rgba(0, 213, 255, 0.12)";
     var barDomains = bar.domains || [];
 
     var lineCtx = $("#aiChartLine");
@@ -102,7 +102,7 @@
           labels: line.labels,
           datasets: [
             {
-              label: lineTheme.label || "Throughput",
+              label: lineTheme.label || "Activity",
               data: line.values,
               fill: true,
               tension: 0.35,
@@ -152,7 +152,7 @@
           labels: bar.labels,
           datasets: [
             {
-              label: "Load index",
+              label: "Activity",
               data: vals,
               borderRadius: 8,
               borderSkipped: false,
@@ -240,8 +240,8 @@
     return [
       {
         kpi: "total_models",
-        label: "Registered endpoints",
-        hint: "",
+        label: "Connected Services",
+        hint: "Services configured in the platform",
         icon: "◎",
         format: "int",
         trend_key: "total_models",
@@ -249,8 +249,8 @@
       },
       {
         kpi: "total_requests",
-        label: "Inference load index",
-        hint: "",
+        label: "AI Activity",
+        hint: "Total AI activity during the selected period",
         icon: "📡",
         format: "int",
         trend_key: "total_requests",
@@ -258,8 +258,8 @@
       },
       {
         kpi: "success_rate",
-        label: "Fleet reliability",
-        hint: "",
+        label: "System Reliability",
+        hint: "Overall system stability",
         icon: "✓",
         format: "pct",
         trend_key: "success_rate",
@@ -267,8 +267,8 @@
       },
       {
         kpi: "avg_response_ms",
-        label: "Latency index",
-        hint: "",
+        label: "Response Time",
+        hint: "Average response speed",
         icon: "⏱",
         format: "ms",
         trend_key: "avg_response_ms",
@@ -276,8 +276,8 @@
       },
       {
         kpi: "online_services",
-        label: "Online services",
-        hint: "",
+        label: "Active Services",
+        hint: "Services currently available",
         icon: "●",
         format: "int",
         trend_key: "online_services",
@@ -285,8 +285,8 @@
       },
       {
         kpi: "offline_services",
-        label: "Needs attention",
-        hint: "",
+        label: "Alerts",
+        hint: "Issues that require action",
         icon: "⚠",
         format: "int",
         trend_key: "offline_services",
@@ -442,24 +442,46 @@
     el.innerHTML = (items || [])
       .map(function (it) {
         var sev = it.severity || "info";
-        var rowClass = "ai-feed-item";
-        if (sev === "warn") rowClass += " ai-feed-item--warn";
-        if (sev === "error") rowClass += " ai-feed-item--error";
+        var rowClass = "mm-timeline-item";
+        if (sev === "warn") rowClass += " mm-timeline-item--warn";
+        if (sev === "error") rowClass += " mm-timeline-item--error";
+        var typeRaw = String(it.type || "system").toLowerCase();
+        var type = typeRaw === "user" ? "USER" : "SYSTEM";
+        var badgeClass =
+          type === "USER" ? "mm-timeline-item__badge mm-timeline-item__badge--user" : "mm-timeline-item__badge";
         return (
-          '<div class="' +
+          '<article class="' +
           rowClass +
           '">' +
-          '<div class="ai-feed-meta"><span>' +
+          '<div class="mm-timeline-item__meta">' +
+          "<time>" +
           escapeHtml(it.time) +
-          '</span><span>·</span><span>' +
-          escapeHtml(it.type) +
+          "</time>" +
+          '<span class="' +
+          badgeClass +
+          '">' +
+          escapeHtml(type) +
           "</span></div>" +
-          "<div>" +
+          '<p class="mm-timeline-item__msg">' +
           escapeHtml(it.message) +
-          "</div></div>"
+          "</p></article>"
         );
       })
       .join("");
+  }
+
+  function updateApiStatus(ok, data) {
+    var badge = document.getElementById("aiApiStatusBadge");
+    var text = document.getElementById("aiApiStatusText");
+    var svc = document.getElementById("mmStatusServices");
+    if (text) text.textContent = ok ? "System Online" : "System Offline";
+    if (badge) {
+      badge.classList.toggle("mm-topbar-badge--offline", !ok);
+      badge.classList.toggle("mm-topbar-badge--live", ok);
+    }
+    if (svc && data && data.kpis && data.kpis.online_services != null) {
+      svc.textContent = String(data.kpis.online_services);
+    }
   }
 
   function fillModelFilter(data, ui) {
@@ -468,7 +490,7 @@
     var cur = sel.value;
     var models = data.filter_options || data.models || [];
     var allLabel =
-      (ui && ui.toolbar && ui.toolbar.model_all) || "All endpoints";
+      (ui && ui.toolbar && ui.toolbar.model_all) || "All services";
     var opts =
       '<option value="all">' + escapeHtml(allLabel) + "</option>" +
       models
@@ -507,7 +529,6 @@
     if (el && tb.from_label) el.textContent = tb.from_label;
     el = $("#aiLblTo");
     if (el && tb.to_label) el.textContent = tb.to_label;
-    syncThemeNavBtn();
     el = $("#aiLblRefresh");
     if (el && tb.refresh) el.textContent = tb.refresh;
     el = $("#aiLblAutoRefresh");
@@ -597,8 +618,9 @@
     wireTableSortOnce();
     renderFeed(data.activity);
     buildCharts(root, data);
+    updateApiStatus(true, data);
     var hint = $("#aiGeneratedAt");
-    var gl = (data.ui && data.ui.generated_label) || "Updated";
+    var gl = (data.ui && data.ui.generated_label) || "Last updated";
     if (hint && data.generated_at) {
       hint.textContent = gl + " · " + data.generated_at;
     }
@@ -618,24 +640,16 @@
       })
       .catch(function () {
         console.warn("[AI Dashboard] fetch failed — using bootstrap payload");
+        updateApiStatus(false, null);
         var boot = window.__AI_DASHBOARD_BOOTSTRAP;
-        if (boot && typeof boot === "object") applyDashboard(root, apiUrl, boot);
+        if (boot && typeof boot === "object") {
+          applyDashboard(root, apiUrl, boot);
+          updateApiStatus(true, boot);
+        }
       })
       .finally(function () {
         setLoading(root, false);
       });
-  }
-
-  function syncThemeNavBtn() {
-    var root = $("#aiDashRoot");
-    var lbl = $("#aiLblTheme");
-    var btn = $("#aiBtnTheme");
-    if (!root || !lbl) return;
-    var light = root.getAttribute("data-ai-theme") === "light";
-    lbl.textContent = light ? "Mode sombre" : "Mode clair";
-    if (btn) {
-      btn.title = light ? "Passer au thème sombre" : "Passer au thème clair";
-    }
   }
 
   function initFullscreen(root) {
@@ -650,9 +664,9 @@
         document.msFullscreenElement === root;
       btn.setAttribute("aria-pressed", active ? "true" : "false");
       if (lbl) {
-        lbl.textContent = active ? "Quitter écran" : "Plein écran";
+        lbl.textContent = active ? "Exit Fullscreen" : "Fullscreen";
       }
-      btn.title = active ? "Quitter le plein écran (Échap)" : "Afficher le tableau de bord en plein écran";
+      btn.title = active ? "Exit fullscreen (Esc)" : "View dashboard in fullscreen";
       root.classList.toggle("ai-dash-root--fullscreen", !!active);
     }
 
@@ -718,7 +732,7 @@
     var pending = false;
 
     var welcome =
-      "Bonjour — assistant OpenAI du AI Command Center. Posez vos questions sur la plateforme Smart City (observabilité, surveillance, déchets, UAV, trafic…). Je n’ai pas accès aux flux capteurs en direct.";
+      "Hello — I am the MedinaMind AI assistant. Ask me about city monitoring, safety, traffic, roads, waste, or drones. I do not have access to live sensor feeds.";
 
     function setErr(text) {
       if (!errEl) return;
@@ -776,7 +790,7 @@
         "ai-chatbot-dock__msg-block ai-chatbot-dock__msg-block--" + (role === "user" ? "user" : "assistant");
       var label = document.createElement("span");
       label.className = "ai-chatbot-dock__msg-label";
-      label.textContent = role === "user" ? "Vous" : "Assistant";
+      label.textContent = role === "user" ? "You" : "Assistant";
       var bubble = document.createElement("div");
       bubble.className =
         "ai-chatbot-dock__bubble ai-chatbot-dock__bubble--" + (role === "user" ? "user" : "assistant");
@@ -797,10 +811,10 @@
         empty.setAttribute("role", "status");
         var et = document.createElement("p");
         et.className = "ai-chatbot-dock__empty-title";
-        et.textContent = "Prêt à échanger";
+        et.textContent = "Ready to chat";
         var eh = document.createElement("p");
         eh.className = "ai-chatbot-dock__empty-hint";
-        eh.textContent = "Votre conversation apparaîtra ici. Posez une question sur la plateforme.";
+        eh.textContent = "Your conversation will appear here. Ask a question about the platform.";
         empty.appendChild(et);
         empty.appendChild(eh);
         msgsEl.appendChild(empty);
@@ -893,8 +907,8 @@
         .then(function (pack) {
           removeTyping();
           if (!pack.ok) {
-            var err = (pack.data && pack.data.error) || "Erreur serveur.";
-            setErr(typeof err === "string" ? err : "Erreur.");
+            var err = (pack.data && pack.data.error) || "Server error.";
+            setErr(typeof err === "string" ? err : "Something went wrong.");
             session.pop();
             renderAll();
             return;
@@ -904,14 +918,14 @@
             session.push({ role: "assistant", content: reply });
             renderAll();
           } else {
-            setErr("Réponse inattendue du serveur.");
+            setErr("Unexpected server response.");
             session.pop();
             renderAll();
           }
         })
         .catch(function () {
           removeTyping();
-          setErr("Impossible de contacter le serveur.");
+          setErr("Unable to reach the server.");
           session.pop();
           renderAll();
         })
@@ -971,22 +985,15 @@
     initClock();
     initFullscreen(root);
     initAiChatbot(root);
-    syncThemeNavBtn();
 
     $("#aiBtnRefresh") &&
       $("#aiBtnRefresh").addEventListener("click", function () {
         fetchSummary(root, apiUrl);
       });
 
-    var themeBtn = $("#aiBtnTheme");
-    if (themeBtn) {
-      themeBtn.addEventListener("click", function () {
-        var t = root.getAttribute("data-ai-theme") === "light" ? "dark" : "light";
-        root.setAttribute("data-ai-theme", t);
-        syncThemeNavBtn();
-        fetchSummary(root, apiUrl);
-      });
-    }
+    document.addEventListener("medinamind-theme-change", function () {
+      fetchSummary(root, apiUrl);
+    });
 
     $("#aiFilterModel") &&
       $("#aiFilterModel").addEventListener("change", function () {

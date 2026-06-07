@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block body_class %}cockpit fusion-hub-sc road-damage-sc{% endblock %}
+{% block body_class %}cockpit fusion-hub-sc road-damage-sc ai-dashboard-sc mm-dash-body{% endblock %}
 
 {% block title %}Analyse IA — Signalement #{{ rec.pk }}{% endblock %}
 
@@ -258,22 +258,6 @@
 </style>
 
 <div class="fh-root">
-  <header class="fh-nav fh-glass" aria-label="Primary">
-    <div class="fh-nav-brand fh-brand-cluster">
-      <span class="fh-brand-orb" aria-hidden="true"></span>
-      <div class="fh-brand-text">
-        <h1 class="fh-nav-logo">Smart City Platform</h1>
-        <p class="fh-nav-tag">Analyse IA · Signalement #{{ rec.pk }}</p>
-      </div>
-    </div>
-    <div class="fh-nav-meta">
-      <span class="fh-nav-loc" title="Contexte">{{ rec.get_category_display }}</span>
-      <span class="fh-clock" id="fhClock" aria-live="polite">--:--:--</span>
-      <span class="fh-icon-chip" title="Notifications">🔔</span>
-      <span class="fh-nav-user" title="Operator" aria-hidden="true"></span>
-    </div>
-  </header>
-
 <div class="reclamation-ai-dash">
   {% if is_live_mode %}
   <div class="live-drone-banner" role="status" aria-live="polite">

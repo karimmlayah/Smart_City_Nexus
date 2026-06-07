@@ -1,10 +1,13 @@
 from collections import Counter
 from dataclasses import dataclass
+import logging
 from typing import Any, Dict, List, Optional, Sequence, Set, Tuple
 
 import cv2
 import numpy as np
 from ultralytics import YOLO
+
+logger = logging.getLogger(__name__)
 
 ZONE_COLORS_BGR = [
     (255, 80, 80),
@@ -96,25 +99,56 @@ def _point_in_poly(poly: np.ndarray, x: int, y: int) -> bool:
     return cv2.pointPolygonTest(poly, (x, y), False) >= 0
 
 
+def point_in_polygon(x: float, y: float, polygon: Sequence[Tuple[int, int]]) -> bool:
+    """Ray-casting point-in-polygon test (same coordinate space as ROI vertices)."""
+    if len(polygon) < 3:
+        return False
+    inside = False
+    n = len(polygon)
+    for i in range(n):
+        xi, yi = float(polygon[i][0]), float(polygon[i][1])
+        xj, yj = float(polygon[(i + 1) % n][0]), float(polygon[(i + 1) % n][1])
+        intersect = (yi > y) != (yj > y) and x < ((xj - xi) * (y - yi)) / (yj - yi + 1e-12) + xi
+        if intersect:
+            inside = not inside
+    return inside
+
+
+def get_detection_center(det: Dict) -> Tuple[int, int]:
+    x1, y1, x2, y2 = int(det["x1"]), int(det["y1"]), int(det["x2"]), int(det["y2"])
+    return int((x1 + x2) / 2), int((y1 + y2) / 2)
+
+
 def _assign_zone_for_bbox(polygons: List[np.ndarray], x1: int, y1: int, x2: int, y2: int) -> int:
-    """Robust zone assignment: center + corners + edge midpoints."""
-    cx = int((x1 + x2) / 2)
-    cy = int((y1 + y2) / 2)
-    sample_points = [
-        (cx, cy),
-        (x1, y1),
-        (x2, y1),
-        (x1, y2),
-        (x2, y2),
-        (cx, y1),
-        (cx, y2),
-        (x1, cy),
-        (x2, cy),
-    ]
+    """Assign detection to ROI zone using bbox center point only."""
+    cx, cy = get_detection_center({"x1": x1, "y1": y1, "x2": x2, "y2": y2})
     for i, poly in enumerate(polygons):
-        if any(_point_in_poly(poly, px, py) for px, py in sample_points):
+        if _point_in_poly(poly, cx, cy):
             return i
     return -1
+
+
+def _filter_candidates_by_roi(
+    candidates: List[Dict],
+    roi_polygons: List[List[Tuple[int, int]]],
+) -> Tuple[List[Dict], List[int]]:
+    """
+    Keep detections whose bbox center lies inside at least one ROI polygon.
+    When no ROI is defined, all candidates are kept (single implicit full-frame zone).
+    """
+    if not roi_polygons:
+        return list(candidates), [0] * len(candidates)
+
+    polygons = [np.array(poly, dtype=np.int32) for poly in roi_polygons]
+    kept: List[Dict] = []
+    zone_indices: List[int] = []
+    for cand in candidates:
+        x1, y1, x2, y2 = int(cand["x1"]), int(cand["y1"]), int(cand["x2"]), int(cand["y2"])
+        zone_idx = _assign_zone_for_bbox(polygons, x1, y1, x2, y2)
+        if zone_idx >= 0:
+            kept.append(cand)
+            zone_indices.append(zone_idx)
+    return kept, zone_indices
 
 
 def _bbox_iou_xyxy(a: Tuple[int, int, int, int], b: Tuple[int, int, int, int]) -> float:
@@ -190,6 +224,7 @@ class ZoneDetection:
     detections_total: int
     track_state: Optional[Dict] = None
     model_config: Optional[Dict] = None
+    vehicle_detections: Optional[List[Dict]] = None
 
 
 def _normalize_allowed_labels(allowed_labels: Optional[Set[str]]) -> Optional[Set[str]]:
@@ -612,6 +647,7 @@ def _render_and_count_candidates(
     display_mode: str = "normal_detection",
     show_speed_overlays: bool = True,
     track_state: Optional[Dict] = None,
+    draw_boxes: bool = True,
 ) -> ZoneDetection:
     output = frame.copy()
     h, w = output.shape[:2]
@@ -629,57 +665,58 @@ def _render_and_count_candidates(
         min_box_area=min_box_area,
     )
 
+    roi_candidates, roi_zone_indices = _filter_candidates_by_roi(filtered, roi_polygons)
+    if has_roi and logger.isEnabledFor(logging.DEBUG):
+        logger.debug(
+            "ROI filter: zones=%d total_detections=%d inside_roi=%d",
+            len(polygons),
+            len(filtered),
+            len(roi_candidates),
+        )
+
     dm_raw = (display_mode or "normal_detection").strip().lower()
     dm_draw = "normal_detection" if dm_raw == "congestion_heatmap" else dm_raw
 
     ts_base = dict(track_state or {})
     prev_hm_pack = ts_base.pop("congestion_heatmap", None)
-    tracked, new_track_state = update_tracks(filtered, ts_base)
+    tracked, new_track_state = update_tracks(roi_candidates, ts_base)
     merged_track: Dict[str, Any] = dict(ts_base)
     merged_track.update(new_track_state or {})
 
-    for cand in filtered:
-        cls_id = int(cand["cls_id"])
+    for cand, zone_idx in zip(roi_candidates, roi_zone_indices):
         label = str(cand["label"])
-        x1, y1, x2, y2 = int(cand["x1"]), int(cand["y1"]), int(cand["x2"]), int(cand["y2"])
-        if has_roi:
-            zone_idx = _assign_zone_for_bbox(polygons, x1, y1, x2, y2)
-            if zone_idx < 0:
-                continue
-        else:
-            zone_idx = 0
-
         detections_total += 1
         per_zone[zone_idx][label] += 1
 
-    if dm_draw == "speed_status":
-        _draw_speed_boxes(
-            output,
-            tracked,
-            show_speed_overlays=bool(show_speed_overlays),
-            draw_confidence=bool(draw_confidence),
-            line_thickness=line_thickness,
-            font_scale=font_scale,
-            font_thickness=font_thickness,
-        )
-    elif dm_draw == "minimal":
-        _draw_minimal_boxes(
-            output,
-            filtered,
-            line_thickness=line_thickness,
-            draw_confidence=bool(draw_confidence),
-            font_scale=font_scale,
-            font_thickness=font_thickness,
-        )
-    else:
-        _draw_normal_boxes(
-            output,
-            filtered,
-            show_confidence=bool(draw_confidence),
-            line_thickness=line_thickness,
-            font_scale=font_scale,
-            font_thickness=font_thickness,
-        )
+    if draw_boxes:
+        if dm_draw == "speed_status":
+            _draw_speed_boxes(
+                output,
+                tracked,
+                show_speed_overlays=bool(show_speed_overlays),
+                draw_confidence=bool(draw_confidence),
+                line_thickness=line_thickness,
+                font_scale=font_scale,
+                font_thickness=font_thickness,
+            )
+        elif dm_draw == "minimal":
+            _draw_minimal_boxes(
+                output,
+                roi_candidates,
+                line_thickness=line_thickness,
+                draw_confidence=bool(draw_confidence),
+                font_scale=font_scale,
+                font_thickness=font_thickness,
+            )
+        elif dm_draw != "congestion_heatmap":
+            _draw_normal_boxes(
+                output,
+                roi_candidates,
+                show_confidence=bool(draw_confidence),
+                line_thickness=line_thickness,
+                font_scale=font_scale,
+                font_thickness=font_thickness,
+            )
 
     for i, poly in enumerate(polygons):
         color = ZONE_COLORS_BGR[i % len(ZONE_COLORS_BGR)]
@@ -699,16 +736,36 @@ def _render_and_count_candidates(
         from monitoring.traffic_tdss.congestion_heatmap import update_and_render_heatmap
 
         roi_list: List[List[Tuple[int, int]]] = [list(map(tuple, poly)) for poly in roi_polygons]
-        output, hm_packed = update_and_render_heatmap(output, filtered, roi_list, prev_hm_pack)
+        output, hm_packed = update_and_render_heatmap(output, roi_candidates, roi_list, prev_hm_pack)
         merged_track["congestion_heatmap"] = hm_packed
     else:
         merged_track.pop("congestion_heatmap", None)
+
+    vehicle_detections: List[Dict] = []
+    for det_item, zone_idx in zip(tracked, roi_zone_indices):
+        cls_id = int(det_item.get("cls_id") or 0)
+        vehicle_detections.append(
+            {
+                "track_id": int(det_item.get("track_id") or 0),
+                "label": str(det_item.get("label") or "vehicle"),
+                "cls_id": cls_id,
+                "conf": round(float(det_item.get("conf") or 0.0), 4),
+                "x1": int(det_item["x1"]),
+                "y1": int(det_item["y1"]),
+                "x2": int(det_item["x2"]),
+                "y2": int(det_item["y2"]),
+                "zone_idx": int(zone_idx),
+                "speed_px": round(float(det_item.get("speed_px") or 0.0), 3),
+                "speed_status": str(det_item.get("speed_status") or "Medium"),
+            }
+        )
 
     return ZoneDetection(
         per_zone_counts=per_zone,
         processed_frame=output,
         detections_total=detections_total,
         track_state=merged_track,
+        vehicle_detections=vehicle_detections,
     )
 
 
@@ -725,6 +782,7 @@ def detect_in_zones(
     display_mode: str = "normal_detection",
     show_speed_overlays: bool = True,
     track_state: Optional[Dict] = None,
+    draw_boxes: bool = True,
 ) -> ZoneDetection:
     candidates = _run_model_candidates(model, frame, allowed_labels, imgsz, max_det)
     return _render_and_count_candidates(
@@ -737,6 +795,7 @@ def detect_in_zones(
         display_mode=display_mode,
         show_speed_overlays=show_speed_overlays,
         track_state=track_state,
+        draw_boxes=draw_boxes,
     )
 
 
@@ -753,6 +812,7 @@ def detect_in_zones_multi(
     display_mode: str = "normal_detection",
     show_speed_overlays: bool = True,
     track_state: Optional[Dict] = None,
+    draw_boxes: bool = True,
 ) -> ZoneDetection:
     candidates: List[Dict] = []
     for mi, model in enumerate(models):
@@ -777,6 +837,7 @@ def detect_in_zones_multi(
         display_mode=display_mode,
         show_speed_overlays=show_speed_overlays,
         track_state=track_state,
+        draw_boxes=draw_boxes,
     )
 
 
@@ -832,6 +893,7 @@ def detect_in_zones_congestion_ambulance(
     display_mode: str = "normal_detection",
     show_speed_overlays: bool = True,
     track_state: Optional[Dict] = None,
+    draw_boxes: bool = True,
 ) -> ZoneDetection:
     merged = infer_candidates_congestion_ambulance(
         model_congestion, model_ambulance, frame, imgsz=imgsz, max_det=max_det
@@ -846,6 +908,7 @@ def detect_in_zones_congestion_ambulance(
         display_mode=display_mode,
         show_speed_overlays=show_speed_overlays,
         track_state=track_state,
+        draw_boxes=draw_boxes,
     )
 
 
@@ -859,6 +922,7 @@ def detect_from_candidates(
     display_mode: str = "normal_detection",
     show_speed_overlays: bool = True,
     track_state: Optional[Dict] = None,
+    draw_boxes: bool = True,
 ) -> ZoneDetection:
     """Build zone counts + annotated frame from precomputed candidates."""
     return _render_and_count_candidates(
@@ -871,5 +935,6 @@ def detect_from_candidates(
         display_mode=display_mode,
         show_speed_overlays=show_speed_overlays,
         track_state=track_state,
+        draw_boxes=draw_boxes,
     )
 

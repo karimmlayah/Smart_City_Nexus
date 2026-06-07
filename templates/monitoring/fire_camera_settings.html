@@ -1,16 +1,21 @@
 {% extends "base.html" %}
 {% load static %}
-{% block title %}Smart City · Réglages caméra ESP{% endblock %}
-{% block body_class %}cockpit fusion-hub-sc road-damage-sc fc-camera-page{% endblock %}
+{% block title %}Smart City · ESP32-CAM Control Center{% endblock %}
+{% block body_class %}cockpit fusion-hub-sc road-damage-sc fc-camera-page ai-dashboard-sc mm-dash-body{% endblock %}
+
 {% block extra_head %}
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{% static 'monitoring/fusion_hub_dashboard.css' %}">
   <link rel="stylesheet" href="{% static 'monitoring/fusion_hub_smartcity.css' %}">
   <link rel="stylesheet" href="{% static 'monitoring/road_damage_theme.css' %}">
   <link rel="stylesheet" href="{% static 'monitoring/fire-camera-settings.css' %}">
+  <link rel="stylesheet" href="{% static 'monitoring/fc-camera-control.css' %}?v=5">
 {% endblock %}
+
+{% block topbar %}{% include "monitoring/partials/mm_topbar.html" %}{% endblock %}
+
 {% block content %}
 <div
   class="fc-camera-dashboard"
@@ -20,291 +25,365 @@
   data-stream-proxy="{{ esp_stream_proxy_url|escape }}"
   data-state-url="{{ fire_camera_state_url|escape }}"
 >
-  <header class="glass fc-camera-head">
-    <div class="fc-camera-head-left">
-      <div class="fc-camera-brand">
-        <span class="fc-camera-brand-mark" aria-hidden="true">📷</span>
-        <div>
-          <h1 class="fc-camera-title">Réglages caméra</h1>
-          <p class="fc-camera-sub">ESP32-CAM · HTTP /control ou /cmd</p>
-        </div>
+  <div class="fc-page__bg" aria-hidden="true"></div>
+  <div class="fc-page__grid" aria-hidden="true"></div>
+  <div class="fc-page__particles" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+
+  <!-- A. Page command bar -->
+  <header class="fc-command-bar" aria-label="ESP32-CAM command bar">
+    <div class="fc-command-bar__sweep" aria-hidden="true"></div>
+    <div class="fc-command-bar__left">
+      <div class="fc-command-bar__icon" aria-hidden="true">📷</div>
+      <div>
+        <h2 class="fc-command-bar__title">ESP32-CAM Control Center</h2>
+        <p class="fc-command-bar__sub">Real-time camera monitoring, live stream control, and AI-ready image tuning</p>
       </div>
-      <div class="fc-status-cluster">
-        <span class="fc-conn-badge" id="fcConnBadge" aria-live="polite">—</span>
-        <span class="fc-esp-status" id="fcEspLiveStatus" aria-live="polite" title="Détail dernière commande"></span>
+      <div class="fc-status-pills">
+        <span class="fc-pill fc-pill--live" id="fcPillSystem"><span class="fc-pill__dot"></span> System Online</span>
+        <span class="fc-pill" id="fcPillStream"><span class="fc-pill__dot"></span> Stream Idle</span>
+        <span class="fc-pill" id="fcPillAi"><span class="fc-pill__dot"></span> Detection Ready</span>
+        <span class="fc-pill" id="fcPillSync"><span class="fc-pill__dot"></span> Sync OK</span>
       </div>
     </div>
-    <div class="fc-camera-head-actions">
-      <span class="fc-header-clock" id="fcJarvisClock">--:--:--</span>
-      <a href="{% url 'monitoring:fire_camera_detect' %}" class="fc-btn fc-btn-ghost">Détection feu ONNX</a>
-      <a href="{% url 'monitoring:surveillance_dashboard' %}" class="fc-btn fc-btn-neon">Surveillance</a>
+    <div class="fc-command-bar__actions">
+      <span class="fc-conn-badge" id="fcConnBadge" aria-live="polite">—</span>
+      <button type="button" class="fc-cmd-btn" id="fcCmdRefresh" title="Refresh preview">↻ Refresh</button>
+      <button type="button" class="fc-cmd-btn fc-cmd-btn--primary" id="fcCmdSync" title="Full ESP sync">⟳ Sync</button>
+      <button type="button" class="fc-cmd-btn" id="fcCmdFullscreen" title="Fullscreen">⛶ Fullscreen</button>
+      <a href="{% url 'monitoring:fire_camera_detect' %}" class="fc-cmd-btn">Fire ONNX</a>
     </div>
   </header>
+  <p class="fc-esp-status" id="fcEspLiveStatus" aria-live="polite" title="Last command detail"></p>
 
-  <div class="fc-page">
-    <header class="glass fc-hero">
-      <h2 class="fc-hero-title">
-        <span>Connexion &amp; image</span>
-        <span class="fc-badge">Live sync</span>
-      </h2>
-      <p class="fc-hero-desc">
-        Chaque réglage est <strong>enregistré tout de suite</strong> dans la base Django + envoyé à l’ESP (<code>/control</code> ou <code>/cmd</code>).
-        L’aperçu JPEG en dessous se rafraîchit après chaque changement pour montrer le résultat.
-        <a href="{% url 'monitoring:fire_camera_detect' %}">Détection feu</a> utilise la même IP enregistrée.
-      </p>
-      <details class="fc-help" style="margin-top:0.75rem;">
-        <summary>📱 Ouvrir sur téléphone (même Wi‑Fi que ce PC)</summary>
-        <div class="fc-phone-box fc-help-body">
-          <span id="fcPhoneHint">Copie cette URL dans le navigateur du téléphone :</span><br/>
-          <code id="fcPhoneUrl"></code>
-        </div>
-      </details>
-    </header>
+  <form method="post" id="fcForm" class="fc-page">
+    {% csrf_token %}
 
-    <form method="post" id="fcForm">
-      {% csrf_token %}
-
-      <div class="fc-camera-grid">
-        <aside class="glass fc-col fc-col-stream">
-          <div class="fc-section-header">
-            <h2 class="fc-panel-title">Flux &amp; connexion</h2>
+    <div class="fc-main-layout">
+      <!-- Left — Live preview & stream monitor -->
+      <div class="fc-preview-col">
+        <section class="fc-card fc-monitor-card">
+          <div class="fc-card__head">
+            <div>
+              <h3 class="fc-card__title">Live Preview &amp; Stream Monitor</h3>
+              <p class="fc-card__sub">MJPEG stream, JPEG capture, network endpoints, and live telemetry</p>
+            </div>
+            <div class="fc-preview-head__right">
+              <div class="fc-lens-holo" aria-hidden="true"><span class="fc-lens-holo__ring"></span><span class="fc-lens-holo__core"></span></div>
+              <span class="fc-live-badge" id="fcLiveBadge">Preview Ready</span>
+            </div>
           </div>
-          <div class="fc-panel-inner">
-            <div class="fc-field">
-              <label class="fc-label" for="esp_ip">Adresse IP ESP32-CAM</label>
-              <input id="esp_ip" name="esp_ip" type="text" value="{{ esp_ip|escape }}" placeholder="192.168.0.148" autocomplete="off" />
-            </div>
-            {% if stream_url %}
-            <p class="fc-status-strip">Flux : <code>{{ stream_url }}</code><br/>Contrôle : <code>{{ control_url }}</code> (port 80)</p>
-            <div class="fc-link-row">
-              {% if control_url %}<a href="{{ control_url }}" target="_blank" rel="noopener">Page caméra ESP (80)</a>{% endif %}
-              {% if stream_url %}<a href="{{ stream_url }}" target="_blank" rel="noopener">Flux navigateur (81)</a>{% endif %}
-            </div>
-            {% else %}
-            <p class="fc-status-strip">Saisis l’IP ci‑dessus : liens, flux et aperçu utilisent <code>http://&lt;IP&gt;</code>.</p>
-            {% endif %}
-
-            <div class="fc-panel-block" style="margin-top:1rem;padding-top:1rem;border-top:1px solid rgba(47,128,237,0.25);">
-              <h3 class="fc-panel-title">Drone / route — YOLO temps réel</h3>
-              <p class="fc-subhint">Valeurs appliquées sur <strong>/reclamations/&lt;id&gt;/ai/?live=1</strong> quand aucun <code>?model=</code> / <code>?conf=</code> dans l’URL (priorité URL &gt; base &gt; session).</p>
-              <div class="fc-field">
-                <label class="fc-label" for="road_live_model_key">Modèle classification chaussée (clé projet)</label>
-                <select id="road_live_model_key" name="road_live_model_key">
-                  <option value="">— Défaut session / projet —</option>
-                  {% for m in road_vision_models %}
-                  <option value="{{ m.key|escape }}" {% if m.key == road_live_model_key %}selected{% endif %} {% if not m.exists %}disabled{% endif %}>
-                    {{ m.label }}{% if not m.exists %} (absent){% endif %}
-                  </option>
-                  {% endfor %}
-                </select>
-              </div>
-              <div class="fc-field">
-                <label class="fc-label" for="road_live_conf">Confiance minimum (YOLO)</label>
-                <p class="fc-subhint">Vide = défaut Django (<code>{{ road_conf_fallback }}</code>).</p>
-                <input type="number" id="road_live_conf" name="road_live_conf" min="0.01" max="1" step="0.05"
-                       placeholder="{{ road_conf_fallback }}"
-                       {% if road_live_conf is not None %}value="{{ road_live_conf }}"{% endif %} />
-              </div>
-              <button type="submit" name="action" value="save_road_live" class="fc-btn fc-btn-neon fc-btn-block" style="margin-top:0.5rem;">
-                Enregistrer modèle drone (base Django)
-              </button>
+          <div class="fc-card__body fc-monitor-body">
+            <div class="fc-telemetry-bar" aria-label="Live telemetry">
+              <span class="fc-telemetry-chip" id="fcTelRes">RES —</span>
+              <span class="fc-telemetry-chip" id="fcTelQuality">JPEG —</span>
+              <span class="fc-telemetry-chip" id="fcTelHealth">Stream —</span>
+              <span class="fc-telemetry-chip" id="fcTelSync">Sync —</span>
             </div>
 
-            <div class="fc-row-btns">
-              <button type="submit" name="action" value="test80" class="fc-btn fc-btn-ghost">Test port 80</button>
-              <button type="submit" name="action" value="test81" class="fc-btn fc-btn-ghost">Test port 81 (stream)</button>
+            <div class="fc-preview-frame">
+              <div class="fc-preview-frame__corners" aria-hidden="true">
+                <span class="fc-corner fc-corner--tl"></span>
+                <span class="fc-corner fc-corner--tr"></span>
+                <span class="fc-corner fc-corner--bl"></span>
+                <span class="fc-corner fc-corner--br"></span>
+              </div>
+              <div class="fc-preview-scan" aria-hidden="true"></div>
+              <div class="fc-preview-holo-grid" aria-hidden="true"></div>
+              <div id="fcStreamPh" class="fc-stream-placeholder">
+                <div class="fc-holo-wireframe" aria-hidden="true"><span></span><span></span><span></span></div>
+                <span class="fc-cam-ico" aria-hidden="true">◎</span>
+                <strong>Live camera preview</strong>
+                <span>Waiting for stream — start below to monitor camera output</span>
+              </div>
+              <img id="fcStreamImg" class="fc-stream-img" {% if esp_stream_proxy_url and stream_url %}src="{{ esp_stream_proxy_url|escape }}"{% endif %} alt="ESP32-CAM live stream (Django proxy)" />
+            </div>
+
+            <div class="fc-stream-actions fc-row-btns">
               <button type="button" class="fc-btn fc-btn-neon" id="fcBtnStart">▶ Start stream</button>
               <button type="button" class="fc-btn fc-btn-ghost" id="fcBtnStop">⏹ Stop stream</button>
+              <button type="submit" name="action" value="test80" class="fc-btn fc-btn-ghost">Test port 80</button>
+              <button type="submit" name="action" value="test81" class="fc-btn fc-btn-ghost">Test port 81</button>
+              <button type="button" class="fc-btn fc-btn-ghost" id="fcBtnRefreshSnap">↻ Refresh capture</button>
             </div>
 
-            <div class="fc-stream-wrap">
-              <div id="fcStreamPh" class="fc-stream-placeholder">
-                <span class="fc-cam-ico" aria-hidden="true">📷</span>
-                <span>Appuyez sur <strong>Start Stream</strong> après avoir mis l’IP<br/>ou regarde l’aperçu JPEG ci‑dessous</span>
+            <div class="fc-monitor-split">
+              <div class="fc-capture-section">
+                <p class="fc-subhint"><strong>Capture preview (/capture)</strong> — reflects sensor tuning after each adjustment.</p>
+                <p class="fc-snap-meta" id="fcSnapMeta" aria-live="polite">Loading…</p>
+                <div class="fc-snap-preview-row">
+                  <div class="fc-snap-frame" id="fcSnapFrame">
+                    <div class="fc-snap-frame__corners" aria-hidden="true"></div>
+                    <div class="fc-snap-frame__scan" aria-hidden="true"></div>
+                    <div class="fc-snap-empty" id="fcSnapPh">
+                      <span class="fc-snap-empty__icon" aria-hidden="true">◎</span>
+                      <strong>No capture signal</strong>
+                      <span>Check ESP IP, port 80, and camera connection</span>
+                    </div>
+                    <img id="fcSnapPreview" class="fc-snap-preview" alt="Capture preview /capture (Django proxy)" src="{{ camera_capture_proxy_url|escape }}?t=0" hidden />
+                  </div>
+                </div>
+                <p class="fc-subhint fc-capture-link">
+                  <a href="#" id="fcOpenCapture" class="fc-link-capture" target="_blank" rel="noopener" style="display:none;">Open /capture in browser</a>
+                </p>
               </div>
-              <img id="fcStreamImg" class="fc-stream-img" {% if esp_stream_proxy_url and stream_url %}src="{{ esp_stream_proxy_url|escape }}"{% endif %} alt="Flux ESP32-CAM (proxy Django)" />
-            </div>
-            <p class="fc-subhint" style="margin-top:0.65rem;">
-              <a href="#" id="fcOpenCapture" class="fc-link-capture" target="_blank" rel="noopener" style="display:none;">📸 Ouvrir /capture (navigateur)</a>
-            </p>
-            <div class="fc-snap-preview-box">
-              <p class="fc-subhint"><strong>Aperçu photo (/capture)</strong> — c’est <strong>ici</strong> que tu vois l’effet des réglages (luminosité, résolution, etc.). Le grand cadre au‑dessus ne bouge qu’après <strong>Start stream</strong>.</p>
-              <p class="fc-snap-meta" id="fcSnapMeta" aria-live="polite">Chargement…</p>
-              <div class="fc-snap-preview-row">
-                <img id="fcSnapPreview" class="fc-snap-preview" alt="Aperçu /capture (proxy Django)" src="{{ camera_capture_proxy_url|escape }}?t=0" />
-                <button type="button" class="fc-btn fc-btn-ghost" id="fcBtnRefreshSnap">↻ Rafraîchir</button>
+
+              <div class="fc-network-compact">
+                <h4 class="fc-panel-title">Network &amp; endpoints</h4>
+                <div class="fc-field">
+                  <label class="fc-label" for="esp_ip">ESP32-CAM IP address</label>
+                  <input id="esp_ip" name="esp_ip" type="text" value="{{ esp_ip|escape }}" placeholder="192.168.0.148" autocomplete="off" />
+                </div>
+                {% if stream_url %}
+                <p class="fc-status-strip">Stream: <code>{{ stream_url }}</code></p>
+                <p class="fc-status-strip">Control: <code>{{ control_url }}</code> (port 80)</p>
+                <div class="fc-link-row">
+                  {% if control_url %}<a href="{{ control_url }}" target="_blank" rel="noopener">ESP page (80)</a>{% endif %}
+                  {% if stream_url %}<a href="{{ stream_url }}" target="_blank" rel="noopener">Browser stream (81)</a>{% endif %}
+                </div>
+                {% else %}
+                <p class="fc-status-strip">Enter the IP — links and preview use <code>http://&lt;IP&gt;</code>.</p>
+                {% endif %}
+                <details class="fc-help">
+                  <summary>Mobile access &amp; troubleshooting</summary>
+                  <div class="fc-help-body">
+                    <div class="fc-phone-box">
+                      <span id="fcPhoneHint">Open on phone (same Wi‑Fi):</span><br/>
+                      <code id="fcPhoneUrl"></code>
+                    </div>
+                    <ul>
+                      <li>Port <strong>80</strong>: <code>/cmd</code>, <code>/status</code>, <code>/capture</code></li>
+                      <li>Port <strong>81</strong>: MJPEG <code>http://&lt;IP&gt;:81/stream</code></li>
+                      <li>For smooth stream: VGA, JPEG quality ~12</li>
+                    </ul>
+                  </div>
+                </details>
               </div>
-              <p class="fc-subhint" style="margin-top:0.45rem;font-size:0.72rem;">Après un curseur, l’image est rafraîchie plusieurs fois (~0,2 s … 1,5 s) le temps que l’ESP applique la commande.</p>
             </div>
 
-            <details class="fc-help" style="margin-top:1rem;">
-              <summary>Aide &amp; dépannage (Wi‑Fi / ports / fluidité)</summary>
-              <div class="fc-help-body">
-                <ul style="margin:0;padding-left:1.1rem;">
-                  <li>Même routeur Wi‑Fi pour le PC et l’ESP ; évite le Wi‑Fi « invité » (isolement clients).</li>
-                  <li>Port <strong>80</strong> : contrôle <code>/cmd</code>, <code>/status</code>, <code>/capture</code>.</li>
-                  <li>Port <strong>81</strong> : flux MJPEG <code>http://&lt;IP&gt;:81/stream</code>.</li>
-                  <li>Pour un flux fluide : baisse la résolution (VGA) et qualité JPEG ~12 dans le panneau capteur.</li>
-                </ul>
-              </div>
-            </details>
+            <div class="fc-signal-flow" aria-label="Signal flow">
+              <span class="fc-signal-flow__node">ESP32</span>
+              <span class="fc-signal-flow__arrow">→</span>
+              <span class="fc-signal-flow__node">HTTP</span>
+              <span class="fc-signal-flow__arrow">→</span>
+              <span class="fc-signal-flow__node">Stream</span>
+              <span class="fc-signal-flow__arrow">→</span>
+              <span class="fc-signal-flow__node">AI Detection</span>
+            </div>
           </div>
-        </aside>
+        </section>
 
-        <aside class="glass fc-col fc-col-controls">
-          <div class="fc-section-header">
-            <h2 class="fc-panel-title">Capteur &amp; corrections</h2>
+        <section class="fc-card fc-ai-panel fc-ai-panel--compact">
+          <div class="fc-card__head">
+            <div>
+              <h3 class="fc-card__title">AI Monitoring Pipeline</h3>
+              <p class="fc-card__sub">Detection mode, confidence, stream health</p>
+            </div>
           </div>
-          <div class="fc-controls-wrap">
-            <div class="fc-panel-block">
-              <h3 class="fc-panel-title">Image · capteur</h3>
-
-              <div class="fc-field">
-                <label class="fc-label" for="id_framesize">Résolution</label>
-                <select id="id_framesize" name="framesize" data-fc-patch data-var="framesize">
-                  {% for val, label in fs_options %}
-                  <option value="{{ val }}" {% if prefs.framesize == val %}selected{% endif %}>{{ label }}</option>
-                  {% endfor %}
-                </select>
-              </div>
-
-              <div class="fc-field">
-                <label class="fc-label" for="id_quality">Qualité JPEG</label>
-                <p class="fc-subhint">4 = MAX · 63 = MIN — ~12 conseillé pour un stream stable</p>
-                <input type="range" id="id_quality" name="quality" min="4" max="63" value="{{ prefs.quality }}"
-                       data-fc-patch data-var="quality" />
-                <div class="fc-slider-val" data-fc-for="quality">{{ prefs.quality }}</div>
-              </div>
-
-              <h3 class="fc-panel-title" style="margin-top:1rem;">Image</h3>
-              <div class="fc-grid-inner fc-grid-inner-stack">
-                <div class="fc-field">
-                  <label class="fc-label">Luminosité</label>
-                  <input type="range" name="brightness" min="-2" max="2" value="{{ prefs.brightness }}" data-fc-patch data-var="brightness" />
-                  <div class="fc-slider-val" data-fc-for="brightness">{{ prefs.brightness }}</div>
-                </div>
-                <div class="fc-field">
-                  <label class="fc-label">Contraste</label>
-                  <input type="range" name="contrast" min="-2" max="2" value="{{ prefs.contrast }}" data-fc-patch data-var="contrast" />
-                  <div class="fc-slider-val" data-fc-for="contrast">{{ prefs.contrast }}</div>
-                </div>
-                <div class="fc-field">
-                  <label class="fc-label">Saturation</label>
-                  <input type="range" name="saturation" min="-2" max="2" value="{{ prefs.saturation }}" data-fc-patch data-var="saturation" />
-                  <div class="fc-slider-val" data-fc-for="saturation">{{ prefs.saturation }}</div>
-                </div>
-                <div class="fc-field">
-                  <label class="fc-label">Netteté</label>
-                  <input type="range" name="sharpness" min="-2" max="2" value="{{ prefs.sharpness }}" data-fc-patch data-var="sharpness" />
-                  <div class="fc-slider-val" data-fc-for="sharpness">{{ prefs.sharpness }}</div>
-                </div>
-              </div>
-
-              <h3 class="fc-panel-title" style="margin-top:1rem;">Balance des blancs</h3>
-              <div class="fc-field fc-grid-inner fc-grid-inner-stack">
-                <label class="fc-label"><input type="checkbox" name="awb" value="1" {% if prefs.awb %}checked{% endif %} data-fc-patch data-var="awb" /> AWB auto</label>
-                <label class="fc-label"><input type="checkbox" name="awb_gain" value="1" {% if prefs.awb_gain %}checked{% endif %} data-fc-patch data-var="awb_gain" /> AWB Gain</label>
-              </div>
-              <div class="fc-field">
-                <label class="fc-label" for="id_wb">Mode WB</label>
-                <select id="id_wb" name="wb_mode" data-fc-patch data-var="wb_mode">
-                  {% for val, label in wb_options %}
-                  <option value="{{ val }}" {% if prefs.wb_mode == val %}selected{% endif %}>{{ label }}</option>
-                  {% endfor %}
-                </select>
-              </div>
-
-              <h3 class="fc-panel-title" style="margin-top:1rem;">Exposition</h3>
-              <div class="fc-field fc-grid-inner fc-grid-inner-stack">
-                <label class="fc-label"><input type="checkbox" name="aec" value="1" {% if prefs.aec %}checked{% endif %} data-fc-patch data-var="aec" /> AEC auto</label>
-                <label class="fc-label"><input type="checkbox" name="aec2" value="1" {% if prefs.aec2 %}checked{% endif %} data-fc-patch data-var="aec2" /> AEC2 DSP</label>
-              </div>
-              <div class="fc-field">
-                <label class="fc-label">Niveau AE</label>
-                <input type="range" name="ae_level" min="-2" max="2" value="{{ prefs.ae_level }}" data-fc-patch data-var="ae_level" />
-                <div class="fc-slider-val" data-fc-for="ae_level">{{ prefs.ae_level }}</div>
-              </div>
-
-              <h3 class="fc-panel-title" style="margin-top:1rem;">Gain</h3>
-              <div class="fc-field fc-grid-inner fc-grid-inner-stack">
-                <label class="fc-label"><input type="checkbox" name="agc" value="1" {% if prefs.agc %}checked{% endif %} data-fc-patch data-var="agc" /> AGC auto</label>
-              </div>
-              <div class="fc-field">
-                <label class="fc-label" for="id_gain">Plafond gain</label>
-                <select id="id_gain" name="gainceiling" data-fc-patch data-var="gainceiling">
-                  {% for g in gain_labels %}
-                  <option value="{{ forloop.counter0 }}" {% if prefs.gainceiling == forloop.counter0 %}selected{% endif %}>{{ g }}</option>
-                  {% endfor %}
-                </select>
-              </div>
-              <p class="fc-subhint">Échelle : {% for g in gain_labels %}{{ g }}{% if not forloop.last %} · {% endif %}{% endfor %}</p>
+          <div class="fc-card__body">
+            <div class="fc-pipeline-nodes" aria-label="AI pipeline">
+              <span class="fc-pipeline-node is-active">Camera Input</span>
+              <span class="fc-pipeline-node is-active">Preprocess</span>
+              <span class="fc-pipeline-node is-active">Inference</span>
+              <span class="fc-pipeline-node">Monitoring</span>
             </div>
+            <div class="fc-ai-metrics">
+              <div class="fc-ai-metric">Detection mode<strong id="fcAiMode">Road YOLO Live</strong></div>
+              <div class="fc-ai-metric">Confidence min<strong id="fcAiConf">{% if road_live_conf is not None %}{{ road_live_conf }}{% else %}{{ road_conf_fallback }}{% endif %}</strong></div>
+              <div class="fc-ai-metric">Stream health<strong id="fcAiHealth">—</strong></div>
+              <div class="fc-ai-metric">Sync state<strong id="fcAiSync">Ready</strong></div>
+            </div>
+            <div class="fc-telemetry-spark" aria-hidden="true"><div class="fc-telemetry-spark__line"></div></div>
+          </div>
+        </section>
+      </div>
 
-            <div class="fc-panel-block" style="margin-top:1rem;">
-              <h3 class="fc-panel-title">Corrections · orientation · effet · LED</h3>
-              <p class="fc-subhint">Chaque case ou curseur est <strong>enregistré directement</strong> et l’aperçu JPEG à gauche se met à jour pour montrer le rendu (flux MJPEG optionnel).</p>
-              <div class="fc-grid-inner fc-grid-inner-stack fc-grid-checks">
-                <label class="fc-label"><input type="checkbox" name="bpc" value="1" {% if prefs.bpc %}checked{% endif %} data-fc-patch data-var="bpc" /> BPC</label>
-                <label class="fc-label"><input type="checkbox" name="wpc" value="1" {% if prefs.wpc %}checked{% endif %} data-fc-patch data-var="wpc" /> WPC</label>
-                <label class="fc-label"><input type="checkbox" name="raw_gma" value="1" {% if prefs.raw_gma %}checked{% endif %} data-fc-patch data-var="raw_gma" /> Gamma RAW</label>
-                <label class="fc-label"><input type="checkbox" name="lenc" value="1" {% if prefs.lenc %}checked{% endif %} data-fc-patch data-var="lenc" /> Lens correction</label>
-                <label class="fc-label"><input type="checkbox" name="dcw" value="1" {% if prefs.dcw %}checked{% endif %} data-fc-patch data-var="dcw" /> DCW</label>
-                <label class="fc-label"><input type="checkbox" name="hmirror" value="1" {% if prefs.hmirror %}checked{% endif %} data-fc-patch data-var="hmirror" /> Miroir H</label>
-                <label class="fc-label"><input type="checkbox" name="vflip" value="1" {% if prefs.vflip %}checked{% endif %} data-fc-patch data-var="vflip" /> Flip V</label>
-              </div>
-              <div class="fc-field" style="margin-top:0.65rem;">
-                <label class="fc-label" for="id_fx">Effet spécial</label>
-                <select id="id_fx" name="special_effect" data-fc-patch data-var="special_effect">
-                  {% for val, label in fx_options %}
-                  <option value="{{ val }}" {% if prefs.special_effect == val %}selected{% endif %}>{{ label }}</option>
-                  {% endfor %}
-                </select>
+      <!-- Right — Sensor & tuning controls -->
+      <div class="fc-control-stack">
+        <section class="fc-card">
+          <div class="fc-card__head">
+            <div>
+              <h3 class="fc-card__title">Sensor Imaging</h3>
+              <p class="fc-card__sub">Resolution, JPEG quality, brightness &amp; color</p>
+            </div>
+          </div>
+          <div class="fc-card__body">
+            <div class="fc-field">
+              <label class="fc-label" for="id_framesize">Resolution</label>
+              <select id="id_framesize" name="framesize" data-fc-patch data-var="framesize">
+                {% for val, label in fs_options %}
+                <option value="{{ val }}" {% if prefs.framesize == val %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="fc-field">
+              <label class="fc-label" for="id_quality">JPEG quality</label>
+              <p class="fc-subhint">4 = MAX · 63 = MIN — ~12 recommended for a stable stream</p>
+              <input type="range" id="id_quality" name="quality" min="4" max="63" value="{{ prefs.quality }}" data-fc-patch data-var="quality" />
+              <div class="fc-slider-val" data-fc-for="quality">{{ prefs.quality }}</div>
+            </div>
+            <div class="fc-grid-inner fc-grid-inner-stack">
+              <div class="fc-field">
+                <label class="fc-label">Brightness</label>
+                <input type="range" name="brightness" min="-2" max="2" value="{{ prefs.brightness }}" data-fc-patch data-var="brightness" />
+                <div class="fc-slider-val" data-fc-for="brightness">{{ prefs.brightness }}</div>
               </div>
               <div class="fc-field">
-                <label class="fc-label">Flash LED — intensité</label>
-                <input type="range" name="led_intensity" min="0" max="255" value="{{ prefs.led_intensity }}" data-fc-patch data-var="led_intensity" />
-                <div class="fc-slider-val" data-fc-for="led_intensity">{{ prefs.led_intensity }}</div>
+                <label class="fc-label">Contrast</label>
+                <input type="range" name="contrast" min="-2" max="2" value="{{ prefs.contrast }}" data-fc-patch data-var="contrast" />
+                <div class="fc-slider-val" data-fc-for="contrast">{{ prefs.contrast }}</div>
               </div>
-              <div class="fc-row-btns" style="margin-top:0.5rem;">
-                <button type="button" class="fc-btn fc-btn-ghost" id="fcLed0">OFF</button>
-                <button type="button" class="fc-btn fc-btn-ghost" id="fcLed100">Faible</button>
-                <button type="button" class="fc-btn fc-btn-ghost" id="fcLed200">Fort</button>
-                <button type="button" class="fc-btn fc-btn-ghost" id="fcLed255">MAX</button>
+              <div class="fc-field">
+                <label class="fc-label">Saturation</label>
+                <input type="range" name="saturation" min="-2" max="2" value="{{ prefs.saturation }}" data-fc-patch data-var="saturation" />
+                <div class="fc-slider-val" data-fc-for="saturation">{{ prefs.saturation }}</div>
+              </div>
+              <div class="fc-field">
+                <label class="fc-label">Sharpness</label>
+                <input type="range" name="sharpness" min="-2" max="2" value="{{ prefs.sharpness }}" data-fc-patch data-var="sharpness" />
+                <div class="fc-slider-val" data-fc-for="sharpness">{{ prefs.sharpness }}</div>
               </div>
             </div>
+            <h4 class="fc-panel-title" style="margin-top:0.75rem;">White balance</h4>
+            <div class="fc-field fc-grid-inner fc-grid-inner-stack">
+              <label class="fc-label"><input type="checkbox" name="awb" value="1" {% if prefs.awb %}checked{% endif %} data-fc-patch data-var="awb" /> AWB auto</label>
+              <label class="fc-label"><input type="checkbox" name="awb_gain" value="1" {% if prefs.awb_gain %}checked{% endif %} data-fc-patch data-var="awb_gain" /> AWB Gain</label>
+            </div>
+            <div class="fc-field">
+              <label class="fc-label" for="id_wb">Mode WB</label>
+              <select id="id_wb" name="wb_mode" data-fc-patch data-var="wb_mode">
+                {% for val, label in wb_options %}
+                <option value="{{ val }}" {% if prefs.wb_mode == val %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+        </section>
 
-            <div class="fc-panel-block fc-save-block">
+        <!-- Exposure & Gain -->
+        <section class="fc-card">
+          <div class="fc-card__head">
+            <div>
+              <h3 class="fc-card__title">Exposure &amp; Gain</h3>
+              <p class="fc-card__sub">AEC, AE level, AGC and gain ceiling</p>
+            </div>
+          </div>
+          <div class="fc-card__body">
+            <div class="fc-field fc-grid-inner fc-grid-inner-stack">
+              <label class="fc-label"><input type="checkbox" name="aec" value="1" {% if prefs.aec %}checked{% endif %} data-fc-patch data-var="aec" /> AEC auto</label>
+              <label class="fc-label"><input type="checkbox" name="aec2" value="1" {% if prefs.aec2 %}checked{% endif %} data-fc-patch data-var="aec2" /> AEC2 DSP</label>
+            </div>
+            <div class="fc-field">
+              <label class="fc-label">AE level</label>
+              <input type="range" name="ae_level" min="-2" max="2" value="{{ prefs.ae_level }}" data-fc-patch data-var="ae_level" />
+              <div class="fc-slider-val" data-fc-for="ae_level">{{ prefs.ae_level }}</div>
+            </div>
+            <h4 class="fc-panel-title" style="margin-top:0.65rem;">Gain</h4>
+            <div class="fc-field fc-grid-inner fc-grid-inner-stack">
+              <label class="fc-label"><input type="checkbox" name="agc" value="1" {% if prefs.agc %}checked{% endif %} data-fc-patch data-var="agc" /> AGC auto</label>
+            </div>
+            <div class="fc-field">
+              <label class="fc-label" for="id_gain">Gain ceiling</label>
+              <select id="id_gain" name="gainceiling" data-fc-patch data-var="gainceiling">
+                {% for g in gain_labels %}
+                <option value="{{ forloop.counter0 }}" {% if prefs.gainceiling == forloop.counter0 %}selected{% endif %}>{{ g }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <p class="fc-subhint">Scale: {% for g in gain_labels %}{{ g }}{% if not forloop.last %} · {% endif %}{% endfor %}</p>
+          </div>
+        </section>
+
+        <!-- Orientation / Correction / LED -->
+        <section class="fc-card">
+          <div class="fc-card__head">
+            <div>
+              <h3 class="fc-card__title">Orientation / Correction / LED</h3>
+              <p class="fc-card__sub">BPC, WPC, gamma, lens, mirror, effects, flash</p>
+            </div>
+          </div>
+          <div class="fc-card__body">
+            <div class="fc-grid-inner fc-grid-inner-stack fc-grid-checks">
+              <label class="fc-label"><input type="checkbox" name="bpc" value="1" {% if prefs.bpc %}checked{% endif %} data-fc-patch data-var="bpc" /> BPC</label>
+              <label class="fc-label"><input type="checkbox" name="wpc" value="1" {% if prefs.wpc %}checked{% endif %} data-fc-patch data-var="wpc" /> WPC</label>
+              <label class="fc-label"><input type="checkbox" name="raw_gma" value="1" {% if prefs.raw_gma %}checked{% endif %} data-fc-patch data-var="raw_gma" /> Gamma RAW</label>
+              <label class="fc-label"><input type="checkbox" name="lenc" value="1" {% if prefs.lenc %}checked{% endif %} data-fc-patch data-var="lenc" /> Lens correction</label>
+              <label class="fc-label"><input type="checkbox" name="dcw" value="1" {% if prefs.dcw %}checked{% endif %} data-fc-patch data-var="dcw" /> DCW</label>
+              <label class="fc-label"><input type="checkbox" name="hmirror" value="1" {% if prefs.hmirror %}checked{% endif %} data-fc-patch data-var="hmirror" /> H mirror</label>
+              <label class="fc-label"><input type="checkbox" name="vflip" value="1" {% if prefs.vflip %}checked{% endif %} data-fc-patch data-var="vflip" /> Flip V</label>
+            </div>
+            <div class="fc-field" style="margin-top:0.65rem;">
+              <label class="fc-label" for="id_fx">Special effect</label>
+              <select id="id_fx" name="special_effect" data-fc-patch data-var="special_effect">
+                {% for val, label in fx_options %}
+                <option value="{{ val }}" {% if prefs.special_effect == val %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="fc-field">
+              <label class="fc-label">Flash LED — intensity</label>
+              <input type="range" name="led_intensity" min="0" max="255" value="{{ prefs.led_intensity }}" data-fc-patch data-var="led_intensity" />
+              <div class="fc-slider-val" data-fc-for="led_intensity">{{ prefs.led_intensity }}</div>
+            </div>
+            <div class="fc-row-btns">
+              <button type="button" class="fc-btn fc-btn-ghost" id="fcLed0">OFF</button>
+              <button type="button" class="fc-btn fc-btn-ghost" id="fcLed100">Low</button>
+              <button type="button" class="fc-btn fc-btn-ghost" id="fcLed200">High</button>
+              <button type="button" class="fc-btn fc-btn-ghost" id="fcLed255">MAX</button>
+            </div>
+            <div class="fc-save-block">
               <button type="button" class="fc-btn fc-btn-neon fc-btn-block" id="fcSyncFull">
-                💾 Synchroniser tout sur l’ESP (ré-envoi complet /cmd)
+                Sync all settings to ESP (full /cmd resend)
               </button>
-              <p class="fc-subhint" style="margin-top:0.65rem;text-align:center;">
-                Chaque réglage est déjà enregistré en base et envoyé au fur et à mesure. Ce bouton ré-applique <strong>tous</strong> les paramètres dans l’ordre firmware.
+              <p class="fc-subhint fc-save-hint">
+                Each adjustment is saved to the database and sent live. This button re-applies every parameter.
               </p>
             </div>
           </div>
-        </aside>
-      </div>
-    </form>
+        </section>
 
-    <p class="fc-footer-actions">
-      <a href="{% url 'monitoring:fire_camera_detect' %}" class="fc-btn fc-btn-neon">→ Détection feu ONNX</a>
-      <a href="{% url 'monitoring:surveillance_dashboard' %}" class="fc-btn fc-btn-ghost" style="margin-left:0.5rem;">Surveillance</a>
-    </p>
-  </div>
+        <!-- AI & Live detection -->
+        <section class="fc-card">
+          <div class="fc-card__head">
+            <div>
+              <h3 class="fc-card__title">AI &amp; Live Detection</h3>
+              <p class="fc-card__sub">Road YOLO model and confidence for live analysis routes</p>
+            </div>
+          </div>
+          <div class="fc-card__body">
+            <p class="fc-subhint">Applied on <strong>/reclamations/&lt;id&gt;/ai/?live=1</strong> (URL priority &gt; database &gt; session).</p>
+            <div class="fc-field">
+              <label class="fc-label" for="road_live_model_key">Road classification model</label>
+              <select id="road_live_model_key" name="road_live_model_key">
+                <option value="">— Session / project default —</option>
+                {% for m in road_vision_models %}
+                <option value="{{ m.key|escape }}" {% if m.key == road_live_model_key %}selected{% endif %} {% if not m.exists %}disabled{% endif %}>
+                  {{ m.label }}{% if not m.exists %} (missing){% endif %}
+                </option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="fc-field">
+              <label class="fc-label" for="road_live_conf">Minimum confidence (YOLO)</label>
+              <p class="fc-subhint">Empty = Django default (<code>{{ road_conf_fallback }}</code>).</p>
+              <input type="number" id="road_live_conf" name="road_live_conf" min="0.01" max="1" step="0.05"
+                     placeholder="{{ road_conf_fallback }}"
+                     {% if road_live_conf is not None %}value="{{ road_live_conf }}"{% endif %} />
+            </div>
+            <button type="submit" name="action" value="save_road_live" class="fc-btn fc-btn-neon fc-btn-block">
+              Save drone model (Django database)
+            </button>
+          </div>
+        </section>
+      </div>
+    </div>
+  </form>
+
+  <p class="fc-footer-actions">
+    <a href="{% url 'monitoring:fire_camera_detect' %}" class="fc-btn fc-btn-neon">→ Fire ONNX Detection</a>
+    <a href="{% url 'monitoring:surveillance_dashboard' %}" class="fc-btn fc-btn-ghost">Surveillance</a>
+  </p>
 </div>
 
-<script>
-(function() {
-  function tickClock() {
-    var el = document.getElementById("fcJarvisClock");
-    if (!el) return;
-    var d = new Date();
-    el.textContent = d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
-  }
-  tickClock();
-  setInterval(tickClock, 1000);
-})();
-</script>
 <script>
 (function() {
   var origin = window.location.origin || '';
@@ -325,26 +404,88 @@
   var btnX = document.getElementById('fcBtnStop');
   var ipField = document.getElementById('esp_ip');
   var badgeEl = document.getElementById('fcConnBadge');
+  var pillStream = document.getElementById('fcPillStream');
+  var pillSync = document.getElementById('fcPillSync');
+  var liveBadge = document.getElementById('fcLiveBadge');
+  var telRes = document.getElementById('fcTelRes');
+  var telQuality = document.getElementById('fcTelQuality');
+  var telHealth = document.getElementById('fcTelHealth');
+  var telSync = document.getElementById('fcTelSync');
+  var aiHealth = document.getElementById('fcAiHealth');
+  var aiSync = document.getElementById('fcAiSync');
+  var aiConf = document.getElementById('fcAiConf');
+
+  function setStreamPill(on) {
+    if (pillStream) {
+      pillStream.classList.toggle('is-on', !!on);
+      pillStream.innerHTML = '<span class="fc-pill__dot"></span> ' + (on ? 'Stream Active' : 'Stream Idle');
+    }
+    if (liveBadge) {
+      liveBadge.textContent = on ? 'Live' : 'Preview Ready';
+      liveBadge.classList.toggle('is-off', !on);
+    }
+    if (telHealth) telHealth.textContent = on ? 'Stream OK' : 'Stream —';
+  }
+
+  function updateTelemetry() {
+    var fs = document.getElementById('id_framesize');
+    var q = document.getElementById('id_quality');
+    if (telRes && fs) {
+      var opt = fs.options[fs.selectedIndex];
+      telRes.textContent = opt ? 'RES ' + opt.text.split(' ')[0] : 'RES —';
+    }
+    if (telQuality && q) telQuality.textContent = 'JPEG ' + q.value;
+  }
 
   var snapEl = document.getElementById('fcSnapPreview');
+  var snapFrame = document.getElementById('fcSnapFrame');
+  var snapPh = document.getElementById('fcSnapPh');
+
+  function setSnapVisualState(mode) {
+    if (!snapFrame) return;
+    snapFrame.classList.remove('is-live', 'is-loading');
+    if (mode === 'live') snapFrame.classList.add('is-live');
+    else if (mode === 'loading') snapFrame.classList.add('is-loading');
+    if (snapEl) {
+      if (mode === 'live') snapEl.removeAttribute('hidden');
+      else snapEl.setAttribute('hidden', 'hidden');
+    }
+    if (snapPh) {
+      var title = snapPh.querySelector('strong');
+      if (title) {
+        title.textContent = mode === 'loading' ? 'Loading capture' : 'No capture signal';
+      }
+    }
+  }
+
+  function isValidSnapDimensions(w, h) {
+    return w > 8 && h > 8;
+  }
+
   if (snapEl) {
     snapEl.addEventListener('load', function() {
       var meta = document.getElementById('fcSnapMeta');
       if (!meta) return;
-      if (snapEl.naturalWidth <= 4 && snapEl.naturalHeight <= 4) {
-        meta.textContent = 'Image quasi vide : l’ESP ne renvoie souvent pas de JPEG (vérifie IP / caméra).';
+      if (!isValidSnapDimensions(snapEl.naturalWidth, snapEl.naturalHeight)) {
+        meta.textContent = 'No JPEG from ESP — check IP, port 80, and camera.';
         meta.classList.add('is-warn');
+        if (aiHealth) aiHealth.textContent = 'No signal';
+        setSnapVisualState('empty');
       } else {
-        meta.textContent = 'Image ESP · ' + snapEl.naturalWidth + '×' + snapEl.naturalHeight;
+        meta.textContent = 'ESP capture · ' + snapEl.naturalWidth + '×' + snapEl.naturalHeight;
         meta.classList.remove('is-warn');
+        if (aiHealth) aiHealth.textContent = 'Good';
+        setSnapVisualState('live');
       }
     });
     snapEl.addEventListener('error', function() {
       var meta = document.getElementById('fcSnapMeta');
       if (meta) {
-        meta.textContent = 'Erreur chargement aperçu.';
+        meta.textContent = 'Preview load error.';
         meta.classList.add('is-warn');
       }
+      if (aiHealth) aiHealth.textContent = 'Error';
+      setSnapVisualState('empty');
     });
   }
 
@@ -395,17 +536,19 @@
         if (lab) lab.textContent = String(val);
       }
     });
+    updateTelemetry();
   }
 
   if (btnS && img && ph) {
     btnS.addEventListener('click', function() {
       if (!cleanHostFromInput()) {
-        window.alert('Indique l’adresse IP de l’ESP dans le champ ci‑dessus (ou enregistre-la en base).');
+        window.alert('Enter the ESP IP address in the field above (or save it to the database).');
       }
       var su = getStreamProxyUrl();
       img.src = su + (su.indexOf('?') >= 0 ? '&' : '?') + 't=' + Date.now();
       img.classList.add('is-on');
       ph.classList.add('is-off');
+      setStreamPill(true);
     });
   }
   if (btnX && img && ph) {
@@ -413,6 +556,7 @@
       img.removeAttribute('src');
       img.classList.remove('is-on');
       ph.classList.remove('is-off');
+      setStreamPill(false);
     });
   }
 
@@ -434,12 +578,23 @@
   }
 
   function setBadge(text, ok) {
-    if (!badgeEl) return;
-    badgeEl.textContent = text;
-    badgeEl.classList.remove('is-ok', 'is-warn', 'is-bad');
-    if (ok === true) badgeEl.classList.add('is-ok');
-    else if (ok === false) badgeEl.classList.add('is-bad');
-    else badgeEl.classList.add('is-warn');
+    if (badgeEl) {
+      badgeEl.textContent = text;
+      badgeEl.classList.remove('is-ok', 'is-warn', 'is-bad');
+      if (ok === true) badgeEl.classList.add('is-ok');
+      else if (ok === false) badgeEl.classList.add('is-bad');
+      else badgeEl.classList.add('is-warn');
+    }
+    if (pillSync) {
+      pillSync.classList.toggle('is-on', ok === true);
+      pillSync.classList.toggle('is-warn', ok === false);
+    }
+    if (aiSync) aiSync.textContent = ok === true ? 'Synced' : (ok === false ? 'Failed' : 'Ready');
+    updateSyncTelemetry(ok === true ? 'Synced' : (ok === false ? 'Failed' : 'Ready'));
+  }
+
+  function updateSyncTelemetry(text) {
+    if (telSync) telSync.textContent = text || 'Sync —';
   }
 
   function setStatus(text, ok) {
@@ -454,6 +609,7 @@
   function refreshCapturePreview(urlHint) {
     var snap = document.getElementById('fcSnapPreview');
     if (!snap) return;
+    setSnapVisualState('loading');
     if (urlHint) {
       snap.src = urlHint.indexOf('http') === 0 ? urlHint : (window.location.origin + (urlHint.indexOf('/') === 0 ? urlHint : '/' + urlHint));
       return;
@@ -469,6 +625,27 @@
     setTimeout(checkCaptureReachable, 400);
   });
 
+  var cmdRefresh = document.getElementById('fcCmdRefresh');
+  if (cmdRefresh && btnSnap) cmdRefresh.addEventListener('click', function() { btnSnap.click(); });
+
+  var cmdSync = document.getElementById('fcCmdSync');
+  var btnSync = document.getElementById('fcSyncFull');
+  if (cmdSync && btnSync) cmdSync.addEventListener('click', function() { btnSync.click(); });
+
+  var cmdFs = document.getElementById('fcCmdFullscreen');
+  if (cmdFs && root) {
+    cmdFs.addEventListener('click', function() {
+      var fs = document.fullscreenElement || document.webkitFullscreenElement;
+      if (!fs) {
+        var req = root.requestFullscreen || root.webkitRequestFullscreen;
+        if (req) try { req.call(root); } catch (e) {}
+      } else {
+        var exit = document.exitFullscreen || document.webkitExitFullscreen;
+        if (exit) try { exit.call(document); } catch (e2) {}
+      }
+    });
+  }
+
   function bustStreamIfLive() {
     if (!img || !img.classList.contains('is-on')) return;
     var su = getStreamProxyUrl();
@@ -481,18 +658,14 @@
     _previewTimers = [];
   }
 
-  /** Plusieurs rafraîchissements : l’ESP traite /cmd puis /capture avec un léger délai. */
   function schedulePreviewAfterChange(firstUrlHint) {
     clearPreviewTimers();
     var hint0 = firstUrlHint && String(firstUrlHint).length ? firstUrlHint : null;
     var delays = [220, 650, 1400];
     delays.forEach(function(ms, i) {
       var id = setTimeout(function() {
-        if (i === 0 && hint0) {
-          refreshCapturePreview(hint0);
-        } else {
-          refreshCapturePreview();
-        }
+        if (i === 0 && hint0) refreshCapturePreview(hint0);
+        else refreshCapturePreview();
         bustStreamIfLive();
         if (i === delays.length - 1) checkCaptureReachable();
       }, ms);
@@ -510,46 +683,45 @@
         if (!meta) return;
         var ok = r.headers.get('X-ESP-Reachable') === '1';
         if (ok) {
-          meta.textContent = 'Vue ESP · ' + new Date().toLocaleTimeString('fr-FR');
+          meta.textContent = 'ESP view · ' + new Date().toLocaleTimeString('en-US');
           meta.classList.remove('is-warn');
+          if (aiHealth) aiHealth.textContent = 'Good';
+          if (snapEl && isValidSnapDimensions(snapEl.naturalWidth, snapEl.naturalHeight)) {
+            setSnapVisualState('live');
+          }
         } else {
-          meta.textContent = '⚠ Pas de JPEG depuis l’ESP (image grise = secours Django). Vérifie IP, port 80, caméra.';
+          meta.textContent = 'No JPEG from ESP — check IP, port 80, and camera.';
           meta.classList.add('is-warn');
+          if (aiHealth) aiHealth.textContent = 'Degraded';
+          setSnapVisualState('empty');
         }
       })
       .catch(function() {});
   }
 
-  /** API POST /camera/settings/update/ — field / value alignés sur les paramètres ESP. */
   function updateSetting(field, value) {
     var body = { field: field, value: value };
     if (ipField && ipField.value.trim()) body.esp_ip = ipField.value.trim();
     return fetch(CAMERA_UPDATE_URL, {
       method: 'POST',
       credentials: 'same-origin',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-CSRFToken': csrftoken || ''
-      },
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrftoken || '' },
       body: JSON.stringify(body)
     })
       .then(function(r) {
-        return r.json().then(function(j) {
-          return { httpOk: r.ok, data: j };
-        }).catch(function() {
-          return { httpOk: r.ok, data: { db_ok: false, message: 'Réponse invalide' } };
-        });
+        return r.json().then(function(j) { return { httpOk: r.ok, data: j }; })
+          .catch(function() { return { httpOk: r.ok, data: { db_ok: false, message: 'Invalid response' } }; });
       })
       .then(function(res) { handleApiResponse(res.httpOk, res.data); })
       .catch(function() {
-        setBadge('Erreur réseau', false);
-        setStatus('Requête échouée (réseau ou CSRF).', false);
+        setBadge('Network error', false);
+        setStatus('Request failed (network or CSRF).', false);
       });
   }
 
   function handleApiResponse(httpOk, data) {
     if (!httpOk || !data || data.db_ok !== true) {
-      var msg = (data && data.message) || ('Erreur HTTP / validation.');
+      var msg = (data && data.message) || 'HTTP / validation error.';
       setBadge(msg, false);
       setStatus(msg, false);
       return;
@@ -557,11 +729,9 @@
     if (data.prefs) applyPrefsFromServer(data.prefs);
     if (typeof data.esp_ip_db === 'string' && ipField && data.esp_ip_db) ipField.value = data.esp_ip_db;
     syncCaptureOpenLink();
-
     var badgeOk = data.esp_ok === true ? true : null;
-    setBadge(data.message || (data.esp_ok ? 'Base OK + ESP OK' : 'Base OK — ESP ne répond pas (/cmd)'), badgeOk);
+    setBadge(data.message || (data.esp_ok ? 'Database OK + ESP OK' : 'Database OK — ESP not responding'), badgeOk);
     setStatus(data.message || '', data.esp_ok === true ? true : null);
-
     schedulePreviewAfterChange(data.capture_url || null);
   }
 
@@ -575,7 +745,6 @@
     return prefs;
   }
 
-  var btnSync = document.getElementById('fcSyncFull');
   if (btnSync) {
     btnSync.addEventListener('click', function() {
       var payload = { prefs: collectPrefsFromDom() };
@@ -584,36 +753,43 @@
       fetch(CAMERA_SYNC_URL, {
         method: 'POST',
         credentials: 'same-origin',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRFToken': csrftoken || ''
-        },
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrftoken || '' },
         body: JSON.stringify(payload)
       })
         .then(function(r) { return r.json(); })
         .then(function(data) {
           if (data.prefs) applyPrefsFromServer(data.prefs);
           if (data.esp_ip_db && ipField) ipField.value = data.esp_ip_db;
-          setStatus(data.message || 'Synchronisation envoyée.', data.esp_applied ? true : null);
-          setBadge(data.esp_applied ? 'Synchronisation ESP envoyée' : (data.message || '—'), data.esp_applied ? true : null);
+          setStatus(data.message || 'Sync sent.', data.esp_applied ? true : null);
+          setBadge(data.esp_applied ? 'ESP sync sent' : (data.message || '—'), data.esp_applied ? true : null);
           schedulePreviewAfterChange(data.capture_url || null);
         })
-        .catch(function() { setStatus('Échec synchronisation complète.', false); })
+        .catch(function() { setStatus('Full sync failed.', false); })
         .finally(function() { btnSync.disabled = false; });
     });
   }
 
   syncCaptureOpenLink();
+  updateTelemetry();
+  setSnapVisualState('loading');
+
   if (ipField) {
     ipField.addEventListener('input', function() { syncCaptureOpenLink(); });
     ipField.addEventListener('change', function() {
       syncCaptureOpenLink();
       refreshCapturePreview();
-      if (!ipField.value.trim() && statusEl) setStatus('Sans IP, les commandes ne partent pas vers la caméra.', false);
+      if (!ipField.value.trim() && statusEl) setStatus('No IP — commands will not reach the camera.', false);
     });
   }
   var capLink = document.getElementById('fcOpenCapture');
   if (capLink) capLink.addEventListener('click', function() { capLink.href = buildCaptureProxyUrl(); });
+
+  var roadConf = document.getElementById('road_live_conf');
+  if (roadConf && aiConf) {
+    roadConf.addEventListener('input', function() {
+      if (roadConf.value) aiConf.textContent = roadConf.value;
+    });
+  }
 
   fetch(STATE_URL, { credentials: 'same-origin' })
     .then(function(r) { return r.json(); })
@@ -622,7 +798,7 @@
       if (d.esp_ip && ipField) ipField.value = d.esp_ip;
       syncCaptureOpenLink();
       schedulePreviewAfterChange(null);
-      setBadge('État chargé depuis la base', null);
+      setBadge('State loaded from database', null);
     })
     .catch(function() { refreshCapturePreview(); checkCaptureReachable(); });
 
@@ -630,9 +806,9 @@
     var ipEl0 = document.getElementById('esp_ip');
     var has = root.getAttribute('data-has-host') === 'true';
     if (!ipEl0 || (!ipEl0.value.trim() && !has)) {
-      setStatus('Saisis l’IP ESP — les réglages seront enregistrés et envoyés via /cmd.', false);
+      setStatus('Enter ESP IP — settings will be saved and sent via /cmd.', false);
     } else {
-      setStatus('Prêt — chaque contrôle appelle l’API Django puis l’ESP.', null);
+      setStatus('Ready — each control calls the Django API then the ESP.', null);
     }
   }
 
@@ -644,6 +820,7 @@
     el.addEventListener('input', function() {
       var lab = document.querySelector('[data-fc-for="' + field + '"]');
       if (lab) lab.textContent = el.value;
+      if (field === 'quality') updateTelemetry();
       debouncedSend();
     });
   });
@@ -651,6 +828,7 @@
   document.querySelectorAll('select[data-fc-patch]').forEach(function(el) {
     el.addEventListener('change', function() {
       updateSetting(el.getAttribute('data-var'), parseInt(el.value, 10));
+      if (el.getAttribute('data-var') === 'framesize') updateTelemetry();
     });
   });
 

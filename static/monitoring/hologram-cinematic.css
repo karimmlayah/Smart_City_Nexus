@@ -1,0 +1,878 @@
+/* ============================================================
+   MedinaMind — Floating AR Smart City Hologram
+   ============================================================ */
+
+.holo-city-wrap {
+  --holo-pos-x: 0px;
+  --holo-pos-y: 12px;
+  --holo-scale: 0.9;
+  --holo-cyan: #00d5ff;
+  --holo-glow: rgba(0, 213, 255, 0.55);
+  --holo-glass: rgba(8, 22, 48, 0.72);
+  --holo-glass-border: rgba(0, 213, 255, 0.42);
+  width: min(940px, 96vw);
+  position: absolute;
+  bottom: 9%;
+  left: 50%;
+  transform: translateX(calc(-50% + var(--holo-pos-x)))
+    translateY(var(--holo-pos-y))
+    scale(var(--holo-scale));
+  transform-origin: center bottom;
+  z-index: 5;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.45s ease;
+}
+
+.holo-city-wrap.visible {
+  opacity: 1;
+}
+
+.holo-city-wrap.is-entering {
+  transform: translateX(calc(-50% + var(--holo-pos-x)))
+    translateY(calc(var(--holo-pos-y) + 10px))
+    scale(calc(var(--holo-scale) * 0.97));
+  transition: opacity 0.5s ease, transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.holo-city-wrap.visible.is-entering {
+  transform: translateX(calc(-50% + var(--holo-pos-x)))
+    translateY(var(--holo-pos-y))
+    scale(var(--holo-scale));
+}
+
+/* ── Scene: no box, open composition ── */
+.ar-hologram-scene {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  background: none;
+  border: none;
+  box-shadow: none;
+}
+
+/* Layer reveal / hide */
+.holo-layer {
+  opacity: 0;
+  transform: translateY(8px) scale(0.98);
+}
+
+.holo-city-wrap.visible .holo-layer {
+  opacity: 1;
+  transform: none;
+}
+
+.holo-city-wrap.is-revealing .holo-layer {
+  animation: holoLayerIn 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.holo-city-wrap.is-hiding .holo-layer {
+  animation: holoLayerOut 0.35s ease forwards;
+}
+
+.holo-city-wrap.is-revealing [data-layer="emitter"]  { animation-delay: 0s; }
+.holo-city-wrap.is-revealing [data-layer="city"]     { animation-delay: 0.12s; }
+.holo-city-wrap.is-revealing [data-layer="badge"]    { animation-delay: 0.08s; }
+.holo-city-wrap.is-revealing [data-layer="brand"]    { animation-delay: 0.05s; }
+.holo-city-wrap.is-revealing [data-layer="meta"]     { animation-delay: 0.05s; }
+.holo-city-wrap.is-revealing [data-layer="stat-l1"]  { animation-delay: 0.22s; }
+.holo-city-wrap.is-revealing [data-layer="stat-l2"]  { animation-delay: 0.30s; }
+.holo-city-wrap.is-revealing [data-layer="stat-l3"]  { animation-delay: 0.38s; }
+.holo-city-wrap.is-revealing [data-layer="stat-r1"]  { animation-delay: 0.22s; }
+.holo-city-wrap.is-revealing [data-layer="stat-r2"]  { animation-delay: 0.30s; }
+.holo-city-wrap.is-revealing [data-layer="stat-r3"]  { animation-delay: 0.38s; }
+.holo-city-wrap.is-revealing [data-layer="footer"]   { animation-delay: 0.45s; }
+
+@keyframes holoLayerIn {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.96);
+    filter: blur(2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+@keyframes holoLayerOut {
+  to {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.97);
+  }
+}
+
+/* ── Floating pills (top) ── */
+.holo-float {
+  position: absolute;
+  z-index: 12;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.38rem 0.85rem;
+  border-radius: 999px;
+  background: var(--holo-glass);
+  border: 1px solid var(--holo-glass-border);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow:
+    0 0 22px rgba(0, 213, 255, 0.18),
+    0 4px 16px rgba(0, 0, 0, 0.35);
+  font-size: 0.72rem;
+  color: #e8f4ff;
+  white-space: nowrap;
+}
+
+.holo-float--brand {
+  top: -0.2rem;
+  left: 0;
+}
+
+.holo-float--badge {
+  top: -0.55rem;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0.35rem 1rem;
+}
+
+.holo-city-wrap.is-revealing .holo-float--badge {
+  animation-name: holoBadgeIn;
+}
+
+@keyframes holoBadgeIn {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(14px) scale(0.96);
+    filter: blur(2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+.holo-float--meta {
+  top: -0.2rem;
+  right: 0;
+}
+
+.holo-float__text {
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-size: 0.62rem;
+  color: #fff;
+}
+
+.holo-live-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #00e396;
+  box-shadow: 0 0 10px rgba(0, 227, 150, 0.8);
+  animation: ar-pulse 2s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+.holo-module-badge {
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--holo-cyan);
+  text-shadow: 0 0 12px rgba(0, 213, 255, 0.5);
+}
+
+.holo-float--meta [data-holo="time"] {
+  color: var(--holo-cyan);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.holo-sep {
+  opacity: 0.4;
+}
+
+/* ── Radial composition ── */
+.hologram-composition {
+  display: grid;
+  grid-template-columns: minmax(128px, 148px) minmax(0, 1fr) minmax(128px, 148px);
+  align-items: center;
+  gap: 0.35rem;
+  width: 100%;
+  padding-top: 1.75rem;
+}
+
+.holo-wing {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  justify-content: center;
+}
+
+.hologram-core {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 320px;
+}
+
+/* Decorative arcs — no box */
+.holo-arc {
+  position: absolute;
+  width: 48px;
+  height: 48px;
+  border: 1px solid rgba(0, 213, 255, 0.18);
+  pointer-events: none;
+  z-index: 2;
+  opacity: 0.7;
+}
+
+.holo-arc--tl { top: 8%; left: 6%; border-right: none; border-bottom: none; border-radius: 8px 0 0 0; }
+.holo-arc--tr { top: 8%; right: 6%; border-left: none; border-bottom: none; border-radius: 0 8px 0 0; }
+.holo-arc--bl { bottom: 22%; left: 8%; border-right: none; border-top: none; border-radius: 0 0 0 8px; }
+.holo-arc--br { bottom: 22%; right: 8%; border-left: none; border-top: none; border-radius: 0 0 8px 0; }
+
+/* ── City stage ── */
+.hologram-stage {
+  position: relative;
+  width: 100%;
+  height: 300px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  box-shadow: none;
+  overflow: visible;
+  --px: 0px;
+  --py: 0px;
+}
+
+/* Soft radial backdrop — helps readability without a solid block */
+.hologram-stage__backdrop {
+  position: absolute;
+  inset: 0 4% 8%;
+  border-radius: 50%;
+  background: radial-gradient(
+    ellipse 85% 80% at 50% 55%,
+    rgba(4, 18, 42, 0.72) 0%,
+    rgba(4, 18, 42, 0.45) 45%,
+    rgba(4, 18, 42, 0.08) 72%,
+    transparent 88%
+  );
+  pointer-events: none;
+  z-index: 0;
+}
+
+.hologram-stage__aura {
+  position: absolute;
+  inset: 2% 8% 14%;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(0, 213, 255, 0.22) 0%,
+    rgba(0, 213, 255, 0.08) 45%,
+    transparent 72%
+  );
+  pointer-events: none;
+  z-index: 1;
+  animation: holoAuraPulse 4s ease-in-out infinite;
+}
+
+@keyframes holoAuraPulse {
+  0%, 100% { opacity: 0.7; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.03); }
+}
+
+.hologram-scanlines {
+  position: absolute;
+  inset: 8% 12% 20%;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 3px,
+    rgba(0, 213, 255, 0.018) 3px,
+    rgba(0, 213, 255, 0.018) 4px
+  );
+  pointer-events: none;
+  z-index: 8;
+  mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black 30%, transparent 75%);
+  -webkit-mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black 30%, transparent 75%);
+}
+
+.hologram-beam {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  width: 110px;
+  height: 68%;
+  margin-left: -55px;
+  background: linear-gradient(
+    180deg,
+    rgba(0, 213, 255, 0.38) 0%,
+    rgba(0, 213, 255, 0.14) 55%,
+    transparent 100%
+  );
+  clip-path: polygon(38% 100%, 62% 100%, 53% 0%, 47% 0%);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.holo-city-wrap.visible .hologram-beam {
+  opacity: 1;
+  animation: holoBeamPulse 3.5s ease-in-out infinite;
+}
+
+@keyframes holoBeamPulse {
+  0%, 100% { opacity: 0.65; }
+  50% { opacity: 1; }
+}
+
+.hologram-radar {
+  position: absolute;
+  inset: 8% 14% 22%;
+  border-radius: 50%;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 3;
+  opacity: 0.32;
+}
+
+.hologram-radar::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg,
+    rgba(0, 213, 255, 0.4) 22deg,
+    transparent 44deg
+  );
+  animation: holoRadarSweep 7s linear infinite;
+}
+
+@keyframes holoRadarSweep {
+  to { transform: rotate(360deg); }
+}
+
+.hologram-ring {
+  position: absolute;
+  left: 50%;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 213, 255, 0.2);
+  pointer-events: none;
+}
+
+.hologram-ring--1 {
+  width: 94%;
+  height: 34%;
+  bottom: 6%;
+  margin-left: -47%;
+  border-width: 1.5px;
+  border-color: rgba(0, 213, 255, 0.35);
+  animation: holoRingSpin 22s linear infinite;
+}
+
+.hologram-ring--2 {
+  width: 76%;
+  height: 26%;
+  bottom: 10%;
+  margin-left: -38%;
+  border-color: rgba(0, 213, 255, 0.22);
+  animation: holoRingSpin 30s linear infinite reverse;
+}
+
+@keyframes holoRingSpin {
+  from { transform: rotateX(68deg) rotateZ(0deg); }
+  to { transform: rotateX(68deg) rotateZ(360deg); }
+}
+
+/* ── Smart city SVG ── */
+.hologram-city {
+  position: relative;
+  width: 96%;
+  height: 88%;
+  z-index: 5;
+  transform: translate(var(--px), var(--py));
+  transition: transform 0.18s ease-out;
+}
+
+.hologram-city-svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  filter: drop-shadow(0 0 12px rgba(0, 213, 255, 0.25));
+}
+
+.holo-svg-buildings .holo-bld {
+  animation: holoBldPulse 4s ease-in-out infinite;
+}
+
+.holo-svg-buildings .holo-bld:nth-child(2) { animation-delay: 0.6s; }
+.holo-svg-buildings .holo-bld:nth-child(4) { animation-delay: 1.2s; }
+.holo-svg-buildings--front .holo-bld { animation-delay: 0.3s; }
+
+@keyframes holoBldPulse {
+  0%, 100% { opacity: 0.88; }
+  50% { opacity: 1; }
+}
+
+.holo-svg-tower {
+  animation: holoTowerGlow 3s ease-in-out infinite;
+}
+
+@keyframes holoTowerGlow {
+  0%, 100% { opacity: 0.92; }
+  50% { opacity: 1; }
+}
+
+.holo-svg-node {
+  animation: holoNodePulse 2.2s ease-in-out infinite;
+}
+
+.holo-svg-node:nth-child(2) { animation-delay: 0.5s; }
+.holo-svg-node:nth-child(3) { animation-delay: 1s; }
+.holo-svg-node:nth-child(4) { animation-delay: 1.5s; }
+
+.holo-svg-links {
+  animation: holoLinkFlow 4s linear infinite;
+}
+
+@keyframes holoLinkFlow {
+  to { stroke-dashoffset: -20; }
+}
+
+.hologram-road-network,
+.hologram-buildings {
+  display: none;
+}
+
+.hologram-center-label {
+  position: absolute;
+  bottom: -4px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--holo-cyan);
+  padding: 0.28rem 0.85rem;
+  border-radius: 999px;
+  border: 1px solid var(--holo-glass-border);
+  background: var(--holo-glass);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 0 16px rgba(0, 213, 255, 0.2);
+  text-shadow: 0 0 10px rgba(0, 213, 255, 0.5);
+}
+
+/* Module overlays */
+.hologram-module-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+
+.ar-hologram-scene[data-module="traffic"] .hologram-module-overlay--traffic { opacity: 1; }
+.ar-hologram-scene[data-module="energy"] .hologram-module-overlay--energy { opacity: 1; }
+.ar-hologram-scene[data-module="pollution"] .hologram-module-overlay--pollution { opacity: 1; }
+.ar-hologram-scene[data-module="security"] .hologram-module-overlay--security { opacity: 1; }
+
+.hologram-module-overlay--traffic {
+  background: repeating-linear-gradient(45deg, transparent, transparent 20px, rgba(0, 213, 255, 0.04) 20px, rgba(0, 213, 255, 0.04) 21px);
+}
+
+.hologram-module-overlay--energy {
+  background: repeating-linear-gradient(90deg, transparent, transparent 14px, rgba(255, 220, 80, 0.06) 14px, rgba(255, 220, 80, 0.06) 15px);
+}
+
+.hologram-module-overlay--pollution {
+  background:
+    radial-gradient(circle at 30% 35%, rgba(120, 255, 120, 0.08) 0 6px, transparent 7px),
+    radial-gradient(circle at 65% 30%, rgba(255, 200, 80, 0.06) 0 5px, transparent 6px);
+}
+
+.hologram-module-overlay--security {
+  background: repeating-conic-gradient(from 0deg at 50% 55%, transparent 0deg 28deg, rgba(0, 213, 255, 0.04) 28deg 29deg);
+}
+
+/* Particles & nodes */
+.hologram-particles {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 6;
+  overflow: hidden;
+}
+
+.hologram-particles span {
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--holo-cyan);
+  box-shadow: 0 0 8px var(--holo-glow);
+  bottom: 16%;
+  animation: holoParticleRise 5s ease-in infinite;
+  opacity: 0;
+}
+
+.hologram-particles span:nth-child(1) { left: 18%; animation-delay: 0s; }
+.hologram-particles span:nth-child(2) { left: 38%; animation-delay: 1s; }
+.hologram-particles span:nth-child(3) { left: 58%; animation-delay: 2s; }
+.hologram-particles span:nth-child(4) { left: 78%; animation-delay: 0.5s; }
+.hologram-particles span:nth-child(5) { left: 48%; animation-delay: 1.5s; }
+
+@keyframes holoParticleRise {
+  0% { transform: translateY(0); opacity: 0; }
+  20% { opacity: 0.8; }
+  80% { opacity: 0.3; }
+  100% { transform: translateY(-100px); opacity: 0; }
+}
+
+.hologram-data-nodes {
+  position: absolute;
+  inset: 0;
+  z-index: 7;
+  pointer-events: none;
+}
+
+.hologram-data-node {
+  position: absolute;
+  left: var(--nx);
+  top: var(--ny);
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--holo-cyan);
+  box-shadow: 0 0 12px var(--holo-glow);
+  animation: holoNodePulse 2.5s ease-in-out infinite;
+}
+
+.hologram-data-node::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 24px;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(0, 213, 255, 0.4), transparent);
+  transform: rotate(-20deg);
+  transform-origin: left center;
+}
+
+@keyframes holoNodePulse {
+  0%, 100% { opacity: 0.6; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.25); }
+}
+
+/* ── Projection emitter (bottom) ── */
+.holo-emitter {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  width: 200px;
+  height: 60px;
+  margin-left: -100px;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.holo-emitter__pulse {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  width: 140px;
+  height: 42px;
+  margin-left: -70px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(0, 213, 255, 0.45), rgba(0, 213, 255, 0.06));
+  animation: holoEmitterPulse 2.8s ease-in-out infinite;
+}
+
+.holo-emitter__ring {
+  position: absolute;
+  bottom: 4px;
+  left: 50%;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 213, 255, 0.25);
+  transform: translateX(-50%) rotateX(72deg);
+}
+
+.holo-emitter__ring--1 { width: 160px; height: 44px; margin-left: -80px; animation: holoEmitterSpin 18s linear infinite; }
+.holo-emitter__ring--2 { width: 120px; height: 32px; margin-left: -60px; border-color: rgba(0, 213, 255, 0.15); animation: holoEmitterSpin 26s linear infinite reverse; }
+.holo-emitter__ring--3 { width: 80px; height: 22px; margin-left: -40px; border-style: dashed; border-color: rgba(0, 213, 255, 0.12); animation: holoEmitterSpin 34s linear infinite; }
+
+@keyframes holoEmitterPulse {
+  0%, 100% { opacity: 0.6; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.06); }
+}
+
+@keyframes holoEmitterSpin {
+  to { transform: translateX(-50%) rotateX(72deg) rotateZ(360deg); }
+}
+
+/* ── Floating stat capsules ── */
+.hologram-stat-card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.52rem 0.72rem;
+  min-width: 118px;
+  border-radius: 999px;
+  background: var(--holo-glass);
+  border: 1px solid var(--holo-glass-border);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow:
+    0 0 22px rgba(0, 213, 255, 0.16),
+    0 4px 14px rgba(0, 0, 0, 0.3);
+  transition: border-color 0.35s ease, box-shadow 0.35s ease, transform 0.35s ease;
+}
+
+.holo-city-wrap.visible:not(.is-revealing):not(.is-hiding) .hologram-stat-card {
+  animation: holoCapsuleFloat 5s ease-in-out infinite;
+}
+
+.holo-wing--left .hologram-stat-card:nth-child(1) { animation-delay: 0s; }
+.holo-wing--left .hologram-stat-card:nth-child(2) { animation-delay: 0.8s; }
+.holo-wing--left .hologram-stat-card:nth-child(3) { animation-delay: 1.6s; }
+.holo-wing--right .hologram-stat-card:nth-child(1) { animation-delay: 0.4s; }
+.holo-wing--right .hologram-stat-card:nth-child(2) { animation-delay: 1.2s; }
+.holo-wing--right .hologram-stat-card:nth-child(3) { animation-delay: 2s; }
+
+@keyframes holoCapsuleFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+
+.hologram-stat-card__icon {
+  font-size: 0.95rem;
+  line-height: 1;
+  filter: drop-shadow(0 0 4px rgba(0, 213, 255, 0.4));
+  flex-shrink: 0;
+}
+
+.hologram-stat-card__body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.05rem;
+  min-width: 0;
+}
+
+.hologram-stat-card__label {
+  font-size: 0.56rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(200, 230, 255, 0.88);
+}
+
+.hologram-stat-card__val {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5), 0 0 10px rgba(0, 213, 255, 0.3);
+}
+
+.hologram-stat-card__connector {
+  position: absolute;
+  top: 50%;
+  right: -22px;
+  width: 28px;
+  height: 2px;
+  background: linear-gradient(90deg, rgba(0, 213, 255, 0.75), transparent);
+  box-shadow: 0 0 8px rgba(0, 213, 255, 0.45);
+  animation: holoConnectorGlow 2.5s ease-in-out infinite;
+}
+
+.hologram-stat-card__connector--right {
+  right: auto;
+  left: -18px;
+  background: linear-gradient(270deg, rgba(0, 213, 255, 0.5), transparent);
+}
+
+@keyframes holoConnectorGlow {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+
+.hologram-stat-card.active-module {
+  border-color: rgba(0, 213, 255, 0.55);
+  box-shadow: 0 0 24px rgba(0, 213, 255, 0.22);
+}
+
+.hologram-stat-card.holo-selected {
+  border-color: rgba(0, 213, 255, 0.75) !important;
+  box-shadow: 0 0 32px rgba(0, 213, 255, 0.35) !important;
+}
+
+.hologram-stat-card.val-updated,
+.holo-value.value-updated {
+  animation: holoValuePulse 0.55s ease;
+}
+
+@keyframes holoValuePulse {
+  0% {
+    color: var(--holo-cyan);
+    text-shadow: 0 0 16px rgba(0, 213, 255, 0.7);
+  }
+  100% {
+    color: inherit;
+    text-shadow: none;
+  }
+}
+
+/* Module stat highlights */
+.ar-hologram-scene[data-module="traffic"] .hologram-stat-card[data-metric="traffic"],
+.ar-hologram-scene[data-module="energy"] .hologram-stat-card[data-metric="energy"],
+.ar-hologram-scene[data-module="pollution"] .hologram-stat-card[data-metric="air-quality"],
+.ar-hologram-scene[data-module="security"] .hologram-stat-card[data-metric="safety"] {
+  border-color: rgba(0, 213, 255, 0.5);
+  box-shadow: 0 0 22px rgba(0, 213, 255, 0.2);
+}
+
+.ar-hologram-scene[data-module="traffic"] .holo-svg-roads { stroke: #38E8FF; stroke-opacity: 0.85; }
+
+.holo-info-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.32rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.65rem;
+  color: #dceeff;
+  background: var(--holo-glass);
+  border: 1px solid var(--holo-glass-border);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 0 16px rgba(0, 213, 255, 0.12);
+}
+
+.holo-info-chip strong {
+  color: #fff;
+  font-weight: 700;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+
+.holo-online {
+  color: #00e396 !important;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* ── Bottom info strip ── */
+.holo-info-strip {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.45rem;
+  margin-top: 0.2rem;
+}
+
+/* ── Responsive ── */
+@media (max-width: 780px) {
+  .holo-city-wrap {
+    width: min(96vw, 680px);
+    bottom: 7%;
+  }
+
+  .hologram-composition {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto;
+    gap: 0.5rem;
+    padding-top: 2rem;
+  }
+
+  .hologram-core {
+    order: -1;
+    min-height: 280px;
+  }
+
+  .hologram-stage {
+    height: 260px;
+  }
+
+  .holo-wing {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .hologram-stat-card {
+    flex: 1 1 calc(50% - 0.4rem);
+    min-width: 128px;
+  }
+
+  .hologram-stat-card__connector {
+    display: none;
+  }
+
+  .holo-float--brand,
+  .holo-float--meta {
+    position: relative;
+    top: auto;
+    left: auto;
+    right: auto;
+  }
+
+  .holo-float--badge {
+    position: relative;
+    top: auto;
+    left: auto;
+    transform: none;
+    margin: 0 auto;
+  }
+
+  .ar-hologram-scene {
+    gap: 0.5rem;
+  }
+
+  .holo-arc {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hologram-ring,
+  .hologram-radar::before,
+  .hologram-particles span,
+  .hologram-building,
+  .holo-svg-buildings .holo-bld,
+  .holo-svg-tower,
+  .holo-svg-node,
+  .hologram-data-node,
+  .hologram-stat-card,
+  .holo-emitter__ring,
+  .hologram-stage__aura {
+    animation: none !important;
+  }
+
+  .holo-layer {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+}
+
+.holo-chips-legacy {
+  display: none !important;
+}
+
+.ar-camera-stage:has(.holo-city-wrap.visible) .module-float-card {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(-50%) translateY(8px);
+}

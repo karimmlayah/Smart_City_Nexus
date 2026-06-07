@@ -1,0 +1,9 @@
+<div class="ps-field ps-field--full">
+  <div class="ps-field__check-row">
+    {{ field }}
+    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+  </div>
+  {% if field.errors %}
+    <ul class="ps-field__errors">{% for e in field.errors %}<li>{{ e }}</li>{% endfor %}</ul>
+  {% endif %}
+</div>

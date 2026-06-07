@@ -5,24 +5,24 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}Smart City — Surveillance{% endblock %}</title>
+  {% include "monitoring/partials/theme_boot_script.html" %}
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{% static 'monitoring/app.css' %}">
+  <link rel="stylesheet" href="{% static 'monitoring/theme-tokens.css' %}?v=4">
+  <link rel="stylesheet" href="{% static 'monitoring/theme-global.css' %}?v=1">
+  <link rel="stylesheet" href="{% static 'monitoring/ai-dashboard-modern.css' %}?v=8">
+  <link rel="stylesheet" href="{% static 'monitoring/theme-modules-light.css' %}?v=1">
+  <link rel="stylesheet" href="{% static 'monitoring/theme-light-overrides.css' %}?v=5">
+  <link rel="stylesheet" href="{% static 'monitoring/brand-logos.css' %}?v=3">
+  <link rel="stylesheet" href="{% static 'monitoring/ai_orb.css' %}?v=5">
   {% block extra_head %}{% endblock %}
 </head>
-<body class="{% block body_class %}cockpit{% endblock %}">
-  <aside class="rail" aria-label="Navigation principale">
-    <a href="{% url 'monitoring:ai_dashboard' %}" class="rail-link {% if request.resolver_match.url_name == 'ai_dashboard' or request.resolver_match.url_name == 'home' %}rail-link-active{% endif %}" title="Tableau de bord IA global"><span class="rail-icon" aria-hidden="true">📊</span><span class="rail-label">Tableau IA</span></a>
-    <a href="{% url 'monitoring:introduction' %}" class="rail-link {% if request.resolver_match.url_name == 'introduction' %}rail-link-active{% endif %}" title="MedinaMind — Introduction interactive"><span class="rail-icon" aria-hidden="true">🏙️</span><span class="rail-label">Introduction</span></a>
-    <a href="{% url 'monitoring:surveillance_dashboard' %}" class="rail-link {% if request.resolver_match.url_name == 'surveillance_dashboard' %}rail-link-active{% endif %}" title="Surveillance / fusion multi-capteurs"><span class="rail-icon" aria-hidden="true">▣</span><span class="rail-label">Surveillance</span></a>
-    <a href="{% url 'monitoring:fire_camera_detect' %}" class="rail-link {% if request.resolver_match.url_name == 'fire_camera_detect' %}rail-link-active{% endif %}" title="Détection feu et fumée (ONNX)"><span class="rail-icon" aria-hidden="true">🔥</span><span class="rail-label">Feu &amp; fumée</span></a>
-    <a href="{% url 'monitoring:camera_settings' %}" class="rail-link {% if request.resolver_match.url_name == 'camera_settings' or request.resolver_match.url_name == 'fire_camera_settings' %}rail-link-active{% endif %}" title="Réglages caméra ESP32"><span class="rail-icon" aria-hidden="true">📷</span><span class="rail-label">Caméra ESP32</span></a>
-    <a href="{% url 'monitoring:road_damage_test' %}" class="rail-link {% if request.resolver_match.url_name == 'road_damage_test' %}rail-link-active{% endif %}" title="Analyse IA des dégâts routiers"><span class="rail-icon" aria-hidden="true">🛣</span><span class="rail-label">Routes IA</span></a>
-    <a href="{% url 'monitoring:waste_street_detection' %}" class="rail-link {% if request.resolver_match.url_name == 'waste_street_detection' %}rail-link-active{% endif %}" title="Détection des déchets en rue"><span class="rail-icon" aria-hidden="true">♻</span><span class="rail-label">Déchets rue</span></a>
-    <a href="{% url 'monitoring:uav_dashboard' %}" class="rail-link {% if request.resolver_match.url_name == 'uav_dashboard' %}rail-link-active{% endif %}" title="Pilotage et suivi UAV"><span class="rail-icon" aria-hidden="true">🛰</span><span class="rail-label">UAV</span></a>
-    <a href="{% url 'monitoring:traffic_nexus_dashboard' %}" class="rail-link {% if request.resolver_match.url_name == 'traffic_nexus_dashboard' %}rail-link-active{% endif %}" title="Traffic Nexus — analyse trafic"><span class="rail-icon" aria-hidden="true">🚦</span><span class="rail-label">Traffic Nexus</span></a>
-    <a href="{% url 'monitoring:traffic_signal_control' %}" class="rail-link {% if request.resolver_match.url_name == 'traffic_signal_control' %}rail-link-active{% endif %}" title="Détection rouge / vert et commande ESP32"><span class="rail-icon" aria-hidden="true">🚥</span><span class="rail-label">Feux IA</span></a>
-    <a href="{% url 'monitoring:traffic_violation' %}" class="rail-link {% if request.resolver_match.url_name == 'traffic_violation' or request.resolver_match.url_name == 'traffic_violation_analyze' or request.resolver_match.url_name == 'violation_dashboard' %}rail-link-active{% endif %}" title="Violations au feu rouge"><span class="rail-icon" aria-hidden="true">🛑</span><span class="rail-label">Feu rouge</span></a>
-    <a href="/admin/" class="rail-link" title="Administration Django"><span class="rail-icon" aria-hidden="true">⚙</span><span class="rail-label">Administration</span></a>
-  </aside>
+<body class="{% block body_class %}cockpit mm-dash-body ai-dashboard-sc{% endblock %}">
+  {% block sidebar %}
+  {% include "monitoring/partials/ai_dashboard_sidebar.html" %}
+  {% endblock %}
   <div class="app-shell">
     {% if messages %}
       <ul class="messages messages-top">
@@ -31,8 +31,14 @@
         {% endfor %}
       </ul>
     {% endif %}
+    {% block topbar %}{% include "monitoring/partials/mm_topbar.html" %}{% endblock %}
     {% block content %}{% endblock %}
   </div>
+  {% include "monitoring/partials/ai_orb.html" %}
+  <script src="{% static 'monitoring/clap_detector.js' %}?v=5"></script>
+  <script src="{% static 'monitoring/ai_orb.js' %}?v=12"></script>
+  <script src="{% static 'monitoring/theme-toggle.js' %}?v=4"></script>
+  <script src="{% static 'monitoring/ai-dashboard-ui.js' %}?v=5"></script>
   {% block extra_js %}{% endblock %}
 </body>
 </html>

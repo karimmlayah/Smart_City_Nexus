@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="{% static 'monitoring/surveillance-dashboard.css' %}">
 {% endblock %}
 
-{% block body_class %}cockpit{% endblock %}
+{% block body_class %}cockpit mm-dash-body ai-dashboard-sc{% endblock %}
 
 {% block content %}
 <div
@@ -15,16 +15,17 @@
   class="jarvis-dashboard"
   data-frame-url="{{ fusion_live_frame_url|escape }}"
 >
-  <header class="jarvis-glass-panel jarvis-head">
+  <span class="jarvis-badge" id="jarvisThreatBadge" aria-live="polite" title="New threats" style="display:none;"></span>
+
+  <div class="jarvis-glass-panel jarvis-head jarvis-head--actions">
     <div class="jarvis-head-left">
       <div class="jarvis-brand">
         <span class="jarvis-brand-mark" aria-hidden="true">▣</span>
         <div>
-          <h1 class="jarvis-title">Surveillance AI</h1>
+          <h2 class="jarvis-title">Surveillance AI</h2>
           <p class="jarvis-sub">Live vision · threat correlation · biometric match</p>
         </div>
       </div>
-      <span class="jarvis-badge" id="jarvisThreatBadge" aria-live="polite" title="New threats"></span>
     </div>
     <div class="jarvis-head-actions">
       <button type="button" class="jarvis-icon-btn" id="jarvisSoundBtn" title="Alert tone" aria-label="Toggle alert tone">🔔</button>
@@ -33,7 +34,7 @@
       <button type="button" class="jarvis-btn jarvis-btn-primary" id="jarvisCamStart">Start camera</button>
       <button type="button" class="jarvis-btn jarvis-btn-ghost" id="jarvisCamStop" disabled>Stop</button>
     </div>
-  </header>
+  </div>
 
   <div class="jarvis-glass-panel jarvis-toolbar" aria-label="Model options">
     <div class="jarvis-toggles">

@@ -1,0 +1,662 @@
+/**
+ * MedinaMind — Light theme fixes (loaded last)
+ * Overrides legacy fusion_hub / ai_dashboard hardcoded dark surfaces.
+ */
+
+/* ── 1. Page shells — no black zones ─────────────────────────────────────── */
+html[data-theme="light"],
+html[data-theme="light"] body {
+  background: var(--bg-main) !important;
+  color: var(--text-primary) !important;
+}
+
+html[data-theme="light"] body.mm-home {
+  background: var(--bg-main) !important;
+  color: var(--text-primary) !important;
+}
+
+html[data-theme="light"] body.ai-dashboard-sc,
+html[data-theme="light"] body.ai-dashboard-sc.fusion-hub-sc,
+html[data-theme="light"] body.fusion-hub-sc {
+  background: var(--bg-main) !important;
+  color: var(--text-primary) !important;
+}
+
+html[data-theme="light"] body.ai-dashboard-sc .app-shell,
+html[data-theme="light"] body.ai-dashboard-sc.fusion-hub-sc .app-shell,
+html[data-theme="light"] body.fusion-hub-sc .app-shell {
+  background: var(--bg-page-gradient) !important;
+  background-size: auto, auto, 42px 42px, 42px 42px, auto !important;
+  color: var(--text-primary) !important;
+}
+
+/* ── 2. Fusion Hub / dashboard root tokens ───────────────────────────────── */
+html[data-theme="light"] body.fusion-hub-sc .fh-root,
+html[data-theme="light"] .fh-root.ai-dash-root,
+html[data-theme="light"] #aiDashRoot {
+  --fh-bg0: var(--bg-main);
+  --fh-bg1: var(--bg-secondary);
+  --fh-bg2: var(--accent-blue-soft);
+  --fh-glass: var(--bg-card);
+  --fh-border: var(--border-soft);
+  --fh-cyan: var(--accent-cyan-bright);
+  --fh-text: var(--text-primary);
+  --fh-muted: var(--text-muted);
+  --color-bg: var(--bg-main);
+  --color-surface: var(--bg-secondary);
+  --color-surface-elevated: var(--bg-card);
+  --ad-glass: var(--bg-card);
+  --ad-border: var(--border-soft);
+  --ad-text: var(--text-primary);
+  --ad-muted: var(--text-muted);
+  --ad-shadow: var(--shadow-soft);
+  background: transparent !important;
+  color: var(--text-primary) !important;
+}
+
+html[data-theme="light"] body.fusion-hub-sc .fh-glass,
+html[data-theme="light"] .fh-glass.mm-topbar,
+html[data-theme="light"] .ai-dash-header {
+  background: var(--bg-navbar) !important;
+  border: 1px solid var(--border-soft) !important;
+  border-bottom-color: var(--border-strong) !important;
+  box-shadow: var(--shadow-soft) !important;
+  color: var(--text-primary) !important;
+}
+
+/* ── 3. Navbar / topbar ──────────────────────────────────────────────────── */
+html[data-theme="light"] .mm-home-nav {
+  background: var(--bg-navbar) !important;
+  border-bottom: 1px solid var(--border-strong) !important;
+  box-shadow: 0 4px 18px rgba(15, 23, 42, 0.08) !important;
+  color: var(--text-primary) !important;
+}
+
+html[data-theme="light"] .mm-home-nav__brand,
+html[data-theme="light"] .mm-home-nav__title {
+  color: var(--text-primary) !important;
+}
+
+html[data-theme="light"] .mm-topbar__title,
+html[data-theme="light"] .mm-topbar__subtitle,
+html[data-theme="light"] .mm-topbar__eyebrow {
+  color: var(--text-primary) !important;
+}
+
+html[data-theme="light"] .mm-topbar__subtitle {
+  color: var(--text-secondary) !important;
+}
+
+html[data-theme="light"] .mm-topbar__eyebrow {
+  color: var(--accent-cyan) !important;
+}
+
+html[data-theme="light"] .mm-topbar-badge {
+  background: var(--accent-blue-soft) !important;
+  border-color: var(--border-soft) !important;
+  color: var(--text-secondary) !important;
+}
+
+html[data-theme="light"] .mm-topbar-badge--live {
+  background: rgba(5, 150, 105, 0.1) !important;
+  border-color: rgba(5, 150, 105, 0.25) !important;
+  color: var(--success) !important;
+}
+
+html[data-theme="light"] .mm-topbar-badge--clock {
+  background: rgba(6, 182, 212, 0.1) !important;
+  border-color: var(--border-strong) !important;
+  color: var(--accent-cyan) !important;
+}
+
+/* ── 4. Sidebar ──────────────────────────────────────────────────────────── */
+html[data-theme="light"] .mm-sidebar {
+  background: var(--bg-sidebar) !important;
+  border-right: 1px solid var(--border-strong) !important;
+  box-shadow: 4px 0 28px rgba(15, 23, 42, 0.1) !important;
+}
+
+html[data-theme="light"] .mm-sidebar__brand-name,
+html[data-theme="light"] .mm-sidebar__brand-badge {
+  color: var(--text-primary) !important;
+}
+
+html[data-theme="light"] .mm-sidebar__group-label {
+  color: var(--text-soft) !important;
+}
+
+html[data-theme="light"] .mm-nav-item {
+  color: var(--text-secondary) !important;
+  font-weight: 500;
+}
+
+html[data-theme="light"] .mm-nav-item__icon {
+  color: var(--accent-blue) !important;
+  opacity: 0.82;
+}
+
+html[data-theme="light"] .mm-nav-item:hover {
+  color: var(--accent-blue) !important;
+  background: rgba(29, 78, 216, 0.1) !important;
+  border-color: var(--border-soft) !important;
+  box-shadow: none !important;
+}
+
+html[data-theme="light"] .mm-nav-item--active {
+  color: var(--accent-blue) !important;
+  background: linear-gradient(135deg, rgba(6, 182, 212, 0.22), rgba(29, 78, 216, 0.16)) !important;
+  border-color: var(--border-strong) !important;
+  box-shadow: var(--shadow-glow) !important;
+}
+
+html[data-theme="light"] .mm-nav-item--active .mm-nav-item__icon {
+  color: var(--accent-cyan) !important;
+  opacity: 1;
+}
+
+html[data-theme="light"] .mm-status-card {
+  background: var(--bg-card) !important;
+  border-color: var(--border-soft) !important;
+}
+
+html[data-theme="light"] .mm-status-card__title,
+html[data-theme="light"] .mm-status-card__row {
+  color: var(--text-muted) !important;
+}
+
+html[data-theme="light"] .mm-status-card__row strong {
+  color: var(--text-primary) !important;
+}
+
+/* ── 5. Hero sections ────────────────────────────────────────────────────── */
+html[data-theme="light"] .mm-home-hero__title,
+html[data-theme="light"] .mm-hero__title,
+html[data-theme="light"] .ai-dash-hero-title {
+  background: var(--hero-title-grad) !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  color: transparent !important;
+  filter: none !important;
+}
+
+html[data-theme="light"] .mm-home-hero__subtitle,
+html[data-theme="light"] .mm-home-hero__desc,
+html[data-theme="light"] .mm-hero__subtitle,
+html[data-theme="light"] .ai-dash-sub {
+  color: var(--text-secondary) !important;
+}
+
+html[data-theme="light"] .mm-home-hero__eyebrow,
+html[data-theme="light"] .mm-hero__eyebrow,
+html[data-theme="light"] .ai-globe-hero__eyebrow {
+  color: var(--accent-cyan) !important;
+}
+
+html[data-theme="light"] .ai-globe-hero,
+html[data-theme="light"] .mm-hero {
+  background: var(--hero-bg) !important;
+  border-color: var(--border-strong) !important;
+  box-shadow:
+    var(--shadow-soft),
+    0 0 32px rgba(6, 182, 212, 0.12) !important;
+}
+
+html[data-theme="light"] .ai-globe-hero__glow,
+html[data-theme="light"] .mm-hero__glow {
+  background:
+    radial-gradient(ellipse 60% 80% at 75% 50%, rgba(6, 182, 212, 0.11), transparent 60%),
+    radial-gradient(ellipse 40% 60% at 20% 80%, rgba(29, 78, 216, 0.08), transparent 55%) !important;
+}
+
+html[data-theme="light"] .ai-globe-chip,
+html[data-theme="light"] .mm-hero__tag {
+  background: rgba(6, 182, 212, 0.1) !important;
+  border: 1px solid rgba(6, 182, 212, 0.25) !important;
+  color: #0369a1 !important;
+}
+
+html[data-theme="light"] .ai-meta-hint,
+html[data-theme="light"] .mm-hero__caption,
+html[data-theme="light"] .mm-hero__meta {
+  color: var(--text-muted) !important;
+}
+
+/* ── 6. Cards / panels / KPIs ────────────────────────────────────────────── */
+html[data-theme="light"] .mm-home-card,
+html[data-theme="light"] .mm-home-module,
+html[data-theme="light"] .mm-home-stat,
+html[data-theme="light"] .sch-data-card,
+html[data-theme="light"] .mm-home-hero__float-card,
+html[data-theme="light"] .ai-panel,
+html[data-theme="light"] .mm-panel,
+html[data-theme="light"] .ai-kpi-card,
+html[data-theme="light"] .mm-kpi-grid .ai-kpi-card {
+  background: var(--bg-card) !important;
+  color: var(--text-primary) !important;
+  border: 1px solid var(--border-soft) !important;
+  box-shadow: var(--shadow-soft) !important;
+}
+
+html[data-theme="light"] .mm-home-card:hover,
+html[data-theme="light"] .mm-home-module:hover,
+html[data-theme="light"] .mm-home-stat:hover {
+  background: var(--bg-card-hover) !important;
+  border-color: var(--border-strong) !important;
+  box-shadow: var(--shadow-glow) !important;
+}
+
+html[data-theme="light"] .mm-home-card__title,
+html[data-theme="light"] .mm-home-section__title,
+html[data-theme="light"] .mm-home-module__label,
+html[data-theme="light"] .mm-home-cta__title {
+  color: var(--text-primary) !important;
+}
+
+html[data-theme="light"] .mm-home-card__text,
+html[data-theme="light"] .mm-home-module__hint,
+html[data-theme="light"] .mm-home-cta__text {
+  color: var(--text-secondary) !important;
+}
+
+html[data-theme="light"] .mm-home-footer,
+html[data-theme="light"] .mm-home-stat__label {
+  color: var(--text-muted) !important;
+}
+
+html[data-theme="light"] .mm-home-hero__viz {
+  filter: drop-shadow(0 0 28px rgba(6, 182, 212, 0.12));
+}
+
+html[data-theme="light"] .sch-data-card {
+  background: linear-gradient(145deg, rgba(224, 239, 249, 0.92) 0%, rgba(198, 226, 242, 0.85) 100%) !important;
+  border-color: rgba(6, 182, 212, 0.35) !important;
+  box-shadow: var(--shadow-soft), 0 0 20px rgba(124, 58, 237, 0.08) !important;
+}
+
+html[data-theme="light"] .sch-data-card__title {
+  color: var(--text-primary) !important;
+}
+
+html[data-theme="light"] .sch-data-card__desc {
+  color: var(--text-secondary) !important;
+}
+
+html[data-theme="light"] .sch-health-value,
+html[data-theme="light"] .sch-data-card__meta {
+  color: #0369a1 !important;
+}
+
+html[data-theme="light"] .mm-home-footer {
+  border-top-color: var(--border-soft) !important;
+}
+
+html[data-theme="light"] .mm-team-section {
+  background: linear-gradient(165deg, rgba(224, 239, 249, 0.95) 0%, rgba(198, 226, 242, 0.88) 100%) !important;
+  border-color: var(--border-soft) !important;
+  box-shadow: var(--shadow-soft) !important;
+}
+
+html[data-theme="light"] .mm-team-section__title {
+  color: var(--text-primary) !important;
+}
+
+html[data-theme="light"] .mm-team-section__subtitle {
+  color: var(--text-secondary) !important;
+}
+
+html[data-theme="light"] .mm-team-card__name {
+  color: #0369a1 !important;
+}
+
+html[data-theme="light"] .mm-team-card__photo-wrap {
+  border-color: rgba(6, 182, 212, 0.35);
+  background: rgba(255, 255, 255, 0.85);
+}
+
+html[data-theme="light"] .mm-team-card:hover {
+  border-color: rgba(6, 182, 212, 0.4) !important;
+  box-shadow: var(--shadow-glow) !important;
+}
+
+html[data-theme="light"] .mm-home-cta {
+  background: linear-gradient(135deg, rgba(222, 239, 249, 0.94), rgba(198, 226, 242, 0.9)) !important;
+  border-color: var(--border-strong) !important;
+  box-shadow: var(--shadow-soft) !important;
+}
+
+html[data-theme="light"] .ai-kpi-label,
+html[data-theme="light"] .mm-panel__kicker {
+  color: var(--text-muted) !important;
+}
+
+html[data-theme="light"] .ai-kpi-value,
+html[data-theme="light"] .mm-panel__title {
+  color: var(--text-primary) !important;
+}
+
+html[data-theme="light"] .ai-kpi-hint,
+html[data-theme="light"] .ai-kpi-trend {
+  color: var(--text-secondary) !important;
+}
+
+/* ── 7. Toolbar / forms ──────────────────────────────────────────────────── */
+html[data-theme="light"] .mm-toolbar,
+html[data-theme="light"] .ai-dash-toolbar {
+  background: var(--bg-card) !important;
+  border-color: var(--border-soft) !important;
+  box-shadow: var(--shadow-soft) !important;
+}
+
+html[data-theme="light"] .mm-field select,
+html[data-theme="light"] .mm-field input[type="date"],
+html[data-theme="light"] .ai-dash-toolbar select,
+html[data-theme="light"] .ai-dash-toolbar input[type="date"],
+html[data-theme="light"] .ai-dash-toolbar input[type="text"] {
+  background: var(--input-bg) !important;
+  color: var(--text-primary) !important;
+  border: 1px solid var(--border-soft) !important;
+}
+
+html[data-theme="light"] .mm-field label,
+html[data-theme="light"] .ai-dash-toolbar label {
+  color: var(--text-muted) !important;
+}
+
+html[data-theme="light"] .ai-btn,
+html[data-theme="light"] .mm-topbar-btn:not(.mm-topbar-btn--primary) {
+  background: var(--bg-card) !important;
+  color: var(--text-secondary) !important;
+  border-color: var(--border-soft) !important;
+}
+
+html[data-theme="light"] .ai-btn:hover,
+html[data-theme="light"] .mm-topbar-btn:not(.mm-topbar-btn--primary):hover {
+  background: var(--bg-card-hover) !important;
+  color: var(--accent-blue) !important;
+  border-color: var(--border-strong) !important;
+}
+
+html[data-theme="light"] .ai-btn--primary,
+html[data-theme="light"] .mm-topbar-btn--primary,
+html[data-theme="light"] .mm-home-btn--primary {
+  background: var(--btn-grad) !important;
+  color: #fff !important;
+  border-color: rgba(8, 145, 178, 0.35) !important;
+}
+
+html[data-theme="light"] .ai-btn--primary:hover,
+html[data-theme="light"] .mm-topbar-btn--primary:hover,
+html[data-theme="light"] .mm-home-btn--primary:hover {
+  box-shadow: 0 0 32px rgba(6, 182, 212, 0.28) !important;
+  filter: brightness(1.04);
+}
+
+html[data-theme="light"] .mm-home-btn--ghost {
+  background: var(--bg-card) !important;
+  border-color: var(--border-soft) !important;
+  color: var(--text-secondary) !important;
+}
+
+html[data-theme="light"] .mm-home-nav__link {
+  color: var(--text-muted) !important;
+}
+
+html[data-theme="light"] .mm-home-nav__link:hover,
+html[data-theme="light"] .mm-home-nav__link.is-active {
+  color: var(--accent-blue) !important;
+  background: var(--accent-blue-soft) !important;
+  border-color: var(--border-soft) !important;
+}
+
+/* ── 8. Tables ───────────────────────────────────────────────────────────── */
+html[data-theme="light"] .mm-table thead {
+  background: var(--bg-card-hover) !important;
+}
+
+html[data-theme="light"] .mm-table thead th {
+  color: var(--text-muted) !important;
+  border-bottom-color: var(--border-soft) !important;
+}
+
+html[data-theme="light"] .mm-table tbody td {
+  color: var(--text-secondary) !important;
+  border-bottom-color: var(--border-faint) !important;
+}
+
+html[data-theme="light"] .mm-table tbody tr:hover {
+  background: rgba(29, 78, 216, 0.08) !important;
+}
+
+html[data-theme="light"] .ai-table-wrap,
+html[data-theme="light"] .mm-table-wrap {
+  background: var(--bg-card) !important;
+}
+
+/* ── 9. Timeline / activity ──────────────────────────────────────────────── */
+html[data-theme="light"] .mm-timeline::before {
+  background: linear-gradient(180deg, var(--accent-cyan-bright), rgba(29, 78, 216, 0.22), transparent) !important;
+  opacity: 0.55 !important;
+}
+
+html[data-theme="light"] .mm-timeline-item {
+  background: var(--bg-card) !important;
+  border-color: var(--border-soft) !important;
+}
+
+html[data-theme="light"] .mm-timeline-item:hover {
+  background: var(--bg-card-hover) !important;
+  border-color: var(--border-strong) !important;
+}
+
+html[data-theme="light"] .mm-timeline-item__time {
+  color: var(--text-muted) !important;
+}
+
+html[data-theme="light"] .mm-timeline-item__msg {
+  color: var(--text-secondary) !important;
+}
+
+/* ── 10. Charts ──────────────────────────────────────────────────────────── */
+html[data-theme="light"] .mm-chart-wrap,
+html[data-theme="light"] .ai-chart-wrap {
+  background: transparent !important;
+}
+
+/* ── 11. Theme toggle ────────────────────────────────────────────────────── */
+html[data-theme="light"] .mm-theme-toggle {
+  background: var(--accent-blue-soft) !important;
+  border-color: var(--border-soft) !important;
+  color: var(--accent-cyan) !important;
+}
+
+html[data-theme="light"] .mm-theme-toggle:hover {
+  background: rgba(6, 182, 212, 0.15) !important;
+  border-color: var(--border-strong) !important;
+  box-shadow: var(--shadow-glow) !important;
+}
+
+/* ── 12. Road damage / legacy scoped themes on dashboard ─────────────────── */
+html[data-theme="light"] body.fusion-hub-sc.road-damage-sc {
+  --rd-bg: var(--bg-main);
+  --rd-card: var(--bg-card);
+  --rd-card-border: var(--border-soft);
+  --rd-text: var(--text-primary);
+  --rd-muted: var(--text-muted);
+  --navy: var(--bg-main);
+  --card: var(--bg-card);
+  --text: var(--text-primary);
+  --muted: var(--text-muted);
+}
+
+html[data-theme="light"] body.fusion-hub-sc.road-damage-sc .ai-dash {
+  color: var(--text-primary) !important;
+}
+
+/* ── 13. Chatbot dock ────────────────────────────────────────────────────── */
+html[data-theme="light"] .ai-chatbot-dock {
+  --sc-bg-deep: var(--bg-main);
+  --sc-bg-mid: var(--bg-secondary);
+  --sc-bg-card: var(--bg-card);
+  --sc-text: var(--text-primary);
+  --sc-muted: var(--text-muted);
+  --sc-user-bubble: var(--accent-blue-soft);
+  --sc-assistant-bubble: var(--bg-card-hover);
+}
+
+html[data-theme="light"] .ai-chatbot-dock__panel {
+  background: var(--bg-card) !important;
+  border-color: var(--border-soft) !important;
+  box-shadow: var(--shadow-soft) !important;
+  color: var(--text-primary) !important;
+}
+
+html[data-theme="light"] .ai-chatbot-dock__head {
+  background: linear-gradient(180deg, rgba(6, 182, 212, 0.08) 0%, transparent 100%) !important;
+  border-bottom-color: var(--border-soft) !important;
+}
+
+html[data-theme="light"] .ai-chatbot-dock__head-icon {
+  background: var(--accent-blue-soft) !important;
+  border-color: var(--border-soft) !important;
+}
+
+html[data-theme="light"] .ai-chatbot-dock__brand,
+html[data-theme="light"] .ai-chatbot-dock__title {
+  color: var(--text-primary) !important;
+}
+
+html[data-theme="light"] .ai-chatbot-dock__subtitle {
+  color: var(--text-muted) !important;
+}
+
+html[data-theme="light"] .ai-chatbot-dock__messages {
+  background: transparent !important;
+}
+
+html[data-theme="light"] .ai-chatbot-dock__composer,
+html[data-theme="light"] .ai-chatbot-dock__input {
+  background: var(--input-bg) !important;
+  color: var(--text-primary) !important;
+  border-color: var(--border-soft) !important;
+}
+
+html[data-theme="light"] .ai-chatbot-dock__launcher {
+  background: var(--btn-grad) !important;
+  color: #fff !important;
+  box-shadow: var(--shadow-glow) !important;
+}
+
+/* ── 14. Introduction / AR HUD (About Us) ─────────────────────────────────── */
+html[data-theme="light"] body.ar-page {
+  background: var(--bg-main) !important;
+  color: var(--text-primary) !important;
+}
+
+html[data-theme="light"] body.ar-page .app-shell {
+  background: var(--bg-page-gradient) !important;
+  background-size: auto, auto, 42px 42px, 42px 42px, auto !important;
+}
+
+html[data-theme="light"] .ar-hud-root,
+html[data-theme="light"] .ar-layout {
+  color: var(--text-primary) !important;
+}
+
+html[data-theme="light"] .mm-ar-card,
+html[data-theme="light"] .ar-left-panel,
+html[data-theme="light"] .ar-right-panel,
+html[data-theme="light"] .hud-panel,
+html[data-theme="light"] .ar-center-panel {
+  background: var(--bg-card) !important;
+  border-color: var(--border-soft) !important;
+  box-shadow: var(--shadow-card) !important;
+  color: var(--text-primary) !important;
+}
+
+html[data-theme="light"] .hud-brand,
+html[data-theme="light"] .hud-panel-title,
+html[data-theme="light"] .hud-mod-name,
+html[data-theme="light"] .ar-stat-value {
+  color: var(--text-primary) !important;
+}
+
+html[data-theme="light"] .hud-tag,
+html[data-theme="light"] .ar-live-data-bar__label,
+html[data-theme="light"] .ar-stat-label,
+html[data-theme="light"] .hud-module {
+  color: var(--text-secondary) !important;
+}
+
+html[data-theme="light"] .hud-module.active,
+html[data-theme="light"] .hud-module:hover {
+  background: color-mix(in srgb, var(--accent-cyan) 12%, transparent) !important;
+  border-color: var(--border-strong) !important;
+  color: var(--accent-blue) !important;
+}
+
+html[data-theme="light"] .ar-live-badge {
+  background: rgba(0, 166, 118, 0.12) !important;
+  border-color: rgba(0, 166, 118, 0.28) !important;
+  color: var(--accent-green) !important;
+}
+
+html[data-theme="light"] .holo-city-wrap,
+html[data-theme="light"] .ar-hologram-scene {
+  filter: drop-shadow(0 8px 24px rgba(0, 174, 218, 0.18));
+}
+
+html[data-theme="light"] .holo-stat-card,
+html[data-theme="light"] .holo-badge,
+html[data-theme="light"] .holo-meta-chip {
+  background: var(--holo-bg) !important;
+  border-color: var(--border-strong) !important;
+  color: var(--text-primary) !important;
+  box-shadow: var(--holo-glow) !important;
+}
+
+/* ── 15. Homepage hologram ───────────────────────────────────────────────── */
+html[data-theme="light"] body.mm-home::before {
+  background: var(--bg-page-gradient) !important;
+  background-size: auto, auto, 42px 42px, 42px 42px, auto !important;
+}
+
+html[data-theme="light"] .mm-home-hero__viz svg line,
+html[data-theme="light"] .mm-home-hero__viz svg path,
+html[data-theme="light"] .mm-home-hero__viz svg polyline,
+html[data-theme="light"] .sch-holo svg * {
+  stroke: var(--holo-line) !important;
+}
+
+html[data-theme="light"] .mm-home-hero__viz svg text {
+  fill: var(--holo-text) !important;
+}
+
+/* ── 16. Legacy app.css surfaces ─────────────────────────────────────────── */
+html[data-theme="light"] .glass,
+html[data-theme="light"] .card,
+html[data-theme="light"] .panel {
+  background: var(--bg-card) !important;
+  border-color: var(--border-soft) !important;
+  color: var(--text-primary) !important;
+}
+
+html[data-theme="light"] body.cockpit {
+  background: var(--bg-main) !important;
+  color: var(--text-primary) !important;
+}
+
+html[data-theme="light"] .rail {
+  background: var(--bg-sidebar) !important;
+  border-right-color: var(--border-soft) !important;
+}
+
+html[data-theme="light"] .rail-link {
+  color: var(--text-secondary) !important;
+}
+
+html[data-theme="light"] .rail-link:hover,
+html[data-theme="light"] .rail-link.active {
+  color: var(--accent-blue) !important;
+  background: var(--accent-blue-soft) !important;
+}

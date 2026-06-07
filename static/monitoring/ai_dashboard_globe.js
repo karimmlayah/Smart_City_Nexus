@@ -99,6 +99,60 @@
     );
     scene.add(stars);
 
+    /* Holographic city data nodes orbiting the globe */
+    var nodeCount = 48;
+    var nodeGeo = new THREE.BufferGeometry();
+    var nodePos = new Float32Array(nodeCount * 3);
+    var nodeColors = new Float32Array(nodeCount * 3);
+    for (var n = 0; n < nodeCount; n++) {
+      var nr = 1.18 + Math.random() * 0.35;
+      var nu = Math.random();
+      var nv = Math.random();
+      var nth = nu * Math.PI * 2;
+      var nph = Math.acos(2 * nv - 1);
+      nodePos[n * 3] = nr * Math.sin(nph) * Math.cos(nth);
+      nodePos[n * 3 + 1] = nr * Math.sin(nph) * Math.sin(nth);
+      nodePos[n * 3 + 2] = nr * Math.cos(nph);
+      var cyan = n % 3 === 0;
+      nodeColors[n * 3] = cyan ? 0 : 0.15;
+      nodeColors[n * 3 + 1] = cyan ? 0.84 : 0.39;
+      nodeColors[n * 3 + 2] = cyan ? 1 : 0.92;
+    }
+    nodeGeo.setAttribute("position", new THREE.BufferAttribute(nodePos, 3));
+    nodeGeo.setAttribute("color", new THREE.BufferAttribute(nodeColors, 3));
+    var dataNodes = new THREE.Points(
+      nodeGeo,
+      new THREE.PointsMaterial({
+        size: 0.055,
+        vertexColors: true,
+        transparent: true,
+        opacity: 0.88,
+        sizeAttenuation: true,
+        depthWrite: false,
+      })
+    );
+    earthGroup.add(dataNodes);
+
+    /* Wireframe city grid ring */
+    var gridRing = new THREE.Mesh(
+      new THREE.TorusGeometry(1.22, 0.004, 8, 96),
+      new THREE.MeshBasicMaterial({
+        color: 0x00d5ff,
+        transparent: true,
+        opacity: 0.35,
+        depthWrite: false,
+      })
+    );
+    gridRing.rotation.x = Math.PI * 0.42;
+    earthGroup.add(gridRing);
+
+    var gridRing2 = gridRing.clone();
+    gridRing2.rotation.x = Math.PI * 0.62;
+    gridRing2.rotation.z = Math.PI * 0.25;
+    gridRing2.material = gridRing.material.clone();
+    gridRing2.material.opacity = 0.2;
+    earthGroup.add(gridRing2);
+
     var texBase = "https://threejs.org/examples/textures/planets/earth_atmos_2048.jpg";
     var loader = new THREE.TextureLoader();
     loader.setCrossOrigin("anonymous");
@@ -163,6 +217,9 @@
 
       earthMesh.rotation.y += spin;
       stars.rotation.y += spin * 0.08;
+      dataNodes.rotation.y += spin * 1.4;
+      gridRing.rotation.z += spin * 0.6;
+      gridRing2.rotation.z -= spin * 0.45;
 
       mouse.x += (mouse.tx - mouse.x) * 0.055;
       mouse.y += (mouse.ty - mouse.y) * 0.055;
@@ -197,6 +254,7 @@
         rimGeo.dispose();
         rimMat.dispose();
         starGeo.dispose();
+        nodeGeo.dispose();
       },
       { once: true }
     );

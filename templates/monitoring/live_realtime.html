@@ -5,19 +5,6 @@
 
 {% block content %}
 <div class="live-rt-wrap">
-  <header class="live-rt-header glass">
-    <div class="cockpit-brand">
-      <span class="cockpit-logo">◎</span>
-      <div>
-        <h1 class="cockpit-title">Flux temps réel</h1>
-        <p class="cockpit-sub">Chaque image passe par <strong>{{ yolo_model_name }}</strong> (YOLO + suivi)</p>
-      </div>
-    </div>
-    <div class="live-rt-header-actions">
-      <a href="{% url 'monitoring:dashboard' %}{% if active_source %}?source={{ active_source.pk }}{% endif %}" class="btn-ghost-xl">Tableau de bord</a>
-    </div>
-  </header>
-
   <div class="live-rt-body">
     <aside class="glass live-rt-sources">
       <h2 class="panel-title">Source</h2>

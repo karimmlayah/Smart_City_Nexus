@@ -302,6 +302,13 @@ body.fusion-hub-sc.road-damage-sc.fc-camera-page .fc-camera-dashboard {
 /* ——— Réglages caméra : thème noir cockpit (rail / app.css) ——— */
 body.fc-camera-page .app-shell {
   padding: 0.5rem 0.65rem 0.65rem 0.5rem;
+  width: 100%;
+  max-width: none;
+}
+
+body.fc-camera-page .fc-camera-dashboard {
+  width: 100%;
+  max-width: none;
 }
 
 .fc-camera-dashboard {
@@ -523,6 +530,8 @@ body.fc-camera-page .app-shell {
   border-radius: var(--radius-sm);
   border: 1px solid var(--border);
   background: #000;
+  object-fit: contain;
+  max-height: min(36vh, 280px);
 }
 
 .fc-stream-wrap {

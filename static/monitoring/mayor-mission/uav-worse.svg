@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 480">
+  <rect width="800" height="480" fill="#0a1018"/>
+  <rect width="800" height="480" fill="#ef4444" opacity="0.1"/>
+  <path d="M0 350 Q200 300 400 360 T800 340 L800 480 L0 480 Z" fill="#152a45"/>
+  <!-- collapsed bridge section -->
+  <path d="M150 300 L350 300 L380 480 L150 480 Z" fill="#1a2535"/>
+  <path d="M450 300 L650 300 L650 480 L420 480 L400 340 Z" fill="#1a2535"/>
+  <!-- debris in water -->
+  <rect x="360" y="360" width="60" height="30" fill="#475569" transform="rotate(15 390 375)"/>
+  <rect x="400" y="380" width="40" height="20" fill="#64748b"/>
+  <ellipse cx="390" cy="400" rx="80" ry="20" fill="#334155" opacity="0.5"/>
+  <text x="400" y="60" text-anchor="middle" fill="#ef4444" font-size="24" font-family="sans-serif" font-weight="bold">COLLAPSE IMMINENT</text>
+  <text x="400" y="90" text-anchor="middle" fill="#fca5a5" font-size="14" font-family="sans-serif">No AI prioritization — ground teams delayed</text>
+  <text x="400" y="450" text-anchor="middle" fill="#ef4444" font-size="16" font-family="sans-serif">+35 min delay · 1,100 citizens impacted</text>
+</svg>

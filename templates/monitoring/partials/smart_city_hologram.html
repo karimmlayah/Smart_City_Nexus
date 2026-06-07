@@ -1,0 +1,195 @@
+{# SmartCityHologram — futuristic holographic city projection for homepage hero #}
+<div class="smart-city-hologram" aria-hidden="true">
+  <div class="sch-ambient" aria-hidden="true"></div>
+
+  <div class="sch-particles" aria-hidden="true">
+    <span class="sch-particle sch-particle--1"></span>
+    <span class="sch-particle sch-particle--2"></span>
+    <span class="sch-particle sch-particle--3"></span>
+    <span class="sch-particle sch-particle--4"></span>
+    <span class="sch-particle sch-particle--5"></span>
+    <span class="sch-particle sch-particle--6"></span>
+    <span class="sch-particle sch-particle--7"></span>
+    <span class="sch-particle sch-particle--8"></span>
+    <span class="sch-particle sch-particle--9"></span>
+    <span class="sch-particle sch-particle--10"></span>
+    <span class="sch-particle sch-particle--11"></span>
+    <span class="sch-particle sch-particle--12"></span>
+  </div>
+
+  <div class="sch-orbit sch-orbit--1" aria-hidden="true">
+    <span class="sch-orbit-dot sch-orbit-dot--a"></span>
+    <span class="sch-orbit-dot sch-orbit-dot--b"></span>
+  </div>
+  <div class="sch-orbit sch-orbit--2" aria-hidden="true">
+    <span class="sch-orbit-dot sch-orbit-dot--c"></span>
+  </div>
+  <div class="sch-orbit sch-orbit--3" aria-hidden="true">
+    <span class="sch-orbit-dot sch-orbit-dot--d"></span>
+    <span class="sch-orbit-dot sch-orbit-dot--e"></span>
+  </div>
+
+  <article class="sch-data-card sch-data-card--road">
+    <div class="sch-data-card__head">
+      <svg class="sch-data-card__icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M4 17l4-6 4 3 4-5 4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M3 19h18" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+      </svg>
+      <span class="sch-data-card__title">Road Analysis</span>
+    </div>
+    <p class="sch-data-card__desc">AI scans roads in real-time</p>
+  </article>
+
+  <article class="sch-data-card sch-data-card--traffic">
+    <div class="sch-data-card__head">
+      <svg class="sch-data-card__icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <rect x="4" y="9" width="12" height="7" rx="1.5" stroke="currentColor" stroke-width="1.5"/>
+        <path d="M16 11h3l1.5 2.5V16h-4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="8" cy="17" r="1.5" fill="currentColor"/>
+        <circle cx="17" cy="17" r="1.5" fill="currentColor"/>
+      </svg>
+      <span class="sch-data-card__title">Traffic &middot; Live</span>
+      <span class="sch-data-card__live" aria-hidden="true"></span>
+    </div>
+    <p class="sch-data-card__desc">Real-time flow monitoring</p>
+  </article>
+
+  <article class="sch-data-card sch-data-card--services">
+    <div class="sch-data-card__head">
+      <svg class="sch-data-card__icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <rect x="4" y="4" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.5"/>
+        <rect x="14" y="4" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.5"/>
+        <rect x="4" y="14" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.5"/>
+        <rect x="14" y="14" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.5"/>
+      </svg>
+      <span class="sch-data-card__title">21 Services Online</span>
+    </div>
+    <div class="sch-progress" role="presentation">
+      <div class="sch-progress__fill" style="width:100%"></div>
+    </div>
+    <span class="sch-data-card__meta">100% uptime</span>
+  </article>
+
+  <article class="sch-data-card sch-data-card--health">
+    <div class="sch-data-card__head">
+      <svg class="sch-data-card__icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M12 21s-7-4.5-7-10a4 4 0 017-2.5A4 4 0 0119 11c0 5.5-7 10-7 10z" stroke="currentColor" stroke-width="1.5"/>
+      </svg>
+      <span class="sch-data-card__title">City Health Score</span>
+    </div>
+    <div class="sch-health-row">
+      <span class="sch-health-value">87%</span>
+      <div class="sch-mini-chart" aria-hidden="true">
+        <span style="--h:42%"></span>
+        <span style="--h:58%"></span>
+        <span style="--h:71%"></span>
+        <span style="--h:87%"></span>
+      </div>
+    </div>
+  </article>
+
+  <article class="sch-data-card sch-data-card--air">
+    <div class="sch-data-card__head">
+      <svg class="sch-data-card__icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M6 14a4 4 0 018 0" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        <path d="M4 10a6 6 0 0110 2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        <path d="M2 6a8 8 0 0114 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+      <span class="sch-data-card__title">Air Quality</span>
+    </div>
+    <span class="sch-air-status">Good</span>
+  </article>
+
+  <div class="sch-scene">
+    <div class="sch-scanline" aria-hidden="true"></div>
+
+    <div class="sch-city-wrap">
+      <div class="sch-beams" aria-hidden="true">
+        <span class="sch-beam sch-beam--1"></span>
+        <span class="sch-beam sch-beam--2"></span>
+        <span class="sch-beam sch-beam--3"></span>
+        <span class="sch-beam sch-beam--4"></span>
+        <span class="sch-beam sch-beam--5"></span>
+      </div>
+
+      <div class="sch-skyline">
+        <div class="sch-building sch-building--1">
+          <div class="sch-building__body">
+            <span class="sch-window"></span><span class="sch-window"></span>
+            <span class="sch-window"></span><span class="sch-window"></span>
+          </div>
+        </div>
+        <div class="sch-building sch-building--2">
+          <div class="sch-building__body">
+            <span class="sch-window"></span><span class="sch-window"></span>
+            <span class="sch-window"></span><span class="sch-window"></span>
+            <span class="sch-window"></span><span class="sch-window"></span>
+          </div>
+        </div>
+        <div class="sch-building sch-building--3">
+          <div class="sch-building__body">
+            <span class="sch-window"></span><span class="sch-window"></span>
+            <span class="sch-window"></span>
+          </div>
+        </div>
+
+        <div class="sch-monument" aria-hidden="true">
+          <svg class="sch-monument-svg" viewBox="0 0 80 160" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <filter id="schNeonGlow" x="-50%" y="-50%" width="200%" height="200%">
+                <feGaussianBlur stdDeviation="1.8" result="blur"/>
+                <feMerge>
+                  <feMergeNode in="blur"/>
+                  <feMergeNode in="SourceGraphic"/>
+                </feMerge>
+              </filter>
+            </defs>
+            <g filter="url(#schNeonGlow)" stroke="#00e5ff" stroke-linejoin="round">
+              <rect x="18" y="118" width="44" height="42" stroke-width="1.2" stroke-opacity="0.9"/>
+              <rect x="24" y="108" width="32" height="12" stroke-width="1" stroke-opacity="0.8"/>
+              <path d="M14 118h52" stroke-width="0.8" stroke-opacity="0.55"/>
+              <path d="M20 130h40M20 142h40M20 154h40" stroke-width="0.7" stroke-opacity="0.45"/>
+              <rect x="32" y="72" width="16" height="36" stroke-width="1.1" stroke-opacity="0.92"/>
+              <rect x="30" y="58" width="20" height="16" stroke-width="1" stroke-opacity="0.85"/>
+              <path d="M40 8 L48 58 H32 Z" stroke-width="1.3" stroke-opacity="1"/>
+              <line x1="40" y1="14" x2="40" y2="52" stroke-width="0.8" stroke-opacity="0.55"/>
+              <ellipse cx="40" cy="68" rx="14" ry="5" stroke-width="0.8" stroke-opacity="0.5"/>
+            </g>
+            <circle cx="40" cy="6" r="3.5" fill="#00e5ff" fill-opacity="0.95" filter="url(#schNeonGlow)"/>
+          </svg>
+        </div>
+
+        <div class="sch-building sch-building--4">
+          <div class="sch-building__body">
+            <span class="sch-window"></span><span class="sch-window"></span>
+            <span class="sch-window"></span><span class="sch-window"></span>
+            <span class="sch-window"></span>
+          </div>
+        </div>
+        <div class="sch-building sch-building--5">
+          <div class="sch-building__body">
+            <span class="sch-window"></span><span class="sch-window"></span>
+            <span class="sch-window"></span><span class="sch-window"></span>
+          </div>
+        </div>
+        <div class="sch-building sch-building--6">
+          <div class="sch-building__body">
+            <span class="sch-window"></span><span class="sch-window"></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="sch-city-glow" aria-hidden="true"></div>
+    </div>
+
+    <div class="sch-base" aria-hidden="true">
+      <div class="sch-base__uplight"></div>
+      <div class="sch-base__column"></div>
+      <div class="sch-base__pulse"></div>
+      <div class="sch-base__ring sch-base__ring--1"></div>
+      <div class="sch-base__ring sch-base__ring--2"></div>
+      <div class="sch-base__ring sch-base__ring--3"></div>
+      <div class="sch-base__core"></div>
+    </div>
+  </div>
+</div>

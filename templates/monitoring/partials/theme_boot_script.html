@@ -1,0 +1,48 @@
+<script>
+(function () {
+  try {
+    var THEMES = ["blue-dark", "light", "dark"];
+    var SERVER_MODE = "{{ platform_theme_mode|default:'blue-dark'|escapejs }}";
+    var SERVER_DEFAULT = "{{ platform_theme_default|default:'blue-dark'|escapejs }}";
+
+    function resolveSystem() {
+      return window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "blue-dark";
+    }
+
+    function normalize(raw) {
+      var v = (raw || "").trim().toLowerCase();
+      if (v === "system") return resolveSystem();
+      return THEMES.indexOf(v) >= 0 ? v : null;
+    }
+
+    function getCookie(name) {
+      var m = document.cookie.match(
+        new RegExp("(?:^|; )" + name.replace(/([.$?*|{}()[\]\\/+^])/g, "\\$1") + "=([^;]*)")
+      );
+      return m ? decodeURIComponent(m[1]) : "";
+    }
+
+    var theme = null;
+    try {
+      theme = normalize(localStorage.getItem("medinamind-theme"));
+    } catch (e0) {}
+
+    if (!theme) {
+      theme = normalize(getCookie("medinamind-platform-theme"));
+    }
+    if (!theme) {
+      theme = normalize(SERVER_MODE === "system" ? "system" : SERVER_DEFAULT);
+    }
+    if (!theme) theme = "blue-dark";
+
+    document.documentElement.setAttribute("data-theme", theme);
+    document.documentElement.setAttribute("data-platform-theme", SERVER_MODE);
+
+    if (localStorage.getItem("mm-sidebar-collapsed") === "1") {
+      document.documentElement.classList.add("mm-sidebar-collapsed");
+    }
+  } catch (e) {
+    document.documentElement.setAttribute("data-theme", "blue-dark");
+  }
+})();
+</script>

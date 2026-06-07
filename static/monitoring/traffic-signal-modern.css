@@ -1,0 +1,788 @@
+/**
+ * Smart Traffic Light Intelligence — premium mobility control UI
+ */
+
+:root {
+  --ts-cyan: #00d5ff;
+  --ts-blue: #2f80ed;
+  --ts-card: rgba(6, 18, 40, 0.92);
+  --ts-border: rgba(0, 213, 255, 0.16);
+  --ts-glow: rgba(0, 213, 255, 0.28);
+  --ts-text: #e8f1ff;
+  --ts-muted: #8aa4c9;
+  --ts-red: #ff4d6d;
+  --ts-green: #34d399;
+  --ts-amber: #fb923c;
+  --ts-radius: 14px;
+}
+
+body.traffic-signal-sc .app-shell > .mm-topbar {
+  position: relative;
+  z-index: 30;
+  margin-bottom: 0.65rem;
+  flex-shrink: 0;
+}
+
+body.traffic-signal-sc .ts-root {
+  position: relative;
+  isolation: isolate;
+  font-family: "Inter", system-ui, sans-serif;
+  color: var(--ts-text);
+  padding: 0 0 1rem;
+}
+
+.ts-page__bg,
+.ts-page__grid,
+.ts-page__particles {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.ts-page__bg {
+  background:
+    radial-gradient(ellipse 50% 30% at 8% 0%, rgba(0, 213, 255, 0.06), transparent 55%),
+    radial-gradient(ellipse 40% 25% at 92% 8%, rgba(52, 211, 153, 0.05), transparent 50%),
+    linear-gradient(180deg, #030810 0%, #061428 55%, #030810 100%);
+}
+
+.ts-page__grid {
+  opacity: 0.12;
+  background-image:
+    linear-gradient(rgba(0, 213, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 213, 255, 0.035) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+
+.ts-page__particles span {
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: rgba(0, 213, 255, 0.35);
+  animation: tsFloat 14s ease-in-out infinite;
+}
+
+.ts-page__particles span:nth-child(1) { left: 6%; top: 20%; }
+.ts-page__particles span:nth-child(2) { left: 88%; top: 14%; animation-delay: 1s; }
+.ts-page__particles span:nth-child(3) { left: 42%; top: 78%; animation-delay: 0.5s; }
+.ts-page__particles span:nth-child(4) { left: 72%; top: 55%; animation-delay: 1.8s; background: rgba(52, 211, 153, 0.35); }
+
+.ts-root > *:not(.ts-page__bg):not(.ts-page__grid):not(.ts-page__particles) {
+  position: relative;
+  z-index: 1;
+}
+
+/* Hero */
+.ts-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(220px, 36%);
+  gap: 20px;
+  align-items: center;
+  margin: 0 0.85rem 0.65rem;
+  padding: 22px 26px;
+  border-radius: var(--ts-radius);
+  border: 1px solid var(--ts-border);
+  background: var(--ts-card);
+  backdrop-filter: blur(14px);
+  overflow: hidden;
+  animation: tsSoftRise 0.45s ease-out;
+}
+
+.ts-hero__sweep {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(105deg, transparent 40%, rgba(0, 213, 255, 0.04) 50%, transparent 60%);
+  animation: tsHoloSweep 7s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.ts-hero__title {
+  margin: 0;
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #f5f9ff;
+}
+
+.ts-hero__sub {
+  margin: 8px 0 0;
+  font-size: 0.72rem;
+  line-height: 1.5;
+  color: var(--ts-muted);
+  max-width: 48ch;
+}
+
+.ts-hero__badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin-top: 12px;
+}
+
+.ts-hero-badge {
+  font-size: 0.52rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 0.16rem 0.4rem;
+  border-radius: 999px;
+  color: var(--ts-cyan);
+  border: 1px solid rgba(0, 213, 255, 0.3);
+  background: rgba(0, 213, 255, 0.08);
+  animation: tsPulseGlow 2.5s ease-in-out infinite;
+}
+
+.ts-hero-badge--green {
+  color: #8ef0c8;
+  border-color: rgba(52, 211, 153, 0.35);
+  background: rgba(52, 211, 153, 0.1);
+}
+
+/* Hero traffic-light hologram */
+.ts-hero-holo {
+  position: relative;
+  min-height: 150px;
+  border-radius: 10px;
+  border: 1px solid rgba(0, 213, 255, 0.2);
+  background:
+    radial-gradient(ellipse at 60% 40%, rgba(124, 58, 237, 0.12), transparent 55%),
+    rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.ts-hero-holo__svg {
+  width: 100%;
+  max-height: 120px;
+  display: block;
+}
+
+.ts-hero-holo__scan {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--ts-cyan), transparent);
+  animation: tsSignalScan 3s ease-in-out infinite;
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+.ts-hero-holo__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  justify-content: center;
+  padding: 0.35rem 0.5rem 0.45rem;
+  font-size: 0.48rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.ts-hero-holo__tags span {
+  color: var(--ts-cyan);
+  padding: 0.1rem 0.32rem;
+  border-radius: 4px;
+  background: rgba(0, 213, 255, 0.1);
+  border: 1px solid rgba(0, 213, 255, 0.2);
+}
+
+.ts-holo-bulb--red { animation: tsTrafficRedPulse 2s ease-in-out infinite; }
+.ts-holo-bulb--amber { opacity: 0.35; }
+.ts-holo-bulb--green { animation: tsTrafficGreenPulse 2.4s ease-in-out infinite; }
+
+.ts-holo-dot {
+  animation: tsDataFlow 2.5s ease-in-out infinite;
+}
+
+.ts-holo-dot--2 { animation-delay: 0.8s; }
+
+/* Command grid */
+.ts-command-grid {
+  display: grid;
+  grid-template-columns: minmax(280px, 0.38fr) minmax(0, 0.62fr);
+  gap: 0.75rem;
+  padding: 0 0.85rem 0.85rem;
+  align-items: start;
+}
+
+.ts-card {
+  border-radius: var(--ts-radius);
+  border: 1px solid var(--ts-border);
+  background: var(--ts-card);
+  backdrop-filter: blur(12px);
+  padding: 1rem 1.05rem;
+  animation: tsSoftRise 0.5s ease-out;
+}
+
+.ts-card__kicker {
+  font-size: 0.58rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ts-cyan);
+  margin: 0 0 4px;
+}
+
+.ts-card__title {
+  margin: 0;
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #f0f8ff;
+}
+
+.ts-card__sub {
+  margin: 8px 0 0;
+  font-size: 0.7rem;
+  line-height: 1.45;
+  color: var(--ts-muted);
+}
+
+/* Workflow strip */
+.ts-workflow {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  margin: 14px 0 4px;
+  padding: 8px 6px;
+  border-radius: 8px;
+  border: 1px solid rgba(0, 213, 255, 0.1);
+  background: rgba(0, 0, 0, 0.25);
+  overflow-x: auto;
+}
+
+.ts-workflow__step {
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+  font-size: 0.55rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ts-muted);
+  position: relative;
+}
+
+.ts-workflow__step strong {
+  display: block;
+  font-size: 0.62rem;
+  color: var(--ts-text);
+  margin-bottom: 2px;
+}
+
+.ts-workflow__step:not(:last-child)::after {
+  content: "→";
+  position: absolute;
+  right: -6px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: rgba(0, 213, 255, 0.35);
+  font-size: 0.65rem;
+}
+
+.ts-workflow__ico {
+  display: block;
+  margin: 0 auto 3px;
+  font-size: 0.85rem;
+  opacity: 0.7;
+}
+
+/* Form */
+.ts-field {
+  display: grid;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.ts-field label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--ts-muted);
+}
+
+.ts-field input[type="file"],
+.ts-field input[type="url"] {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid rgba(0, 213, 255, 0.15);
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.35);
+  color: var(--ts-text);
+  padding: 10px 11px;
+  font-size: 0.78rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.ts-field input:focus {
+  outline: none;
+  border-color: rgba(0, 213, 255, 0.4);
+  box-shadow: 0 0 12px rgba(0, 213, 255, 0.12);
+}
+
+.ts-btn {
+  width: 100%;
+  margin-top: 14px;
+  border: 1px solid rgba(0, 213, 255, 0.4);
+  border-radius: 10px;
+  padding: 12px 16px;
+  color: #fff;
+  background: linear-gradient(135deg, rgba(0, 213, 255, 0.45), rgba(47, 128, 237, 0.55));
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 0 16px rgba(0, 213, 255, 0.18);
+  transition: box-shadow 0.2s, transform 0.15s;
+}
+
+.ts-btn:hover {
+  box-shadow: 0 0 22px var(--ts-glow);
+  transform: translateY(-1px);
+}
+
+.ts-alert {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: rgba(255, 77, 109, 0.12);
+  border: 1px solid rgba(255, 77, 109, 0.35);
+  color: #ffc9d4;
+  font-size: 0.75rem;
+}
+
+/* Result card */
+.ts-result-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.ts-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.ts-pill.red {
+  background: rgba(255, 77, 109, 0.15);
+  color: #ffc9d4;
+  border: 1px solid rgba(255, 77, 109, 0.45);
+  animation: tsTrafficRedPulse 2s ease-in-out infinite;
+}
+
+.ts-pill.green {
+  background: rgba(52, 211, 153, 0.15);
+  color: #bbf7d0;
+  border: 1px solid rgba(52, 211, 153, 0.45);
+  animation: tsTrafficGreenPulse 2.4s ease-in-out infinite;
+}
+
+.ts-pill.unknown {
+  background: rgba(138, 164, 201, 0.12);
+  color: #cbd5e1;
+  border: 1px solid rgba(138, 164, 201, 0.3);
+}
+
+/* Preview */
+.ts-preview {
+  position: relative;
+  border: 1px solid rgba(0, 213, 255, 0.18);
+  border-radius: 10px;
+  overflow: hidden;
+  min-height: 280px;
+  background:
+    radial-gradient(ellipse at center, rgba(0, 213, 255, 0.05), transparent 65%),
+    rgba(2, 8, 18, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ts-preview__scan {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--ts-cyan), transparent);
+  animation: tsSignalScan 3s ease-in-out infinite;
+  z-index: 2;
+  pointer-events: none;
+  opacity: 0.4;
+}
+
+.ts-preview img,
+.ts-preview video {
+  position: relative;
+  z-index: 1;
+  max-width: 100%;
+  max-height: min(52vh, 480px);
+  display: block;
+}
+
+/* Empty state */
+.ts-empty {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1.25rem;
+  text-align: center;
+  width: 100%;
+  min-height: 280px;
+}
+
+.ts-empty__holo {
+  position: relative;
+  width: 100px;
+  height: 140px;
+  margin-bottom: 1rem;
+}
+
+.ts-empty__light {
+  position: absolute;
+  left: 50%;
+  top: 8px;
+  transform: translateX(-50%);
+  width: 36px;
+  padding: 8px 0;
+  border-radius: 8px;
+  border: 1px solid rgba(0, 213, 255, 0.25);
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.ts-empty__bulb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.ts-empty__bulb--r {
+  background: rgba(255, 77, 109, 0.25);
+  box-shadow: 0 0 10px rgba(255, 77, 109, 0.3);
+  animation: tsTrafficRedPulse 2s ease-in-out infinite;
+}
+
+.ts-empty__bulb--y {
+  background: rgba(251, 146, 60, 0.15);
+  opacity: 0.4;
+}
+
+.ts-empty__bulb--g {
+  background: rgba(52, 211, 153, 0.25);
+  box-shadow: 0 0 10px rgba(52, 211, 153, 0.25);
+  animation: tsTrafficGreenPulse 2.4s ease-in-out infinite;
+}
+
+.ts-empty__grid {
+  position: absolute;
+  inset: 0;
+  opacity: 0.25;
+  background-image:
+    linear-gradient(rgba(0, 213, 255, 0.12) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 213, 255, 0.12) 1px, transparent 1px);
+  background-size: 14px 14px;
+  border-radius: 8px;
+}
+
+.ts-empty__title {
+  margin: 0;
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #f0f8ff;
+}
+
+.ts-empty__hint {
+  margin: 0.4rem 0 0;
+  font-size: 0.68rem;
+  color: var(--ts-muted);
+  line-height: 1.45;
+  max-width: 28ch;
+}
+
+/* Status cards */
+.ts-status-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.ts-status-card {
+  border-radius: 8px;
+  border: 1px solid rgba(0, 213, 255, 0.12);
+  background: rgba(0, 0, 0, 0.28);
+  padding: 10px;
+  transition: box-shadow 0.2s, border-color 0.2s;
+}
+
+.ts-status-card:hover {
+  border-color: rgba(0, 213, 255, 0.25);
+  box-shadow: 0 0 12px rgba(0, 213, 255, 0.08);
+}
+
+.ts-status-card__label {
+  display: block;
+  font-size: 0.55rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ts-muted);
+  margin-bottom: 4px;
+}
+
+.ts-status-card__value {
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--ts-text);
+}
+
+.ts-status-card--red .ts-status-card__value { color: #ff9aad; }
+.ts-status-card--green .ts-status-card__value { color: #6ee7b7; }
+.ts-status-card--cyan .ts-status-card__value { color: var(--ts-cyan); }
+.ts-status-card--amber .ts-status-card__value { color: #fdba74; }
+.ts-status-card--ok .ts-status-card__value { color: #6ee7b7; }
+.ts-status-card--err .ts-status-card__value { color: #ff9aad; }
+
+/* ESP32 sync visual */
+.ts-sync-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(0, 213, 255, 0.12);
+  background: rgba(0, 0, 0, 0.25);
+}
+
+.ts-sync-bar__node {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.55rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  border: 1px solid rgba(0, 213, 255, 0.2);
+  background: rgba(0, 213, 255, 0.08);
+  color: var(--ts-cyan);
+}
+
+.ts-sync-bar__line {
+  flex: 1;
+  height: 2px;
+  background: rgba(0, 213, 255, 0.15);
+  position: relative;
+  overflow: hidden;
+  border-radius: 1px;
+}
+
+.ts-sync-bar__dot {
+  position: absolute;
+  top: -2px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--ts-cyan);
+  box-shadow: 0 0 8px var(--ts-cyan);
+  animation: tsDataFlowLine 2s ease-in-out infinite;
+}
+
+.ts-sync-bar__label {
+  font-size: 0.65rem;
+  color: var(--ts-muted);
+  min-width: 0;
+}
+
+.ts-sync-bar__label strong {
+  display: block;
+  color: var(--ts-text);
+  font-size: 0.72rem;
+  margin-bottom: 2px;
+}
+
+.ts-sync-bar.ok { border-color: rgba(52, 211, 153, 0.3); }
+.ts-sync-bar.err { border-color: rgba(255, 77, 109, 0.3); }
+
+/* Advanced details */
+.ts-advanced {
+  margin-top: 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(0, 213, 255, 0.1);
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.ts-advanced summary {
+  padding: 8px 10px;
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: var(--ts-muted);
+  cursor: pointer;
+  list-style: none;
+}
+
+.ts-advanced summary::-webkit-details-marker { display: none; }
+
+.ts-advanced summary::before {
+  content: "▸ ";
+  color: var(--ts-cyan);
+}
+
+.ts-advanced[open] summary::before { content: "▾ "; }
+
+.ts-advanced__body {
+  padding: 0 10px 10px;
+  font-size: 0.68rem;
+  color: var(--ts-muted);
+  border-top: 1px solid rgba(0, 213, 255, 0.08);
+}
+
+.ts-advanced__body strong { color: var(--ts-text); }
+
+.ts-code {
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: #9ec8e8;
+  font-size: 0.62rem;
+  margin-top: 6px;
+  padding: 8px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.35);
+  font-family: "JetBrains Mono", monospace;
+}
+
+.ts-metrics-mini {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+  font-size: 0.62rem;
+  color: var(--ts-muted);
+}
+
+.ts-metrics-mini span {
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(0, 213, 255, 0.08);
+}
+
+/* Animations */
+@keyframes tsFloat {
+  0%, 100% { transform: translateY(0); opacity: 0.3; }
+  50% { transform: translateY(-6px); opacity: 0.65; }
+}
+
+@keyframes tsSoftRise {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes tsHoloSweep {
+  0%, 100% { transform: translateX(-25%); opacity: 0; }
+  50% { transform: translateX(25%); opacity: 1; }
+}
+
+@keyframes tsSignalScan {
+  0% { top: 8%; opacity: 0; }
+  15% { opacity: 0.7; }
+  85% { opacity: 0.7; }
+  100% { top: 92%; opacity: 0; }
+}
+
+@keyframes tsPulseGlow {
+  0%, 100% { opacity: 0.75; }
+  50% { opacity: 1; }
+}
+
+@keyframes tsTrafficRedPulse {
+  0%, 100% { opacity: 0.65; filter: brightness(1); }
+  50% { opacity: 1; filter: brightness(1.25); }
+}
+
+@keyframes tsTrafficGreenPulse {
+  0%, 100% { opacity: 0.55; filter: brightness(1); }
+  50% { opacity: 0.95; filter: brightness(1.2); }
+}
+
+@keyframes tsDataFlow {
+  0%, 100% { opacity: 0; }
+  40%, 60% { opacity: 1; }
+}
+
+@keyframes tsDataFlowLine {
+  0% { left: 0; opacity: 0; }
+  20% { opacity: 1; }
+  80% { opacity: 1; }
+  100% { left: calc(100% - 6px); opacity: 0; }
+}
+
+@keyframes tsBorderPulse {
+  0%, 100% { box-shadow: inset 0 0 20px rgba(0, 213, 255, 0.04); }
+  50% { box-shadow: inset 0 0 28px rgba(0, 213, 255, 0.08); }
+}
+
+.ts-preview--empty {
+  animation: tsBorderPulse 3s ease-in-out infinite;
+}
+
+@media (max-width: 1100px) {
+  .ts-command-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ts-status-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 900px) {
+  .ts-hero {
+    grid-template-columns: 1fr;
+    padding: 20px;
+  }
+
+  .ts-hero-holo {
+    min-height: 130px;
+  }
+}
+
+@media (max-width: 520px) {
+  .ts-status-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .ts-workflow__step {
+    font-size: 0.5rem;
+  }
+}

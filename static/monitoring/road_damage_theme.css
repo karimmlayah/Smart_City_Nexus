@@ -24,10 +24,20 @@ body.fusion-hub-sc.road-damage-sc {
   --warn: #f97316;
 }
 
+body.fusion-hub-sc.road-damage-sc .app-shell {
+  padding-top: 0 !important;
+  margin-top: 0 !important;
+}
+
+body.fusion-hub-sc.road-damage-sc.mm-dash-body {
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
 body.fusion-hub-sc.road-damage-sc .ai-dash {
   background: transparent;
   color: var(--rd-text);
-  padding: 1rem 1rem 2.5rem 1rem;
+  padding: 0;
   margin: 0;
   font-family: "Inter", "Segoe UI", system-ui, sans-serif;
 }
@@ -120,13 +130,13 @@ body.fusion-hub-sc.road-damage-sc .score-bar > div {
 
 /* ——— Map & heatmap : plus de hauteur ——— */
 body.fusion-hub-sc.road-damage-sc #citizen-map {
-  height: min(74vh, 900px);
-  min-height: 560px;
+  height: min(42vh, 480px);
+  min-height: 300px;
 }
 
 @media (max-width: 768px) {
   body.fusion-hub-sc.road-damage-sc #citizen-map {
-    height: min(62vh, 640px);
-    min-height: 420px;
+    height: min(38vh, 400px);
+    min-height: 260px;
   }
 }

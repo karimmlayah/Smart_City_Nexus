@@ -1,0 +1,387 @@
+/**
+ * MedinaMind — Global component styles (theme-variable driven)
+ */
+
+html,
+body {
+  background: var(--bg-main) !important;
+  color: var(--text-primary);
+}
+
+body.cockpit {
+  background: var(--bg-main) !important;
+  color: var(--text-primary);
+}
+
+body.ai-dashboard-sc.mm-dash-body,
+body.mm-dash-body,
+body.fusion-hub-sc {
+  background: var(--bg-main) !important;
+  color: var(--text-primary);
+}
+
+body.ai-dashboard-sc.mm-dash-body .app-shell,
+body.mm-dash-body .app-shell,
+body.fusion-hub-sc .app-shell {
+  background: var(--bg-page-gradient) !important;
+  background-size: auto, auto, 42px 42px, 42px 42px, auto !important;
+  color: var(--text-primary);
+}
+
+body.mm-home {
+  background: var(--bg-main);
+  color: var(--text-primary);
+}
+
+/* Glass panels — all modules */
+.fh-glass,
+.surv-hero,
+.surv-module-card,
+.surv-input-card,
+.fd-hero,
+.ws-hero,
+.uav-hero,
+.ts-card,
+.ps-hero,
+.ps-panel,
+.ps-nav,
+.violations-hero,
+.rd-hero,
+.fc-glass,
+.mm-topbar {
+  background: var(--bg-card);
+  border-color: var(--border-soft);
+  color: var(--text-primary);
+}
+
+.mm-topbar {
+  background: var(--bg-navbar) !important;
+  box-shadow: var(--shadow-navbar);
+}
+
+.fh-root,
+.fd-root,
+.ws-root,
+.uav-page,
+.ts-root,
+.ps-root,
+.violations-page,
+.rd-page,
+.fc-camera-dashboard {
+  color: var(--text-primary);
+  background: transparent;
+}
+
+/* Module ambient layers */
+[class*="page__bg"],
+.surv-page__bg,
+.fd-page__bg,
+.ws-page__bg,
+.uav-page__bg,
+.ts-page__bg,
+.ps-page__bg,
+.rd-page__bg,
+.violations-page__bg,
+.fc-page__bg {
+  background: var(--bg-page-gradient) !important;
+  background-size: auto, auto, 42px 42px, 42px 42px, auto !important;
+}
+
+[class*="page__grid"],
+.surv-page__grid,
+.fd-page__grid,
+.ws-page__grid,
+.uav-page__grid,
+.ts-page__grid,
+.ps-page__grid,
+.rd-page__grid,
+.violations-page__grid,
+.fc-page__grid {
+  background-image:
+    linear-gradient(var(--grid-color) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-color) 1px, transparent 1px) !important;
+  background-size: 28px 28px, 28px 28px !important;
+}
+
+[class*="page__particles"] span {
+  background: var(--particle-color) !important;
+}
+
+/* Typography */
+h1, h2, h3, h4, h5, h6 {
+  color: var(--text-primary);
+}
+
+.muted,
+.small,
+[class*="__sub"],
+[class*="__hint"],
+[class*="__desc"] {
+  color: var(--text-muted);
+}
+
+/* Global forms */
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="hidden"]),
+select,
+textarea,
+.fight-url-input,
+.fight-model-select,
+.ps-field__input,
+.ts-field input,
+.fc-input {
+  background: var(--bg-input) !important;
+  color: var(--text-primary) !important;
+  border: 1px solid var(--border-soft) !important;
+  border-radius: 8px;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--text-muted) !important;
+  opacity: 0.85;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--border-strong) !important;
+  box-shadow: var(--focus-ring);
+}
+
+input[type="file"] {
+  background: var(--bg-input) !important;
+  color: var(--text-secondary) !important;
+  border: 1px dashed var(--border-soft) !important;
+  padding: 8px 10px;
+  font-size: 0.78rem;
+}
+
+input[type="file"]::file-selector-button {
+  margin-right: 10px;
+  padding: 6px 12px;
+  border: 1px solid var(--border-soft);
+  border-radius: 6px;
+  background: var(--btn-grad);
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+input[type="checkbox"],
+input[type="radio"] {
+  accent-color: var(--accent-cyan);
+}
+
+input[type="range"] {
+  accent-color: var(--accent-cyan);
+}
+
+label,
+.fight-label,
+.ps-field label,
+.ts-field label {
+  color: var(--text-muted);
+}
+
+/* Buttons */
+.fh-btn-primary,
+.ts-btn,
+.ps-btn--primary,
+.fd-btn--primary,
+.ws-btn--primary,
+.uav-btn-primary,
+.mm-home-btn--primary,
+.ai-btn--primary,
+.mm-topbar-btn--primary {
+  background: var(--btn-grad) !important;
+  color: #fff !important;
+  border: 1px solid var(--border-glow) !important;
+  box-shadow: var(--shadow-glow);
+}
+
+.fh-btn-outline,
+.ps-btn--ghost,
+.ts-btn--ghost,
+.fd-btn--ghost,
+.mm-home-btn--ghost,
+.mm-topbar-btn:not(.mm-topbar-btn--primary) {
+  background: var(--bg-card) !important;
+  color: var(--text-secondary) !important;
+  border: 1px solid var(--border-soft) !important;
+}
+
+.fh-btn-outline:hover,
+.ps-btn--ghost:hover,
+.mm-topbar-btn:not(.mm-topbar-btn--primary):hover {
+  border-color: var(--border-strong) !important;
+  color: var(--accent-blue) !important;
+  box-shadow: var(--shadow-glow);
+}
+
+/* Preview / video stages */
+.video-stage,
+.fh-city-canvas,
+.ts-preview,
+.fc-preview-frame,
+.fusion-stage-empty-wrap,
+[class*="preview-stage"],
+[class*="video-wrap"] {
+  background: var(--preview-bg) !important;
+  border-color: var(--border-soft) !important;
+}
+
+/* Empty states */
+.surv-empty-premium,
+.ts-empty,
+.fusion-stage-empty,
+[class*="empty-premium"],
+[class*="__empty"] {
+  background: var(--holo-bg) !important;
+  border-color: var(--border-soft) !important;
+  color: var(--text-primary);
+}
+
+/* Holograms */
+.surv-city-holo,
+.surv-hero-holo,
+.ts-hero-holo,
+.ps-hero-holo,
+.fd-hero-holo,
+.ws-hero-holo,
+.uav-hero-holo,
+.rd-hero-holo,
+[class*="hero-holo"] {
+  background: var(--holo-bg) !important;
+  border-color: var(--border-soft) !important;
+  box-shadow: var(--holo-glow);
+}
+
+/* Messages */
+.messages-top .msg {
+  border-radius: 8px;
+  border: 1px solid var(--border-soft);
+}
+
+html[data-theme="light"] .messages-top .msg-success {
+  background: rgba(0, 166, 118, 0.1) !important;
+  border-color: rgba(0, 166, 118, 0.25) !important;
+  color: var(--accent-green) !important;
+}
+
+html[data-theme="light"] .messages-top .msg-error {
+  background: rgba(229, 72, 77, 0.08) !important;
+  border-color: rgba(229, 72, 77, 0.25) !important;
+  color: var(--accent-red) !important;
+}
+
+/* Tables */
+table,
+.mm-table,
+.ai-table {
+  color: var(--text-primary);
+}
+
+thead th {
+  color: var(--text-muted) !important;
+  background: var(--bg-card-hover) !important;
+  border-bottom-color: var(--border-soft) !important;
+}
+
+tbody td {
+  color: var(--text-secondary) !important;
+  border-bottom-color: var(--border-faint) !important;
+}
+
+tbody tr:hover {
+  background: color-mix(in srgb, var(--accent-blue) 8%, transparent) !important;
+}
+
+/* Badges */
+[class*="badge"],
+[class*="pill"],
+[class*="tag"]:not([class*="hero"]) {
+  border-color: var(--border-soft);
+}
+
+/* Modals / dialogs */
+dialog,
+.modal,
+[class*="modal"] {
+  background: var(--bg-card);
+  color: var(--text-primary);
+  border-color: var(--border-soft);
+  box-shadow: var(--shadow-card);
+}
+
+/* Leaflet */
+.leaflet-container {
+  background: var(--bg-secondary) !important;
+}
+
+.leaflet-bar a {
+  background: var(--bg-card) !important;
+  color: var(--text-primary) !important;
+  border-color: var(--border-soft) !important;
+}
+
+/* Fusion hub legacy token bridge */
+body.fusion-hub-sc {
+  --fh-glass: var(--bg-card);
+  --fh-border: var(--border-soft);
+  --fh-cyan: var(--accent-cyan);
+  --fh-text: var(--text-primary);
+  --fh-muted: var(--text-muted);
+  --color-bg: var(--bg-main);
+  --color-surface: var(--bg-secondary);
+  --color-surface-elevated: var(--bg-card);
+}
+
+details,
+.surv-advanced-details,
+.ts-advanced,
+.fd-tech-details {
+  background: var(--bg-surface) !important;
+  border-color: var(--border-soft) !important;
+  color: var(--text-secondary);
+}
+
+details summary {
+  color: var(--text-muted);
+}
+
+code {
+  background: var(--overlay-dark);
+  color: var(--accent-cyan);
+  border-radius: 4px;
+  padding: 0.1em 0.35em;
+}
+
+/* Sidebar uses theme vars via ai-dashboard-modern.css */
+.mm-sidebar {
+  background: var(--bg-sidebar) !important;
+  border-right-color: var(--border-soft) !important;
+}
+
+.mm-sidebar__brand-name,
+.mm-nav-item {
+  color: var(--text-secondary);
+}
+
+.mm-nav-item--active {
+  color: var(--accent-blue) !important;
+}
+
+.mm-status-card {
+  background: var(--bg-card) !important;
+  border-color: var(--border-soft) !important;
+}
+
+.mm-status-card__title,
+.mm-status-card__row {
+  color: var(--text-muted) !important;
+}
+
+.mm-status-card__row strong {
+  color: var(--text-primary) !important;
+}

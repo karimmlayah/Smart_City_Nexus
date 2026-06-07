@@ -1,16 +1,19 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block body_class %}cockpit fusion-hub-sc{% endblock %}
+{% block body_class %}cockpit fusion-hub-sc surveillance-sc ai-dashboard-sc mm-dash-body{% endblock %}
 
-{% block title %}{% if request.resolver_match.url_name == 'surveillance_dashboard' %}Smart City · Surveillance Command{% else %}Smart City · Fusion Command Center{% endif %}{% endblock %}
+{% block title %}{% if request.resolver_match.url_name == 'surveillance_dashboard' %}Smart City · City Safety Intelligence{% else %}Smart City · Fusion Command Center{% endif %}{% endblock %}
 
 {% block extra_head %}
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{% static 'monitoring/fusion_hub_dashboard.css' %}">
   <link rel="stylesheet" href="{% static 'monitoring/fusion_hub_smartcity.css' %}">
+  {% if request.resolver_match.url_name == 'surveillance_dashboard' %}
+  <link rel="stylesheet" href="{% static 'monitoring/surveillance-intelligence.css' %}?v=3">
+  {% endif %}
 {% endblock %}
 
 {% block content %}
@@ -28,43 +31,265 @@
   <input type="hidden" name="full_video_analysis" id="fusionFullAnalysisField" value="0" />
   {% endif %}
   <div class="fh-root">
-    <header class="fh-nav fh-glass" aria-label="Primary">
-      <div class="fh-nav-brand fh-brand-cluster">
-        <span class="fh-brand-orb" aria-hidden="true"></span>
-        <div class="fh-brand-text">
-          <h1 class="fh-nav-logo">Smart City Platform</h1>
-          <p class="fh-nav-tag">{% if request.resolver_match.url_name == 'surveillance_dashboard' %}Surveillance Command{% else %}Fusion Command Center{% endif %}</p>
+    {% if request.resolver_match.url_name == 'surveillance_dashboard' %}
+    <div class="surv-page__bg" aria-hidden="true"></div>
+    <div class="surv-page__grid" aria-hidden="true"></div>
+    <div class="surv-page__particles" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+
+    <section class="surv-hero fh-glass" aria-label="City Safety Intelligence Center">
+      <div class="surv-hero__sweep" aria-hidden="true"></div>
+
+      <div class="surv-hero__copy">
+        <h1 class="surv-hero__title">City Safety Intelligence Center</h1>
+        <p class="surv-hero__sub">AI-powered monitoring, incident awareness, and response support for safer urban spaces.</p>
+        <div class="surv-hero__badges">
+          <span class="surv-hero-badge">Live Monitoring</span>
+          <span class="surv-hero-badge">Incident Awareness</span>
+          <span class="surv-hero-badge">Safety Insights</span>
+          <span class="surv-hero-badge surv-hero-badge--alert">Response Ready</span>
         </div>
       </div>
-      <div class="fh-nav-meta">
-        <span class="fh-nav-loc" title="Display only">Network · —</span>
-        <span class="fh-clock" id="fhClock" aria-live="polite">--:--:--</span>
-        <span class="fh-icon-chip" title="Notifications">🔔</span>
-        <span class="fh-nav-user" title="Operator" aria-hidden="true"></span>
+
+      <div class="surv-hero__workflow" aria-label="Safety workflow">
+        <p class="surv-hero__workflow-kicker">Safety Workflow</p>
+        <div class="surv-hero__cards">
+          <article class="surv-workflow-card">
+            <span class="surv-workflow-card__icon" aria-hidden="true">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="4" width="20" height="14" rx="2"/><path d="M10 9l5 3-5 3V9z"/></svg>
+            </span>
+            <span class="surv-workflow-card__text">
+              <strong class="surv-workflow-card__title">Scene Review</strong>
+              <span class="surv-workflow-card__desc">Analyze video, image, or live camera feed</span>
+            </span>
+          </article>
+          <article class="surv-workflow-card">
+            <span class="surv-workflow-card__icon" aria-hidden="true">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2L4 6v6c0 5 3.5 9.5 8 10 4.5-.5 8-5 8-10V6l-8-4z"/><path d="M12 8v4M12 16h.01"/></svg>
+            </span>
+            <span class="surv-workflow-card__text">
+              <strong class="surv-workflow-card__title">Incident Insight</strong>
+              <span class="surv-workflow-card__desc">Highlight risky situations and objects</span>
+            </span>
+          </article>
+          <article class="surv-workflow-card">
+            <span class="surv-workflow-card__icon" aria-hidden="true">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h5"/></svg>
+            </span>
+            <span class="surv-workflow-card__text">
+              <strong class="surv-workflow-card__title">Response Report</strong>
+              <span class="surv-workflow-card__desc">Generate evidence and alert city teams</span>
+            </span>
+          </article>
+        </div>
       </div>
-    </header>
+
+      <div class="surv-city-holo" aria-hidden="true">
+        <svg class="surv-city-holo__svg" viewBox="0 0 360 140" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+          <defs>
+            <linearGradient id="survGridGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#00d5ff" stop-opacity="0.35"/>
+              <stop offset="100%" stop-color="#7c3aed" stop-opacity="0.15"/>
+            </linearGradient>
+            <radialGradient id="survScanGrad" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stop-color="#00d5ff" stop-opacity="0.5"/>
+              <stop offset="100%" stop-color="#00d5ff" stop-opacity="0"/>
+            </radialGradient>
+          </defs>
+          <rect width="360" height="140" fill="rgba(3,12,28,0.55)"/>
+          <g class="surv-city-holo__grid" stroke="url(#survGridGrad)" stroke-width="0.5" fill="none" opacity="0.5">
+            <path d="M0 35 H360 M0 70 H360 M0 105 H360"/>
+            <path d="M45 0 V140 M90 0 V140 M135 0 V140 M180 0 V140 M225 0 V140 M270 0 V140 M315 0 V140"/>
+          </g>
+          <g class="surv-city-holo__blocks" fill="rgba(0,213,255,0.08)" stroke="rgba(0,213,255,0.25)" stroke-width="0.6">
+            <rect x="52" y="62" width="24" height="38" rx="2"/>
+            <rect x="88" y="50" width="20" height="50" rx="2"/>
+            <rect x="118" y="68" width="28" height="32" rx="2"/>
+            <rect x="172" y="44" width="22" height="56" rx="2"/>
+            <rect x="208" y="58" width="26" height="42" rx="2"/>
+            <rect x="252" y="52" width="20" height="48" rx="2"/>
+            <rect x="288" y="66" width="28" height="34" rx="2"/>
+          </g>
+          <ellipse class="surv-city-holo__sweep" cx="180" cy="72" rx="78" ry="58" fill="url(#survScanGrad)" opacity="0.35"/>
+          <line class="surv-city-holo__beam" x1="180" y1="72" x2="180" y2="22" stroke="#00d5ff" stroke-width="1.5" stroke-linecap="round" opacity="0.65"/>
+          <g class="surv-city-holo__cameras">
+            <circle cx="64" cy="50" r="4.5" fill="#061428" stroke="#00d5ff" stroke-width="1.2"/>
+            <circle cx="132" cy="38" r="4.5" fill="#061428" stroke="#00d5ff" stroke-width="1.2"/>
+            <circle cx="208" cy="32" r="4.5" fill="#061428" stroke="#00d5ff" stroke-width="1.2"/>
+            <circle cx="278" cy="48" r="4.5" fill="#061428" stroke="#00d5ff" stroke-width="1.2"/>
+            <circle cx="312" cy="82" r="4.5" fill="#061428" stroke="#00d5ff" stroke-width="1.2"/>
+          </g>
+          <g class="surv-city-holo__alert">
+            <circle cx="208" cy="32" r="9" fill="none" stroke="#ff6b35" stroke-width="1" opacity="0.75"/>
+            <circle cx="208" cy="32" r="3.5" fill="#ff4d6d"/>
+          </g>
+          <g class="surv-city-holo__dots" fill="#00d5ff">
+            <circle class="surv-city-holo__dot surv-city-holo__dot--1" cx="64" cy="50" r="2"/>
+            <circle class="surv-city-holo__dot surv-city-holo__dot--2" cx="132" cy="38" r="2"/>
+            <circle class="surv-city-holo__dot surv-city-holo__dot--3" cx="208" cy="32" r="2"/>
+            <circle class="surv-city-holo__dot surv-city-holo__dot--4" cx="278" cy="48" r="2"/>
+          </g>
+          <polyline class="surv-city-holo__route" points="64,50 132,38 208,32 278,48 312,82" fill="none" stroke="rgba(0,213,255,0.35)" stroke-width="1" stroke-dasharray="4 3"/>
+        </svg>
+        <div class="surv-city-holo__tags">
+          <span>City Safety Scan</span>
+          <span>Incident Review</span>
+          <span>Response Ready</span>
+        </div>
+      </div>
+    </section>
+    {% endif %}
 
     <div id="fhLoadingOverlay" class="fh-loading" aria-hidden="true" role="alert">
       <div class="fh-glass fh-loading-inner">
         <div class="fh-spinner"></div>
+        {% if request.resolver_match.url_name == 'surveillance_dashboard' %}
+        <p>Analyzing city scene…</p>
+        <p class="fh-muted small" style="color:var(--fh-muted,#8ba4c9)">MedinaMind is reviewing safety signals in your media.</p>
+        {% else %}
         <p>Analyzing source…</p>
         <p class="fh-muted small" style="color:var(--fh-muted,#8ba4c9)">Running fusion models on your media.</p>
+        {% endif %}
         <div class="fh-scan-bars"></div>
       </div>
     </div>
 
+    {% if request.resolver_match.url_name == 'surveillance_dashboard' %}
+    <section class="fh-glass fh-input-card fh-input-card--premium surv-input-card">
+      <div class="surv-analyze-header">
+        <span class="fh-input-kicker">Safety Models</span>
+        <h2 class="fh-input-title fh-input-title--rail">Analyze a City Scene</h2>
+      </div>
+
+      <div class="surv-modules-section" role="group" aria-label="Safety Intelligence Modules">
+        <h3 class="surv-modules-title">Safety Intelligence Modules</h3>
+        <div class="surv-modules-grid">
+          <label class="surv-module-card fh-glass fusion-model-card fusion-model-card--fight">
+            <span class="surv-module-card__icon" aria-hidden="true">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2L4 6v6c0 5 3.5 9.5 8 10 4.5-.5 8-5 8-10V6l-8-4z"/></svg>
+            </span>
+            <span class="surv-module-card__body">
+              <span class="surv-module-card__name">Violence Awareness</span>
+              <span class="surv-module-status surv-module-status--ready">Ready</span>
+            </span>
+            <span class="fusion-model-toggle">{{ form.use_fight }}</span>
+          </label>
+
+          <label class="surv-module-card fh-glass fusion-model-card fusion-model-card--weapon">
+            <span class="surv-module-card__icon" aria-hidden="true">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M7 12h10M12 7v10"/></svg>
+            </span>
+            <span class="surv-module-card__body">
+              <span class="surv-module-card__name">Risk Object Detection</span>
+              <span class="surv-module-status surv-module-status--ready">Ready</span>
+            </span>
+            <span class="fusion-model-toggle">{{ form.use_weapon }}</span>
+          </label>
+
+          <label class="surv-module-card fh-glass fusion-model-card fusion-model-card--chatapi">
+            <span class="surv-module-card__icon" aria-hidden="true">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            </span>
+            <span class="surv-module-card__body">
+              <span class="surv-module-card__name">Scene Understanding</span>
+              <span class="surv-module-status surv-module-status--opt">Optional</span>
+            </span>
+            <span class="fusion-model-toggle">{{ form.use_openai_threat }}</span>
+          </label>
+        </div>
+      </div>
+
+      <details class="surv-advanced-details">
+        <summary class="surv-advanced-details__summary">Advanced Model Details</summary>
+        <div class="surv-advanced-details__body">
+          <div class="surv-advanced-row">
+            <span class="surv-advanced-label">Violence model file</span>
+            <code class="surv-advanced-value">{{ fight_model_name }}</code>
+          </div>
+          <div class="surv-advanced-row">
+            <span class="surv-advanced-label">Alert threshold</span>
+            <span class="surv-advanced-value">≥ {{ fight_alert_pct }}% · live <span id="fusionLiveFight">—</span></span>
+          </div>
+          <div class="surv-advanced-row">
+            <span class="surv-advanced-label">Risk object model file</span>
+            <code class="surv-advanced-value">{{ weapon_model_name }}</code>
+          </div>
+          <div class="surv-advanced-row">
+            <span class="surv-advanced-label">Detection threshold</span>
+            <span class="surv-advanced-value">≥ {{ weapon_alert_pct }}% · live <span id="fusionLiveWeapon">—</span></span>
+          </div>
+          <div class="surv-advanced-row">
+            <span class="surv-advanced-label">Scene understanding</span>
+            <span class="surv-advanced-value">Cloud vision API · violence / risk objects</span>
+          </div>
+          <div class="surv-advanced-selects">
+            <div class="fight-field fusion-dropdown-field fusion-dropdown-field--combat fh-toolbar-field">
+              <label for="id_fight_weights" class="fight-label">Violence Model</label>
+              {{ form.fight_weights }}
+              {% if form.fight_weights.errors %}
+                <ul class="fight-field-errors">{% for e in form.fight_weights.errors %}<li>{{ e }}</li>{% endfor %}</ul>
+              {% endif %}
+            </div>
+            <div class="fight-field fusion-dropdown-field fusion-dropdown-field--weapon fh-toolbar-field">
+              <label for="id_weapon_weights" class="fight-label">Risk Object Model</label>
+              {{ form.weapon_weights }}
+              {% if form.weapon_weights.errors %}
+                <ul class="fight-field-errors">{% for e in form.weapon_weights.errors %}<li>{{ e }}</li>{% endfor %}</ul>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </details>
+
+      <div class="fh-input-grid">
+        <div class="fight-field fh-field">
+          <label for="id_youtube_url" class="fight-label">Video Link</label>
+          {{ form.youtube_url }}
+          {% if form.youtube_url.errors %}
+            <ul class="fight-field-errors">{% for e in form.youtube_url.errors %}<li>{{ e }}</li>{% endfor %}</ul>
+          {% endif %}
+        </div>
+        <div class="fight-field fh-field">
+          <label for="id_video_file" class="fight-label">Upload Video</label>
+          {{ form.video_file }}
+          {% if form.video_file.errors %}
+            <ul class="fight-field-errors">{% for e in form.video_file.errors %}<li>{{ e }}</li>{% endfor %}</ul>
+          {% endif %}
+          <p class="muted small surv-field-hint">MP4, WebM, MKV… max {{ fight_upload_max_mb }}&nbsp;MB</p>
+        </div>
+        <div class="fight-field fh-field">
+          <label for="id_fusion_image_file" class="fight-label">Upload Image</label>
+          {{ form.fusion_image_file }}
+          {% if form.fusion_image_file.errors %}
+            <ul class="fight-field-errors">{% for e in form.fusion_image_file.errors %}<li>{{ e }}</li>{% endfor %}</ul>
+          {% endif %}
+          <p class="muted small surv-field-hint">Single city scene frame (JPEG / PNG / WebP)</p>
+        </div>
+        <div class="surv-analyze-actions">
+          <button type="submit" class="fh-btn-primary" id="fhAnalyzeBtn">Analyze Scene</button>
+          {% if fusion_progressive_mode %}
+          <button type="button" class="fh-btn-outline" id="fhBtnFullVideoAnalysis" title="Blocking full scan (legacy path)">Run full analysis</button>
+          {% endif %}
+        </div>
+      </div>
+
+      {% if form.non_field_errors %}
+        <ul class="fight-field-errors fusion-form-errors" style="margin:0.5rem 0 0">
+          {% for e in form.non_field_errors %}<li>{{ e }}</li>{% endfor %}
+        </ul>
+      {% endif %}
+    </section>
+    {% else %}
     <section class="fh-glass fh-input-card fh-input-card--premium">
-      {# Single-line model rail: toggles + weights (same IDs / names for JS & POST) #}
       <div class="fh-source-rail" role="group" aria-label="Analyze source — models and weights">
         <div class="fh-source-rail__lead">
           <span class="fh-input-kicker">Operations</span>
-          <h2 class="fh-input-title fh-input-title--rail">Analyze New Source</h2>
+          <h2 class="fh-input-title fh-input-title--rail">Source Analysis</h2>
         </div>
 
         <label class="fusion-model-card fh-glass fusion-model-card--fight fh-mchip">
           <span class="fusion-model-card-icon" aria-hidden="true">⚔</span>
           <span class="fusion-model-card-text">
-            <span class="fusion-model-card-title">Fight classifier</span>
+            <span class="fusion-model-card-title">Conflict Detection</span>
             <span class="fusion-model-card-file">{{ fight_model_name }}</span>
             <span
               class="fusion-model-card-hint fh-mchip-hint"
@@ -77,7 +302,7 @@
         <label class="fusion-model-card fh-glass fusion-model-card--weapon fh-mchip">
           <span class="fusion-model-card-icon" aria-hidden="true">⚠</span>
           <span class="fusion-model-card-text">
-            <span class="fusion-model-card-title">Weapons</span>
+            <span class="fusion-model-card-title">Weapon Detection</span>
             <span class="fusion-model-card-file">{{ weapon_model_name }}</span>
             <span
               class="fusion-model-card-hint fh-mchip-hint"
@@ -90,11 +315,11 @@
         <label class="fusion-model-card fh-glass fusion-model-card--chatapi fh-mchip">
           <span class="fusion-model-card-icon" aria-hidden="true">AI</span>
           <span class="fusion-model-card-text">
-            <span class="fusion-model-card-title">Chat API threat</span>
+            <span class="fusion-model-card-title">Vision Intelligence</span>
             <span class="fusion-model-card-file">OpenAI Vision</span>
             <span
               class="fusion-model-card-hint fh-mchip-hint"
-              title="Active la détection menace via API (violence, gun, knife, etc.)"
+              title="Threat detection via vision API (violence, gun, knife, etc.)"
             >Violence / gun / knife</span>
           </span>
           <span class="fusion-model-toggle">{{ form.use_openai_threat }}</span>
@@ -111,7 +336,7 @@
           </div>
           <div class="fight-field fusion-dropdown-field fusion-dropdown-field--weapon fh-toolbar-field">
             <label for="id_weapon_weights" class="fight-label sr-only">{{ form.weapon_weights.label }}</label>
-            <span class="fh-toolbar-sel-label" aria-hidden="true">Armes</span>
+            <span class="fh-toolbar-sel-label" aria-hidden="true">Weapons</span>
             {{ form.weapon_weights }}
             {% if form.weapon_weights.errors %}
               <ul class="fight-field-errors">{% for e in form.weapon_weights.errors %}<li>{{ e }}</li>{% endfor %}</ul>
@@ -145,7 +370,7 @@
           <p class="muted small" style="color:var(--fh-muted,#8ba4c9);margin:0.2rem 0 0;font-size:.72rem">Single-frame fusion (JPEG / PNG / WebP)</p>
         </div>
         <div style="display:flex;align-items:flex-end;flex-wrap:wrap;gap:0.5rem">
-          <button type="submit" class="fh-btn-primary" id="fhAnalyzeBtn">Analyze Source</button>
+          <button type="submit" class="fh-btn-primary" id="fhAnalyzeBtn">Run Analysis</button>
           {% if fusion_progressive_mode %}
           <button type="button" class="fh-btn-outline" id="fhBtnFullVideoAnalysis" title="Blocking full scan (legacy path)">Run full analysis</button>
           {% endif %}
@@ -158,6 +383,7 @@
         </ul>
       {% endif %}
     </section>
+    {% endif %}
 
     <div id="fh-pane-live" class="fh-pane is-active" style="gap:0.65rem">
       {% if run_error %}
@@ -178,7 +404,13 @@
 
       <div class="fh-main-grid">
         <aside class="fh-col fh-glass fusion-side-panel">
-          <h3 class="fh-panel-title"><span class="fh-kicker">Threats</span>Detected threats</h3>
+          <h3 class="fh-panel-title">
+            {% if request.resolver_match.url_name == 'surveillance_dashboard' %}
+            <span class="fh-kicker">Incidents</span>Incident Overview
+            {% else %}
+            <span class="fh-kicker">Threats</span>Threat Overview
+            {% endif %}
+          </h3>
           <div class="fh-threat-list" id="fhThreatScroll">
             {% if fusion_threat_cards %}
               {% for card in fusion_threat_cards %}
@@ -202,30 +434,40 @@
                 {% endwith %}
               {% endfor %}
             {% else %}
-              <div class="fh-empty" id="fhThreatEmpty">
-                No threats flagged from the last run.<br />
-                Upload an image, video, or YouTube URL to populate this column.
+              <div class="fh-empty surv-empty-premium{% if request.resolver_match.url_name == 'surveillance_dashboard' %} surv-empty-premium--incident{% endif %}" id="fhThreatEmpty">
+                <div class="surv-empty-premium__ico" aria-hidden="true">🛡️</div>
+                {% if request.resolver_match.url_name == 'surveillance_dashboard' %}
+                <p class="surv-empty-premium__title">No incidents detected yet</p>
+                <p class="surv-empty-premium__hint">MedinaMind will list detected safety events here after analysis.</p>
+                {% else %}
+                <p class="surv-empty-premium__title">No active threats detected</p>
+                <p class="surv-empty-premium__hint">Upload a source or start a live feed to populate this panel.</p>
+                {% endif %}
               </div>
             {% endif %}
           </div>
           <button type="button" class="fh-btn-outline" style="margin:0 0.55rem 0.35rem" id="fhViewAllThreats">View all events</button>
 
           <div class="fh-sys-card fh-glass">
-            <h4 class="fh-panel-title" style="padding-top:0"><span class="fh-kicker">Health</span>System health</h4>
-            <div class="fh-sys-row"><span>AI models</span><span class="fh-sys-ok">Active</span></div>
-            <div class="fh-sys-row"><span>Cameras</span><span class="fh-sys-ok">Local feed ready</span></div>
-            <div class="fh-sys-row"><span>Storage</span><span class="fh-sys-warn">Monitor MEDIA_ROOT</span></div>
+            <h4 class="fh-panel-title" style="padding-top:0"><span class="fh-kicker">Status</span>Operations Status</h4>
+            <div class="fh-sys-row"><span>{% if request.resolver_match.url_name == 'surveillance_dashboard' %}Safety modules{% else %}AI models{% endif %}</span><span class="fh-sys-ok">Active</span></div>
+            <div class="fh-sys-row"><span>Cameras</span><span class="fh-sys-ok">Ready</span></div>
+            <div class="fh-sys-row"><span>Storage</span><span class="fh-sys-warn">Monitoring</span></div>
             <div class="fh-sys-row"><span>Network</span><span class="fh-sys-ok">Stable</span></div>
           </div>
 
-          <h3 class="fh-panel-title">Live Source</h3>
+          <h3 class="fh-panel-title"><span class="fh-kicker">Input</span>Input Mode</h3>
           <div class="fh-batch-panel fh-glass">
             <div class="fusion-source-seg" role="tablist">
-              <span class="fusion-source-tab fusion-source-tab-active" data-panel="batch" role="tab">YouTube / file</span>
+              <span class="fusion-source-tab fusion-source-tab-active" data-panel="batch" role="tab">YouTube / File</span>
               <span class="fusion-source-tab" data-panel="camera" role="tab">Camera</span>
             </div>
             <div id="fusionPanelBatch" class="fusion-panel fusion-panel-visible">
-              <p class="muted small" style="color:var(--fh-muted,#8ba4c9);font-size:.75rem">Use <strong>Analyze New Source</strong> above for batch. Camera streams server-side frames when started.</p>
+              {% if request.resolver_match.url_name == 'surveillance_dashboard' %}
+              <p class="muted small surv-input-hint">Choose video link, upload, or camera mode. Use <strong>Analyze a City Scene</strong> above to run safety review.</p>
+              {% else %}
+              <p class="muted small" style="color:var(--fh-muted,#8ba4c9);font-size:.75rem">Choose a source mode for batch or live analysis. Use <strong>Source Analysis</strong> above for uploads.</p>
+              {% endif %}
             </div>
             <div id="fusionPanelCamera" class="fusion-panel" hidden>
               {% if youtube_video_id or annotated_video_url or local_video_url or fusion_source_is_image %}
@@ -243,7 +485,11 @@
         </aside>
 
         <section class="fh-col fh-col-center">
+          <div class="fh-live-panel-head">
+            <h3 class="fh-panel-title" style="margin:0;padding:0"><span class="fh-kicker">Monitor</span>Live Monitoring Feed</h3>
+          </div>
           <div class="video-stage fh-glass fh-city-canvas" id="mainStage" style="position:relative">
+            <div class="surv-live-scan" aria-hidden="true"></div>
             <div class="video-corners" aria-hidden="true"></div>
             <div class="fh-stage-dock" aria-hidden="true">
               <span class="fh-dock-btn">+</span>
@@ -349,9 +595,19 @@
 
               {% else %}
                 <div class="fight-embed-wrap fusion-stage-empty-wrap">
-                  <div class="stage-empty fh-empty fusion-stage-empty" id="fusionStageEmpty">
-                    <p class="stage-empty-kicker">No media loaded</p>
-                    <p class="muted small">Upload an image, video, or YouTube URL — or open the <strong>Camera</strong> tab and press <strong>Start camera</strong> to show the live feed here.</p>
+                  <div class="stage-empty fh-empty fusion-stage-empty surv-empty-premium surv-empty-premium--feed" id="fusionStageEmpty">
+                    <div class="surv-feed-placeholder" aria-hidden="true">
+                      <span class="surv-feed-placeholder__grid"></span>
+                      <span class="surv-feed-placeholder__scan"></span>
+                      <span class="surv-feed-placeholder__cam">📷</span>
+                    </div>
+                    {% if request.resolver_match.url_name == 'surveillance_dashboard' %}
+                    <p class="stage-empty-kicker">No scene loaded</p>
+                    <p class="surv-empty-premium__hint">Upload a video, image, or start live monitoring.</p>
+                    {% else %}
+                    <p class="stage-empty-kicker">No Media Loaded</p>
+                    <p class="surv-empty-premium__hint">Upload a source or switch to camera mode to start live surveillance analysis.</p>
+                    {% endif %}
                   </div>
                 </div>
               {% endif %}
@@ -369,9 +625,10 @@
                     </div>
                     <div class="fusion-dual-live-crops" id="fusionDualLiveCrops"></div>
                   </div>
-                  <div class="stage-empty fusion-cam-placeholder fh-empty" id="fusionCamPlaceholder">
-                    <p class="stage-empty-kicker">Camera preview</p>
-                    <p class="muted small">Press <strong>Start camera</strong> in the sidebar — the stream appears in this window.</p>
+                  <div class="stage-empty fusion-cam-placeholder fh-empty surv-empty-premium" id="fusionCamPlaceholder">
+                    <div class="surv-empty-premium__ico" aria-hidden="true">📷</div>
+                    <p class="stage-empty-kicker">Camera Preview</p>
+                    <p class="surv-empty-premium__hint">Press <strong>Start camera</strong> in Input Mode — the stream appears in this window.</p>
                   </div>
                 </div>
               </div>
@@ -388,7 +645,7 @@
               {% endif %}
               <button type="button" class="stage-icon-btn" id="fhBtnInspect" title="Inspect">◎</button>
               <span class="stage-hint-toolbar" style="color:var(--fh-muted,#8ba4c9);font-size:11px">
-                {% if fusion_progressive_mode %}Progressive video · ~{{ fusion_analysis_interval_seconds }}s sampling{% elif timeline %}Timeline sync · fight + weapons{% elif youtube_video_id %}YouTube{% elif fusion_source_is_image %}Static image{% elif local_video_url %}Local file{% else %}Upload / camera{% endif %}
+                {% if fusion_progressive_mode %}Progressive video · ~{{ fusion_analysis_interval_seconds }}s sampling{% elif timeline %}Timeline sync · conflict + weapons{% elif youtube_video_id %}YouTube{% elif fusion_source_is_image %}Static image{% elif local_video_url %}Local file{% else %}Source controls{% endif %}
               </span>
             </div>
           </div>
@@ -411,9 +668,19 @@
         </section>
 
         <aside class="fh-col fh-glass fusion-intel-panel">
-          <h3 class="fh-panel-title fh-intel-heading"><span class="fh-kicker">Biometric</span>Face recognition</h3>
+          <h3 class="fh-panel-title fh-intel-heading">
+            {% if request.resolver_match.url_name == 'surveillance_dashboard' %}
+            <span class="fh-kicker">People</span>People Recognition
+            {% else %}
+            <span class="fh-kicker">Biometric</span>Biometric Identification
+            {% endif %}
+          </h3>
           <div class="fh-face-panel-sub muted small" style="padding:0 0.55rem;font-size:11px;color:#8ba4c9;line-height:1.4">
-            Multi-face detector (DeepFace + Haar fallback) · face crops · Cosine match vs Django gallery (max distance 0.4).
+            {% if request.resolver_match.url_name == 'surveillance_dashboard' %}
+            Recognize known people and review detected faces when a scene is analyzed.
+            {% else %}
+            Face matching and person review for urban surveillance scenarios.
+            {% endif %}
           </div>
           <div class="fh-faces-slot" style="overflow-y:auto;max-height:min(54vh,520px);padding:0.35rem 0.55rem">
             {% if not face_recognition_enabled %}
@@ -516,26 +783,48 @@
                 <div class="fh-bio-fallback">No face detected in this frame.</div>
               {% endif %}
             {% else %}
-              <div class="fh-empty" id="fhServerFaceEmpty">
-                Pas encore de visages traités.<br />
-                Lancez une analyse image/vidéo : les recadrages apparaîtront ici. En <strong>caméra</strong>, le flux temps réel remplit la zone verte ci‑dessous.
+              <div class="fh-empty surv-empty-premium surv-empty-premium--faces" id="fhServerFaceEmpty">
+                <div class="surv-empty-premium__ico" aria-hidden="true">👤</div>
+                {% if request.resolver_match.url_name == 'surveillance_dashboard' %}
+                <p class="surv-empty-premium__title">No faces reviewed yet</p>
+                <p class="surv-empty-premium__hint">Detected faces will appear here after image, video, or live camera analysis.</p>
+                {% else %}
+                <p class="surv-empty-premium__title">No biometric matches yet</p>
+                <p class="surv-empty-premium__hint">Launch an image, video, or camera analysis to populate identified face crops.</p>
+                {% endif %}
               </div>
             {% endif %}
             <p class="fh-live-face-hint" id="fhLiveFaceHint" hidden style="font-size:11px;color:#5ec8ff;letter-spacing:0.06em;margin:0.5rem 0 0">LIVE BIOMETRIC · registry lookup · newest at bottom</p>
             <div class="fh-live-face-grid fh-live-face-grid--history" id="fhLiveFaceGrid" aria-live="polite"></div>
           </div>
 
-          <h3 class="fh-panel-title"><span class="fh-kicker">Actions</span>Quick actions</h3>
-          <div class="fh-quick-actions" style="padding:0 0.55rem 0.55rem">
-            <button type="button" class="fh-btn-primary" id="fhQuickReport">Generate report</button>
-            {% if annotated_video_url %}
-              <a class="fh-btn-outline" href="{{ annotated_video_url }}" download style="text-decoration:none">Export evidence</a>
-            {% elif annotated_image_url %}
-              <a class="fh-btn-outline" href="{{ annotated_image_url }}" download style="text-decoration:none">Export evidence</a>
+          <h3 class="fh-panel-title">
+            {% if request.resolver_match.url_name == 'surveillance_dashboard' %}
+            <span class="fh-kicker">Response</span>City Response
             {% else %}
-              <button type="button" class="fh-btn-outline" disabled>Export evidence</button>
+            <span class="fh-kicker">Actions</span>Response Actions
             {% endif %}
-            <a class="fh-btn-outline fh-btn-danger" href="{% url 'monitoring:road_damage_test' %}" style="text-decoration:none">Alert security · road intel</a>
+          </h3>
+          <div class="fh-quick-actions" style="padding:0 0.55rem 0.55rem">
+            <button type="button" class="fh-btn-primary" id="fhQuickReport">
+              {% if request.resolver_match.url_name == 'surveillance_dashboard' %}Generate Safety Report{% else %}Generate Report{% endif %}
+            </button>
+            {% if annotated_video_url %}
+              <a class="fh-btn-outline" href="{{ annotated_video_url }}" download style="text-decoration:none">
+                {% if request.resolver_match.url_name == 'surveillance_dashboard' %}Export Case Evidence{% else %}Export evidence{% endif %}
+              </a>
+            {% elif annotated_image_url %}
+              <a class="fh-btn-outline" href="{{ annotated_image_url }}" download style="text-decoration:none">
+                {% if request.resolver_match.url_name == 'surveillance_dashboard' %}Export Case Evidence{% else %}Export evidence{% endif %}
+              </a>
+            {% else %}
+              <button type="button" class="fh-btn-outline" disabled>
+                {% if request.resolver_match.url_name == 'surveillance_dashboard' %}Export Case Evidence{% else %}Export evidence{% endif %}
+              </button>
+            {% endif %}
+            <a class="fh-btn-outline fh-btn-danger" href="{% url 'monitoring:road_damage_test' %}" style="text-decoration:none">
+              {% if request.resolver_match.url_name == 'surveillance_dashboard' %}Send Safety Alert{% else %}Alert Security · Road Intel{% endif %}
+            </a>
           </div>
         </aside>
       </div>

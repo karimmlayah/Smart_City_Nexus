@@ -1,590 +1,125 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}Smart City · Traffic Nexus{% endblock %}
-{% block body_class %}cockpit fusion-hub-sc road-damage-sc traffic-nexus-sc{% endblock %}
+{% block title %}MedinaMind · Traffic Intelligence{% endblock %}
+{% block body_class %}cockpit fusion-hub-sc road-damage-sc traffic-nexus-sc ai-dashboard-sc mm-dash-body{% endblock %}
 
 {% block extra_head %}
+  <script>
+  (function () {
+    try {
+      var t = localStorage.getItem("medinamind-theme") || "blue-dark";
+      document.documentElement.setAttribute("data-theme", t);
+    } catch (e) {
+      document.documentElement.setAttribute("data-theme", "blue-dark");
+    }
+  })();
+  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'monitoring/theme-tokens.css' %}">
   <link rel="stylesheet" href="{% static 'monitoring/fusion_hub_dashboard.css' %}">
   <link rel="stylesheet" href="{% static 'monitoring/fusion_hub_smartcity.css' %}">
   <link rel="stylesheet" href="{% static 'monitoring/road_damage_theme.css' %}">
+  <link rel="stylesheet" href="{% static 'monitoring/ai_dashboard.css' %}">
+  <link rel="stylesheet" href="{% static 'monitoring/ai-dashboard-modern.css' %}">
+  <link rel="stylesheet" href="{% static 'monitoring/theme-light-overrides.css' %}">
+  <link rel="stylesheet" href="{% static 'monitoring/brand-logos.css' %}">
+  <link rel="stylesheet" href="{% static 'monitoring/traffic_nexus_command.css' %}?v=8">
+  <script src="{% static 'monitoring/traffic_nexus_stream.js' %}?v=3"></script>
+  <script src="{% static 'monitoring/traffic_nexus_vehicle_focus.js' %}?v=7"></script>
 {% endblock %}
 
 {% block content %}
-<style>
-  .tn-dash .ai-dash { padding-top: 0; }
-  .tn-streamlit-hero h1 {
-    font-size: clamp(1.35rem, 2.5vw, 1.85rem);
-    font-weight: 800;
-    color: #7eb8ff;
-    margin: 0 0 8px;
-    letter-spacing: -0.02em;
-  }
-  .tn-streamlit-sub { margin: 0 0 6px; color: var(--text); font-size: 0.95rem; opacity: 0.92; max-width: 720px; }
-  .tn-streamlit-hint { margin: 0 0 14px; color: var(--muted); font-size: 0.82rem; max-width: 720px; }
-  .tn-hero-compact {
-    margin-bottom: 16px;
-    padding-bottom: 12px;
-    border-bottom: 1px solid rgba(255,255,255,0.08);
-  }
-  .tn-workspace {
-    display: grid;
-    grid-template-columns: minmax(240px, 300px) minmax(0, 1fr);
-    gap: 18px;
-    align-items: start;
-  }
-  .tn-params-sidebar {
-    position: sticky;
-    top: 10px;
-    max-height: calc(100vh - 88px);
-    overflow-y: auto;
-    padding-bottom: 8px;
-  }
-  .tn-params-sidebar .tn-sidebar-title {
-    font-size: 0.72rem;
-    font-weight: 800;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: var(--muted);
-    margin: 18px 0 10px;
-    padding-top: 12px;
-    border-top: 1px solid rgba(255,255,255,0.08);
-  }
-  .tn-params-sidebar h3.tn-sidebar-title:first-of-type {
-    margin-top: 8px;
-    padding-top: 0;
-    border-top: none;
-  }
-  .tn-main-panel {
-    min-width: 0;
-    max-width: 1380px;
-  }
-  @media (max-width: 1150px) {
-    .tn-workspace { grid-template-columns: 1fr; }
-    .tn-params-sidebar {
-      position: relative;
-      top: 0;
-      max-height: none;
-      order: 2;
-    }
-    .tn-main-panel { order: 1; }
-  }
-  .tn-toolbar {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    margin-bottom: 14px;
-  }
-  .tn-toolbar .tn-btn-stream {
-    padding: 10px 18px;
-    border-radius: 10px;
-    font-weight: 700;
-    font-size: 0.85rem;
-    cursor: pointer;
-    border: 1px solid rgba(255,255,255,0.35);
-    background: rgba(12,18,40,0.85);
-    color: var(--text);
-  }
-  .tn-toolbar .tn-btn-stream:hover { border-color: rgba(127,184,255,0.5); background: rgba(47,128,237,0.15); }
-  .tn-stage-grid {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 16px;
-    align-items: start;
-    margin-bottom: 10px;
-  }
-  @media (max-width: 960px) { .tn-stage-grid { grid-template-columns: 1fr; } }
-  .tn-stage-live { display: none; }
-  .tn-stage-label {
-    font-size: 0.68rem;
-    font-weight: 800;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: var(--muted);
-    margin-bottom: 8px;
-  }
-  .tn-embed-shell {
-    position: relative;
-    width: 100%;
-    aspect-ratio: 16 / 9;
-    background: #000;
-    border-radius: 12px;
-    overflow: hidden;
-    border: 1px solid rgba(255,255,255,0.14);
-  }
-  .tn-embed-shell iframe,
-  .tn-embed-shell video {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    border: 0;
-  }
-  .tn-embed-placeholder {
-    display: none;
-    align-items: center;
-    justify-content: center;
-    aspect-ratio: 16 / 9;
-    background: #050508;
-    border-radius: 12px;
-    border: 1px dashed rgba(255,255,255,0.15);
-    color: var(--muted);
-    font-size: 0.82rem;
-    padding: 16px;
-    text-align: center;
-    line-height: 1.45;
-  }
-  .tn-embed-placeholder.is-visible { display: flex; }
-  .tn-zone-line {
-    font-size: 0.88rem;
-    color: var(--text);
-    margin: 8px 0 14px;
-    font-weight: 600;
-  }
-  .tn-actions-row { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; }
-  .tn-dash-section {
-    margin-top: 8px;
-    margin-bottom: 20px;
-  }
-  .tn-dash-section > h2 {
-    margin: 0 0 12px;
-    font-size: 1.05rem;
-    font-weight: 800;
-    color: var(--text);
-  }
-  .tn-report-card {
-    border: 1px solid rgba(255,255,255,0.12);
-    border-radius: 14px;
-    padding: 16px 18px;
-    background: rgba(0,0,0,0.22);
-    max-width: 520px;
-  }
-  .tn-report-card h3 { margin: 0 0 12px; font-size: 0.95rem; font-weight: 700; color: var(--text); }
-  .tn-report-card select {
-    width: 100%;
-    max-width: 280px;
-    padding: 10px 11px;
-    border-radius: 10px;
-    border: 1px solid rgba(255,255,255,0.12);
-    background: rgba(0,0,0,0.35);
-    color: var(--muted);
-    margin-top: 6px;
-  }
-  .tn-info-banner {
-    margin: 14px 0 0;
-    padding: 12px 14px;
-    border-radius: 10px;
-    background: rgba(47,128,237,0.18);
-    border: 1px solid rgba(47,128,237,0.35);
-    color: #b8d4ff;
-    font-size: 0.84rem;
-  }
-  .tn-card {
-    background: var(--card); border: 1px solid rgba(47,128,237,0.22); border-radius: 14px; padding: 16px 18px;
-    font-size: 0.88rem;
-  }
-  .tn-card h3 { margin: 0 0 12px; font-size: 0.82rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
-  .tn-field { margin-bottom: 12px; }
-  .tn-field label { display: block; font-size: 0.72rem; font-weight: 700; color: var(--muted); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.06em; }
-  .tn-field input, .tn-field select {
-    width: 100%; padding: 10px 11px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.12);
-    background: rgba(0,0,0,0.35); color: var(--text); box-sizing: border-box;
-  }
-  .tn-field input[type="range"] { padding: 0; height: 28px; }
-  .tn-row-inline { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-  .tn-row-inline label { margin-bottom: 0; text-transform: none; letter-spacing: 0; font-size: 0.85rem; color: var(--text); }
-  .tn-btn {
-    display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 10px 16px;
-    border-radius: 10px; font-weight: 800; font-size: 0.85rem; cursor: pointer; border: none;
-    background: linear-gradient(135deg, #2F80ED, #2563c9); color: #fff; margin-right: 8px; margin-bottom: 8px;
-  }
-  .tn-btn-ghost { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.18); color: var(--text); }
-  .tn-btn-live { background: linear-gradient(135deg, #11998e, #38ef7d); color: #052018; }
-  .tn-canvas-wrap {
-    position: relative; background: #000; border-radius: 14px; overflow: auto; max-height: min(70vh, 600px);
-    border: 1px solid rgba(120, 176, 228, 0.35); box-shadow: 0 12px 26px rgba(5, 10, 24, 0.35);
-  }
-  #tn-canvas { display: block; cursor: crosshair; max-width: 100%; height: auto; }
-  .tn-help { font-size: 0.78rem; color: var(--muted); line-height: 1.45; margin-top: 8px; }
-  .tn-out-img { max-width: 100%; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); }
-  .tn-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; margin-top: 10px; }
-  .tn-table th, .tn-table td { padding: 8px 10px; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.08); }
-  .tn-table th { color: var(--muted); font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.06em; }
-  .tn-agent { background: rgba(0,0,0,0.25); border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; border-left: 3px solid var(--accent); }
-  .tn-agent strong { color: #9ecbff; }
-  .tn-range-val { min-width: 2.5em; font-weight: 700; color: #9ecbff; }
-  .tn-live-bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 10px; }
-  .tn-pill { display: inline-block; padding: 4px 8px; border-radius: 8px; background: rgba(47,128,237,0.2); font-size: 0.75rem; }
-  .tn-advanced {
-    margin-top: 12px;
-    border-top: 1px solid rgba(255,255,255,0.08);
-    padding-top: 10px;
-  }
-  .tn-advanced > summary {
-    cursor: pointer;
-    font-size: 0.78rem;
-    color: var(--muted);
-    font-weight: 700;
-    margin-bottom: 8px;
-  }
-  .tn-insights {
-    margin-top: 14px;
-    display: grid;
-    grid-template-columns: repeat(4, minmax(140px, 1fr));
-    gap: 10px;
-  }
-  .tn-insight-card {
-    border: 1px solid rgba(126, 184, 255, 0.22);
-    border-radius: 12px;
-    padding: 12px;
-    background: rgba(7, 14, 33, 0.75);
-    min-height: 84px;
-  }
-  .tn-insight-card b {
-    display: block;
-    color: #98b5d7;
-    font-size: 0.72rem;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    margin-bottom: 6px;
-  }
-  .tn-insight-card span { font-size: 0.92rem; color: #e7f2ff; }
-  .tn-insight-snap {
-    margin-top: 10px;
-    font-size: 0.8rem;
-    color: #9ecbff;
-  }
-  .tn-premium-block {
-    background: linear-gradient(180deg, rgba(6, 14, 31, 0.96), rgba(4, 11, 25, 0.98));
-    border: 1px solid rgba(123, 169, 219, 0.20);
-    border-radius: 14px;
-    padding: 16px 18px;
-    margin-top: 12px;
-    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.03), 0 8px 18px rgba(2, 6, 16, 0.35);
-  }
-  .tn-premium-title {
-    margin: 0 0 8px;
-    font-size: 1.25rem;
-    font-weight: 800;
-    color: #f7fbff;
-  }
-  .tn-kpi-strip {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(110px, 1fr));
-    gap: 10px;
-    margin-top: 8px;
-  }
-  .tn-kpi-mini {
-    border-radius: 10px;
-    border: 1px solid rgba(107, 158, 214, 0.24);
-    background: rgba(7, 16, 35, 0.88);
-    padding: 10px;
-  }
-  .tn-kpi-mini b {
-    display: block;
-    font-size: 0.72rem;
-    color: #8faecd;
-    margin-bottom: 4px;
-  }
-  .tn-kpi-mini span {
-    font-size: 1.55rem;
-    line-height: 1.1;
-    color: #eef6ff;
-  }
-  .tn-agent-grid {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(180px, 1fr));
-    gap: 10px;
-  }
-  .tn-agent-grid-3 {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(220px, 1fr));
-    gap: 12px;
-  }
-  .tn-live-dot {
-    display: inline-block;
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: #35ff96;
-    box-shadow: 0 0 10px #35ff96;
-    animation: tnPulse 1.35s ease-in-out infinite;
-    margin-right: 6px;
-  }
-  @keyframes tnPulse {
-    0%, 100% { transform: scale(0.9); opacity: 0.65; }
-    50% { transform: scale(1.2); opacity: 1; }
-  }
-  .tn-agent-tile {
-    border-radius: 16px;
-    border: 1px solid rgba(120, 170, 220, 0.24);
-    background: linear-gradient(180deg, rgba(12,22,44,0.72), rgba(7,15,31,0.88));
-    padding: 12px;
-    backdrop-filter: blur(8px);
-    box-shadow: 0 8px 16px rgba(2, 7, 18, 0.32);
-    transition: transform .3s ease, box-shadow .3s ease, border-color .3s ease;
-  }
-  .tn-agent-tile:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 16px 28px rgba(2, 10, 24, 0.45), 0 0 16px rgba(72, 134, 255, 0.18);
-    border-color: rgba(96, 178, 255, 0.45);
-  }
-  .tn-agent-status {
-    font-size: .72rem;
-    padding: 2px 8px;
-    border-radius: 99px;
-    letter-spacing: .05em;
-    font-weight: 700;
-    text-transform: uppercase;
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-  }
-  .tn-agent-status::before {
-    content: "";
-    width: 7px;
-    height: 7px;
-    border-radius: 50%;
-    background: currentColor;
-    box-shadow: 0 0 9px currentColor;
-    animation: tnPulse 1.35s ease-in-out infinite;
-  }
-  .tn-status-active {
-    color: #57ffa9;
-    background: rgba(30, 119, 79, 0.18);
-    border: 1px solid rgba(64, 246, 153, 0.4);
-  }
-  .tn-status-standby {
-    color: #ffd67b;
-    background: rgba(145, 99, 20, 0.2);
-    border: 1px solid rgba(250, 196, 73, 0.4);
-  }
-  .tn-status-alert {
-    color: #ff8b8b;
-    background: rgba(141, 32, 32, 0.25);
-    border: 1px solid rgba(255, 110, 110, 0.45);
-  }
-  .tn-status-override {
-    color: #ffb8f4;
-    background: rgba(110, 35, 105, 0.28);
-    border: 1px solid rgba(255, 140, 230, 0.5);
-    animation: tnGlowPulse 2s ease-in-out infinite;
-  }
-  @keyframes tnGlowPulse {
-    0%, 100% { box-shadow: 0 0 0 0 rgba(255, 120, 220, 0.25); }
-    50% { box-shadow: 0 0 14px 2px rgba(255, 120, 220, 0.35); }
-  }
-  .tn-agent-card--perception {
-    border-color: rgba(56, 232, 255, 0.42);
-    background: linear-gradient(155deg, rgba(8, 52, 68, 0.88), rgba(5, 18, 36, 0.95));
-    box-shadow: 0 10px 22px rgba(0, 55, 72, 0.38), inset 0 1px 0 rgba(120, 245, 255, 0.14);
-  }
-  .tn-agent-card--traffic {
-    border-color: rgba(255, 193, 94, 0.45);
-    background: linear-gradient(155deg, rgba(58, 42, 12, 0.55), rgba(10, 18, 32, 0.94));
-    box-shadow: 0 10px 22px rgba(40, 28, 8, 0.45);
-  }
-  .tn-agent-card--emergency {
-    border-color: rgba(255, 130, 90, 0.48);
-    background: linear-gradient(155deg, rgba(62, 22, 18, 0.62), rgba(12, 14, 28, 0.96));
-    box-shadow: 0 10px 24px rgba(80, 24, 16, 0.42);
-  }
-  .tn-agent-card--violation {
-    border-color: rgba(255, 176, 66, 0.42);
-    background: linear-gradient(155deg, rgba(48, 36, 10, 0.58), rgba(10, 16, 30, 0.94));
-  }
-  .tn-agent-card--prediction {
-    border-color: rgba(168, 122, 255, 0.45);
-    background: linear-gradient(155deg, rgba(38, 22, 62, 0.62), rgba(10, 14, 34, 0.95));
-    box-shadow: 0 10px 22px rgba(48, 28, 88, 0.35);
-  }
-  .tn-agent-card--rerouting {
-    border-color: rgba(82, 214, 186, 0.42);
-    background: linear-gradient(155deg, rgba(12, 48, 44, 0.58), rgba(8, 18, 32, 0.94));
-  }
-  .tn-agent-card--xai {
-    border-color: rgba(110, 178, 255, 0.48);
-    background: linear-gradient(155deg, rgba(18, 38, 72, 0.72), rgba(8, 16, 36, 0.96));
-    box-shadow: 0 10px 22px rgba(24, 72, 140, 0.32);
-  }
-  .tn-agent-card--supervisor {
-    border-color: rgba(255, 214, 120, 0.55);
-    background: linear-gradient(155deg, rgba(42, 36, 18, 0.68), rgba(10, 18, 34, 0.96));
-    box-shadow: 0 12px 28px rgba(36, 32, 12, 0.45), inset 0 1px 0 rgba(255, 220, 140, 0.12);
-  }
-  .tn-agent-card--default {
-    border-color: rgba(120, 170, 220, 0.28);
-  }
-  .tn-agent-supervisor {
-    grid-column: span 2;
-    border: 1px solid rgba(255, 214, 140, 0.42);
-    box-shadow: 0 0 0 1px rgba(255, 210, 130, 0.15), 0 12px 30px rgba(28, 24, 8, 0.5);
-    background: linear-gradient(175deg, rgba(36, 32, 18, 0.82), rgba(10, 18, 34, 0.96));
-  }
-  .tn-agent-cat {
-    display: inline-block;
-    font-size: 0.67rem;
-    color: #8cb0da;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-    margin-bottom: 6px;
-  }
-  .tn-mini-spark {
-    width: 100%;
-    height: 30px;
-    margin-top: 8px;
-    opacity: 0.9;
-  }
-  .tn-reco-card {
-    border-radius: 16px;
-    border: 1px solid rgba(120, 170, 220, 0.26);
-    background: linear-gradient(180deg, rgba(9,20,40,0.85), rgba(6,14,30,0.96));
-    padding: 13px;
-  }
-  .tn-priority-low { color: #ffd48a; border-color: rgba(245, 171, 87, 0.42); background: rgba(245, 171, 87, 0.2); }
-  .tn-priority-medium { color: #ffd48a; border-color: rgba(245, 171, 87, 0.42); background: rgba(245, 171, 87, 0.2); }
-  .tn-priority-high { color: #ffabab; border-color: rgba(255, 118, 118, 0.45); background: rgba(208, 58, 58, 0.22); }
-  .tn-circle-score {
-    width: 74px;
-    height: 74px;
-    border-radius: 50%;
-    display: grid;
-    place-items: center;
-    border: 2px solid rgba(84, 183, 255, 0.5);
-    box-shadow: inset 0 0 16px rgba(25, 117, 191, 0.35), 0 0 20px rgba(53, 159, 255, 0.25);
-    font-weight: 800;
-    color: #e9f4ff;
-  }
-  .tn-bars { margin-top: 8px; }
-  .tn-bar-row { margin-bottom: 8px; }
-  .tn-bar-row label {
-    font-size: 0.82rem;
-    color: #d8e8ff;
-    display: block;
-    margin-bottom: 3px;
-  }
-  .tn-bar-bg {
-    height: 7px;
-    border-radius: 10px;
-    background: rgba(255,255,255,0.18);
-    overflow: hidden;
-  }
-  .tn-bar-fill {
-    height: 100%;
-    background: linear-gradient(90deg, #0f8de8, #40b9ff);
-    border-radius: 10px;
-  }
-  .tn-badge-med {
-    display: inline-block;
-    font-size: 0.67rem;
-    font-weight: 800;
-    border-radius: 8px;
-    padding: 2px 7px;
-    margin-left: 6px;
-    background: rgba(245, 171, 87, 0.22);
-    color: #ffca8b;
-    border: 1px solid rgba(245, 171, 87, 0.35);
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-  }
-  @media (max-width: 960px) {
-    .tn-insights { grid-template-columns: 1fr 1fr; }
-    .tn-kpi-strip { grid-template-columns: 1fr 1fr; }
-    .tn-agent-grid { grid-template-columns: 1fr; }
-    .tn-agent-grid-3 { grid-template-columns: 1fr; }
-    .tn-agent-supervisor { grid-column: span 1; }
-  }
-</style>
+<div class="fh-root ai-dash-root tn-dash" id="tnDashRoot">
+  <div class="tn-ambient-grid" aria-hidden="true"></div>
+  <div class="tn-particles" aria-hidden="true">
+    <span class="tn-particle"></span><span class="tn-particle"></span><span class="tn-particle"></span>
+    <span class="tn-particle"></span><span class="tn-particle"></span>
+  </div>
 
-<div class="fh-root tn-dash">
-  <header class="fh-nav fh-glass" aria-label="Primary">
-    <div class="fh-nav-brand fh-brand-cluster">
-      <span class="fh-brand-orb" aria-hidden="true"></span>
-      <div class="fh-brand-text">
-        <h1 class="fh-nav-logo">Smart City Platform</h1>
-        <p class="fh-nav-tag">Traffic Nexus · TDSS</p>
-      </div>
-    </div>
-    <div class="fh-nav-meta">
-      <span class="fh-nav-loc" title="Module">Mobility · YOLO · ROI · Decision engine</span>
-      <span class="fh-clock" id="fhClock" aria-live="polite">--:--:--</span>
-      <span class="fh-icon-chip" title="Notifications">🔔</span>
-      <span class="fh-nav-user" title="Operator" aria-hidden="true"></span>
-    </div>
-  </header>
-
-  <div class="ai-dash">
-    <header class="tn-hero-compact tn-streamlit-hero">
-      <h1>Traffic Decision Support System</h1>
-      <p class="tn-streamlit-sub">Real-time congestion analysis, smart recommendations, and explainable AI.</p>
-    </header>
-
+  <div class="ai-dash tn-page">
     <div class="tn-workspace">
-      <aside class="tn-params-sidebar tn-card" aria-label="Paramètres détection">
-          <p class="tn-help" style="margin-top:0;">Essentials visibles. Les options techniques sont dans Advanced.</p>
-          <h3 class="tn-sidebar-title">Essentials</h3>
+      <aside class="tn-control tn-glass-card" aria-label="Control center">
+        <div class="tn-control__head">
+          <h2 class="tn-control__title">Control Center</h2>
+          <p class="tn-control__sub">Configure source, zones, and analysis</p>
+        </div>
 
-          <h3 class="tn-sidebar-title">Mode d’analyse</h3>
+        <div class="tn-control__group">
+          <h3 class="tn-control__label">Analysis Mode</h3>
           <div class="tn-field tn-row-inline">
-            <label><input type="radio" name="tn-analysis" id="tn-analysis-vehicle" value="vehicle" checked /> Comptage véhicules</label>
-            <label><input type="radio" name="tn-analysis" id="tn-analysis-congestion" value="congestion" /> Détection congestion</label>
+            <label><input type="radio" name="tn-analysis" id="tn-analysis-vehicle" value="vehicle" checked /> Traffic Volume</label>
+            <label><input type="radio" name="tn-analysis" id="tn-analysis-congestion" value="congestion" /> Congestion</label>
           </div>
-          <p class="tn-help" id="tn-congestion-model-note" style="display:none;">Congestion: <code>yolo_congestion.pt</code> uniquement (pas de <code>best.pt</code>).</p>
-          <h3 class="tn-sidebar-title">Mode traitement</h3>
+          <p class="tn-help tn-help--compact" id="tn-congestion-model-note" style="display:none;">Congestion mode uses dedicated vision model.</p>
+        </div>
+
+        <div class="tn-control__group">
+          <h3 class="tn-control__label">Stream Mode</h3>
           <div class="tn-field tn-row-inline">
             <label><input type="radio" name="tn-processing" id="tn-proc-live" value="live" checked /> Live</label>
-            <label><input type="radio" name="tn-processing" id="tn-proc-opt" value="optimized" /> Optimized stream (auto-cache)</label>
+            <label><input type="radio" name="tn-processing" id="tn-proc-opt" value="optimized" /> Optimized</label>
           </div>
-          <p class="tn-help">Cache optimisé : fichiers vidéo avec durée connue uniquement.</p>
-          <h3 class="tn-sidebar-title">Type de source</h3>
-          <div class="tn-field tn-row-inline">
-            <label><input type="radio" name="tn-src-type" value="youtube" checked /> YouTube / URL</label>
-            <label><input type="radio" name="tn-src-type" value="local" /> Chemin local</label>
-            <label><input type="radio" name="tn-src-type" value="upload" /> Upload fichier</label>
+        </div>
+
+        <div class="tn-control__group">
+          <h3 class="tn-control__label">Source</h3>
+          <div class="tn-field tn-row-inline tn-src-row">
+            <label><input type="radio" name="tn-src-type" value="youtube" checked /> Online</label>
+            <label><input type="radio" name="tn-src-type" value="local" /> Local</label>
+            <label><input type="radio" name="tn-src-type" value="upload" /> Upload</label>
           </div>
           <div class="tn-field" id="wrap-yt">
-            <label for="tn-yt">Video URL</label>
+            <label for="tn-yt">Source URL</label>
             <input type="url" id="tn-yt" placeholder="https://www.youtube.com/watch?v=..." value="https://www.youtube.com/watch?v=MNn9qKG2UFI" autocomplete="off" />
           </div>
           <div class="tn-field" id="wrap-local" style="display:none;">
-            <label for="tn-local-path">Chemin fichier (sous le dossier projet)</label>
+            <label for="tn-local-path">Server file path</label>
             <input type="text" id="tn-local-path" placeholder="traffic_nexus/traffic_nexus/video.mp4" autocomplete="off" />
           </div>
           <div class="tn-field" id="wrap-upload" style="display:none;">
-            <label for="tn-file">Fichier vidéo / image</label>
+            <label for="tn-file">Media file</label>
             <input type="file" id="tn-file" accept="video/*,image/*" />
           </div>
-          <button type="button" class="tn-btn" id="tn-load-frame">Charger le cadre de référence</button>
+          <button type="button" class="tn-btn tn-btn--block" id="tn-load-frame">Load Reference Frame</button>
+        </div>
 
-          <h3 class="tn-sidebar-title" style="margin-top:12px;">Performance</h3>
+        <div class="tn-control__group">
+          <h3 class="tn-control__label">Playback</h3>
           <div class="tn-field" id="tn-perf-wrap">
-            <label for="tn-dash-refresh">Dashboard refresh (frames)</label>
+            <label for="tn-ai-rate">AI Update Rate</label>
+            <select id="tn-ai-rate">
+              <option value="8">Smooth Demo (8 FPS)</option>
+              <option value="10" selected>Balanced (10 FPS)</option>
+              <option value="15">Fast AI (15 FPS)</option>
+            </select>
+            <p class="tn-help tn-help--compact">Video remains smooth while AI updates intelligently in the background.</p>
+          </div>
+          <div class="tn-field" id="tn-dash-refresh-wrap">
+            <label for="tn-dash-refresh">KPI Refresh <span class="tn-range-val" id="tn-dash-refresh-val">3</span></label>
             <input type="range" id="tn-dash-refresh" min="1" max="30" step="1" value="3" disabled aria-disabled="true" />
-            <span class="tn-range-val" id="tn-dash-refresh-val">3</span>
           </div>
           <div class="tn-field">
-            <label><input type="checkbox" id="tn-turbo-local" disabled /> Turbo local playback</label>
-            <p class="tn-help" style="margin-top:4px;">Fichier local ou upload uniquement : inférence plus légère et saut de cadres accru.</p>
+            <label><input type="checkbox" id="tn-turbo-local" disabled /> Fast Playback</label>
           </div>
-          <p class="tn-help" id="tn-perf-hint" style="margin-top:2px;">Chargez un cadre pour activer ces options.</p>
+          <p class="tn-help tn-help--compact" id="tn-perf-hint">Load a frame to enable playback options.</p>
+        </div>
 
-          <hr style="border:none;border-top:1px solid rgba(255,255,255,0.08);margin:16px 0;" />
+        <details class="tn-advanced">
+          <summary>Advanced Options</summary>
 
-          <details class="tn-advanced">
-            <summary>Advanced</summary>
-          <h3 class="tn-sidebar-title">YOLO</h3>
+          <h3 class="tn-control__label">Vision Models</h3>
           <div class="tn-field">
-            <label for="tn-model-mode">Select Model Mode</label>
+            <label for="tn-model-mode">Model Mode</label>
             <select id="tn-model-mode">
               <option value="single_model">Single model</option>
               <option value="dual_model_fusion" selected>Dual model fusion</option>
             </select>
           </div>
           <div class="tn-field">
-            <label for="tn-model">Modèle</label>
+            <label for="tn-model">Model</label>
             <select id="tn-model">
               <option value="yolov8n">yolov8n.pt</option>
               <option value="yolov8m">yolov8m.pt</option>
@@ -593,37 +128,31 @@
             </select>
           </div>
           <div class="tn-field">
-            <label for="tn-custom-pt">Chemin personnalisé (.pt / .onnx)</label>
-            <input type="text" id="tn-custom-pt" placeholder="best.pt ou chemin relatif au projet" autocomplete="off" />
+            <label for="tn-custom-pt">Custom model path</label>
+            <input type="text" id="tn-custom-pt" placeholder="best.pt or relative path" autocomplete="off" />
           </div>
-          <div class="tn-field" id="tn-dual-wrap"><label><input type="checkbox" id="tn-dual" /> Dual model : best.pt + yolov8n.pt</label></div>
-          <p class="tn-help" id="tn-dual-legend" style="margin-top:-6px;line-height:1.45;">
-            <strong>Comptage véhicules</strong> + dual fusion : chargement du couple
-            <code>best.pt</code> (<code>models_traffic/</code> puis racine projet) + <code>yolov8n.pt</code>.
-            Le menu « Modèle » (yolov8n/s/m/…) s’applique surtout au <strong>mode single</strong> ; en dual, l’inférence utilise ce duo (ambulance / classes custom viennent surtout de <code>best.pt</code>, le COCO standard n’a pas « ambulance »).<br/>
-            <strong>Congestion</strong> : uniquement <code>yolo_congestion.pt</code> (aucune fusion <code>best.pt</code>).
-          </p>
+          <div class="tn-field" id="tn-dual-wrap"><label><input type="checkbox" id="tn-dual" /> Dual model fusion</label></div>
+          <p class="tn-help tn-help--compact" id="tn-dual-legend" style="display:none;"></p>
           <div class="tn-field">
-            <label for="tn-labels">Libellés véhicules (CSV)</label>
-            <input type="text" id="tn-labels" value="*" autocomplete="off" placeholder="* = toutes classes, ou liste: car,bus,ambulance,…" />
-            <p class="tn-help" style="margin-top:4px;">Astuce : <code>*</code> désactive le filtre de libellés (recommandé avec dual fusion + best.pt).</p>
+            <label for="tn-labels">Vehicle labels (CSV)</label>
+            <input type="text" id="tn-labels" value="*" autocomplete="off" placeholder="* or car,bus,…" />
           </div>
 
-          <h3 class="tn-sidebar-title">ROI — méthode</h3>
+          <h3 class="tn-control__label">Monitoring Zone</h3>
           <div class="tn-field tn-row-inline">
-            <label><input type="radio" name="tn-roi-tool" value="boxes" /> Boîtes</label>
-            <label><input type="radio" name="tn-roi-tool" value="polygon" checked /> Points (polygone)</label>
+            <label><input type="radio" name="tn-roi-tool" value="boxes" /> Boxes</label>
+            <label><input type="radio" name="tn-roi-tool" value="polygon" checked /> Points</label>
           </div>
-          <p class="tn-help" id="tn-roi-hint-poly">Polygone : placez les points ; « Fermer zone » puis « Sauver zone ».</p>
-          <p class="tn-help" id="tn-roi-hint-box" style="display:none;">Rectangle : deux clics (diagonale), puis « Sauver zone ».</p>
-          <button type="button" class="tn-btn tn-btn-ghost" id="tn-close-poly">Fermer zone (polygone)</button>
+          <p class="tn-help tn-help--compact" id="tn-roi-hint-poly">Draw multiple polygon zones — close &amp; save each one, then toggle active zones below.</p>
+          <p class="tn-help tn-help--compact" id="tn-roi-hint-box" style="display:none;">Two clicks for rectangle, then save.</p>
+          <button type="button" class="tn-btn tn-btn-ghost tn-btn--block" id="tn-close-poly">Close &amp; Save Zone</button>
 
-          <h3 class="tn-sidebar-title">Inférence</h3>
+          <h3 class="tn-control__label">Display</h3>
           <div class="tn-field">
-            <label for="tn-display-mode">Select Display Mode</label>
+            <label for="tn-display-mode">View Mode</label>
             <select id="tn-display-mode">
-              <option value="normal_detection" selected>Normal detection</option>
-              <option value="congestion_heatmap">Congestion heatmap (densité véhicules)</option>
+              <option value="normal_detection" selected>Standard detection</option>
+              <option value="congestion_heatmap">Congestion heatmap</option>
               <option value="speed_status">Speed status</option>
               <option value="minimal">Minimal</option>
             </select>
@@ -637,126 +166,306 @@
             <input type="range" id="tn-fskip" min="1" max="5" step="1" value="1" />
           </div>
           <div class="tn-field">
-            <label>Inference size <span class="tn-range-val" id="tn-imgsz-val">640</span></label>
+            <label>Resolution <span class="tn-range-val" id="tn-imgsz-val">640</span></label>
             <input type="range" id="tn-imgsz" min="160" max="960" step="32" value="640" />
           </div>
           <div class="tn-field">
-            <label>Max detections <span class="tn-range-val" id="tn-maxdet-val">80</span></label>
+            <label>Max vehicles <span class="tn-range-val" id="tn-maxdet-val">80</span></label>
             <input type="range" id="tn-maxdet" min="5" max="200" step="1" value="80" />
           </div>
-          <div class="tn-field"><label><input type="checkbox" id="tn-show-conf" /> Show confidence values</label></div>
-          <div class="tn-field"><label><input type="checkbox" id="tn-show-speed" checked /> Show speed overlays</label></div>
+          <div class="tn-field"><label><input type="checkbox" id="tn-show-conf" /> Show confidence</label></div>
+          <div class="tn-field"><label><input type="checkbox" id="tn-show-speed" checked /> Show speed</label></div>
 
-          <h3 class="tn-sidebar-title">ESP32</h3>
+          <h3 class="tn-control__label">Edge Camera</h3>
           <div class="tn-field">
-            <label for="tn-esp32-url">URL POST JSON</label>
+            <label for="tn-esp32-url">Endpoint URL</label>
             <input type="url" id="tn-esp32-url" placeholder="http://192.168.0.164/traffic" value="http://192.168.0.164/traffic" autocomplete="off" />
           </div>
           <div class="tn-field">
-            <label>Timeout HTTP (s) <span class="tn-range-val" id="tn-esp32-to-val">2</span></label>
+            <label>Timeout (s) <span class="tn-range-val" id="tn-esp32-to-val">2</span></label>
             <input type="range" id="tn-esp32-to" min="0.5" max="10" step="0.1" value="2" />
           </div>
-          <div class="tn-field"><label><input type="checkbox" id="tn-mock-em" /> Urgence simulée</label></div>
+          <div class="tn-field"><label><input type="checkbox" id="tn-mock-em" /> Simulated priority</label></div>
           <div class="tn-field">
-            <label for="tn-prio-zone">Zone prioritaire (urgence simulée)</label>
+            <label for="tn-prio-zone">Priority zone</label>
             <input type="number" id="tn-prio-zone" min="0" max="20" step="1" value="0" />
           </div>
 
-          <h3 class="tn-sidebar-title">Session vidéo (live)</h3>
-
+          <h3 class="tn-control__label">Live Session</h3>
           <div class="tn-live-bar">
             <span class="tn-pill" id="tn-session-pill">Session : —</span>
           </div>
-          <button type="button" class="tn-btn tn-btn-live" id="tn-live-init">Démarrer session live</button>
-          <button type="button" class="tn-btn tn-btn-ghost" id="tn-live-tick">Cadre suivant</button>
-          <button type="button" class="tn-btn tn-btn-ghost" id="tn-live-auto">Lecture auto</button>
-          <button type="button" class="tn-btn tn-btn-ghost" id="tn-live-stop">Stop live</button>
+          <button type="button" class="tn-btn tn-btn-live tn-btn--block" id="tn-live-init">Start Live Session</button>
+          <div class="tn-btn-row">
+            <button type="button" class="tn-btn tn-btn-ghost" id="tn-live-tick">Next Frame</button>
+            <button type="button" class="tn-btn tn-btn-ghost" id="tn-live-auto">Auto Play</button>
+            <button type="button" class="tn-btn tn-btn-ghost" id="tn-live-stop">Stop</button>
+          </div>
 
-          <h3 class="tn-sidebar-title">POST firmware</h3>
-          <div class="tn-field"><label><input type="checkbox" id="tn-esp32-enabled" /> Activer envoi JSON vers ESP32</label></div>
-          <p class="tn-help" style="margin-top:-4px;">Envoi seulement si la décision <strong>confirmée</strong> change (debounce urgence ~1 s).</p>
-          </details>
+          <div class="tn-field"><label><input type="checkbox" id="tn-esp32-enabled" /> Send to edge camera</label></div>
+        </details>
       </aside>
 
-      <div class="tn-main-panel">
-        <p class="tn-streamlit-hint" style="margin-top:0;">Paramètres à gauche, flux vidéo + ROI ici — tout sur la même ligne de vue (grand écran).</p>
+      <main class="tn-main">
+        <header class="tn-page-head">
+          <div class="tn-page-head__copy">
+            <h2 class="tn-page-head__title">Traffic Intelligence</h2>
+            <p class="tn-page-head__sub">Real-time traffic analysis, congestion awareness, and decision support.</p>
+          </div>
+          <div class="tn-page-head__chips">
+            <span class="tn-chip tn-chip--live">Live AI Vision</span>
+            <span class="tn-chip">Smart Mobility</span>
+            <span class="tn-chip">Decision Support</span>
+          </div>
+        </header>
 
-    <div id="tn-msg" style="display:none;padding:12px 14px;border-radius:11px;margin-bottom:14px;background:rgba(229,57,53,0.15);border:1px solid rgba(229,57,53,0.4);color:#ffcdd2;"></div>
+        <div id="tn-msg" class="tn-msg" style="display:none;"></div>
 
-    <div class="tn-toolbar">
-      <button type="button" class="tn-btn-stream" id="tn-save-zone">Save zone</button>
-      <button type="button" class="tn-btn-stream" id="tn-clear-points">Clear points</button>
-      <button type="button" class="tn-btn-stream" id="tn-clear-last">Remove last zone</button>
-      <button type="button" class="tn-btn-stream" id="tn-clear-all">Clear zones</button>
-    </div>
+        <div class="tn-analysis-grid">
+          <div class="tn-video-stack">
+            <div class="tn-toolbar" role="toolbar" aria-label="Zone controls">
+              <div class="tn-draw-mode" role="group" aria-label="Interaction mode">
+                <button type="button" class="tn-draw-mode__btn tn-draw-mode__btn--active" id="tn-mode-mouse" aria-pressed="true">Draw with Mouse</button>
+                <button type="button" class="tn-draw-mode__btn" id="tn-mode-focus" aria-pressed="false">Gesture Vehicle Focus</button>
+              </div>
+              <button type="button" class="tn-btn-stream" id="tn-save-zone">Save Zone</button>
+              <button type="button" class="tn-btn-stream tn-btn-stream--ghost" id="tn-clear-points">Clear Points</button>
+              <button type="button" class="tn-btn-stream tn-btn-stream--ghost" id="tn-clear-last">Remove Last Zone</button>
+              <button type="button" class="tn-btn-stream tn-btn-stream--ghost" id="tn-clear-all">Clear Zones</button>
+            </div>
 
-    <div class="tn-stage-grid">
-      <div class="tn-stage-cell tn-stage-live">
-        <div class="tn-stage-label">Flux vidéo (lecture navigateur)</div>
-        <div id="tn-youtube-wrap" class="tn-embed-shell" style="display:none;">
-          <iframe id="tn-youtube-iframe" title="YouTube preview" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>
+            <div class="tn-gesture-card tn-glass-card" id="tn-gesture-card" hidden>
+              <div class="tn-gesture-card__head">
+                <div>
+                  <h3 class="tn-gesture-card__title">Gesture Vehicle Focus</h3>
+                  <p class="tn-gesture-card__sub">Point at a vehicle to inspect it</p>
+                </div>
+                <span class="tn-gesture-status" id="tn-gesture-status">Gesture focus off</span>
+              </div>
+              <ul class="tn-gesture-hints">
+                <li><strong>Point at a vehicle</strong></li>
+                <li><strong>Hold for 0.3s</strong> to inspect</li>
+                <li>Selected vehicle insight appears automatically</li>
+                <li>Speed is estimated from frame-to-frame motion</li>
+              </ul>
+              <label class="tn-calibration-field">
+                <span>Calibration: meters per pixel</span>
+                <input type="number" id="tn-mpp" value="0.05" step="0.01" min="0.001" max="1" class="tn-calibration-input" />
+              </label>
+              <div id="tn-gesture-preview-slot">
+                <div class="tn-gesture-preview-wrap" id="tn-gesture-preview-wrap">
+                  <video id="tn-hand-webcam" class="tn-gesture-preview" playsinline muted autoplay aria-label="Webcam preview for hand tracking"></video>
+                  <span class="tn-gesture-preview__label">Gesture Camera</span>
+                  <span class="tn-gesture-preview__status" id="tn-gesture-cam-status">Waiting for hand</span>
+                </div>
+              </div>
+            </div>
+
+            <div id="tn-hud-slot" class="tn-hud-slot">
+            <div class="tn-hud-frame" id="tn-hud-frame">
+              <div class="tn-hud-frame__head">
+                <span class="tn-hud-label">AI Vision Feed</span>
+                <span class="tn-hud-roi" id="tn-roi-filter-badge" style="display:none;">ROI filtering active</span>
+                <span class="tn-hud-live">Live</span>
+                <span class="tn-perf-indicators" id="tn-perf-indicators">
+                  <span class="tn-perf-chip" id="tn-ind-video">Video: Smooth</span>
+                  <span class="tn-perf-chip" id="tn-ind-ai">AI: 10 FPS</span>
+                  <span class="tn-perf-chip" id="tn-ind-gesture">Gesture: Off</span>
+                  <span class="tn-perf-chip" id="tn-ind-source">Source: —</span>
+                </span>
+                <button type="button" class="tn-hud-fs-btn" id="tn-fullscreen-vision" title="Fullscreen Vision Mode">Fullscreen Vision Mode</button>
+              </div>
+              <div class="tn-hud-frame__inner">
+                <span class="tn-hud-corner tn-hud-corner--tl" aria-hidden="true"></span>
+                <span class="tn-hud-corner tn-hud-corner--tr" aria-hidden="true"></span>
+                <span class="tn-hud-corner tn-hud-corner--bl" aria-hidden="true"></span>
+                <span class="tn-hud-corner tn-hud-corner--br" aria-hidden="true"></span>
+                <div class="tn-hud-scanline" aria-hidden="true"></div>
+                <div class="tn-stage-grid">
+                  <div class="tn-stage-cell tn-stage-live">
+                    <div id="tn-youtube-wrap" class="tn-embed-shell" style="display:none;">
+                      <iframe id="tn-youtube-iframe" title="YouTube preview" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>
+                    </div>
+                    <div id="tn-upload-video-wrap" class="tn-embed-shell" style="display:none;">
+                      <video id="tn-html5-video" controls playsinline preload="metadata"></video>
+                    </div>
+                    <div id="tn-live-placeholder" class="tn-embed-placeholder is-visible">Paste a source URL or upload media, then load a reference frame.</div>
+                  </div>
+                  <div class="tn-stage-cell tn-stage-roi">
+                    <div class="tn-canvas-wrap" id="tn-canvas-wrap">
+                      <canvas id="tn-canvas" style="display:none;"></canvas>
+                      <canvas id="tn-det-overlay" class="tn-det-overlay" aria-hidden="true"></canvas>
+                      <canvas id="tn-hand-overlay" class="tn-hand-overlay" aria-hidden="true"></canvas>
+                      <div id="tn-focus-instruction" class="tn-hand-instruction" hidden>
+                        <span class="tn-hand-instruction__dot" aria-hidden="true"></span>
+                        Gesture Vehicle Focus — Point at a vehicle
+                      </div>
+                      <div id="tn-placeholder" class="tn-canvas-placeholder">Load a source to begin AI vision analysis.</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            </div>
+
+            <div id="tn-vehicle-insight-slot" class="tn-vehicle-insight-slot">
+              <div class="tn-vehicle-insight tn-glass-card" id="tn-vehicle-insight">
+                <div class="tn-vehicle-insight__head">
+                  <div>
+                    <h3 class="tn-vehicle-insight__title">AI Vehicle Insight</h3>
+                    <span class="tn-vehicle-insight__badge" id="tn-vehicle-selected-badge" hidden>Vehicle selected</span>
+                  </div>
+                </div>
+                <div class="tn-vehicle-insight__empty" id="tn-vehicle-insight-empty">
+                  Point at any detected vehicle to reveal AI-powered mobility insights.
+                </div>
+                <div class="tn-vehicle-insight__body" id="tn-vehicle-insight-body" hidden>
+                  <div class="tn-vehicle-insight__speed-wrap">
+                    <span class="tn-vehicle-insight__speed-label">Estimated speed</span>
+                    <strong class="tn-vehicle-insight__speed" id="tn-vi-speed">—</strong>
+                    <span class="tn-vehicle-insight__speed-unit" id="tn-vi-speed-unit">km/h</span>
+                  </div>
+                  <div class="tn-vehicle-insight__risk-bar" aria-hidden="true">
+                    <div class="tn-vehicle-insight__risk-fill" id="tn-vi-risk-fill"></div>
+                  </div>
+                  <dl class="tn-vehicle-insight__grid">
+                    <div><dt>Vehicle ID</dt><dd id="tn-vi-id">—</dd></div>
+                    <div><dt>Type</dt><dd id="tn-vi-type">—</dd></div>
+                    <div><dt>Direction</dt><dd id="tn-vi-direction">—</dd></div>
+                    <div><dt>Status</dt><dd id="tn-vi-status">—</dd></div>
+                    <div><dt>Lane / Zone</dt><dd id="tn-vi-zone">—</dd></div>
+                    <div><dt>Confidence</dt><dd id="tn-vi-conf">—</dd></div>
+                    <div><dt>Time Tracked</dt><dd id="tn-vi-tracked">—</dd></div>
+                    <div><dt>Risk Level</dt><dd id="tn-vi-risk">—</dd></div>
+                  </dl>
+                  <p class="tn-vehicle-insight__note" id="tn-vi-note">—</p>
+                </div>
+              </div>
+            </div>
+
+            <div id="tn-vision-fs" class="tn-vision-fs" hidden aria-hidden="true">
+              <div class="tn-vision-fs__backdrop" aria-hidden="true"></div>
+              <div class="tn-vision-fs__scan" aria-hidden="true"></div>
+              <header class="tn-vision-fs__top">
+                <div class="tn-vision-fs__top-left">
+                  <span class="tn-vision-fs__title">AI Vision Feed</span>
+                  <span class="tn-chip tn-chip--live">Live</span>
+                  <span class="tn-chip tn-chip--focus" id="tn-fs-focus-badge" hidden>Gesture Vehicle Focus Active</span>
+                  <span class="tn-hud-roi tn-vision-fs__roi" id="tn-fs-roi-badge" style="display:none;">ROI filtering active</span>
+                </div>
+              </header>
+              <div class="tn-vision-fs__stage" id="tn-vision-fs-stage"></div>
+              <aside class="tn-vision-fs__guide tn-glass-card">
+                <h4 class="tn-vision-fs__guide-title">Gesture Vehicle Focus</h4>
+                <ul class="tn-gesture-hints">
+                  <li><strong>Point at a vehicle</strong></li>
+                  <li><strong>Hold for 0.3s</strong> to inspect</li>
+                  <li>Insight panel updates automatically</li>
+                  <li>Mouse hover/click also works</li>
+                </ul>
+                <p class="tn-vision-fs__helper">Point at a vehicle to inspect it</p>
+              </aside>
+              <div class="tn-vision-fs__insight" id="tn-vision-fs-insight"></div>
+              <div class="tn-vision-fs__toolbar tn-glass-card" role="toolbar" aria-label="Fullscreen controls">
+                <button type="button" class="tn-btn" id="tn-fs-analyze">Analyze Frame</button>
+                <button type="button" class="tn-btn tn-btn-ghost" id="tn-fs-save-zone">Save Zone</button>
+                <button type="button" class="tn-btn tn-btn-ghost" id="tn-fs-clear-points">Clear Points</button>
+                <button type="button" class="tn-btn tn-btn-ghost tn-vision-fs__exit" id="tn-fs-exit">Exit Fullscreen</button>
+              </div>
+              <div class="tn-vision-fs__cam" id="tn-vision-fs-cam"></div>
+            </div>
+
+            <div class="tn-video-meta">
+              <p id="tn-zone-count" class="tn-zone-line">Monitored zones: 0</p>
+              <ul id="tn-zone-list" class="tn-zone-list" aria-label="Active monitoring zones"></ul>
+              <p id="tn-selected-points" class="tn-help">Selected points: 0</p>
+            </div>
+
+            <div class="tn-action-bar" role="toolbar" aria-label="Analysis actions">
+              <button type="button" class="tn-btn" id="tn-analyze">Analyze Frame</button>
+              <button type="button" class="tn-btn tn-btn-ghost" id="tn-quick-load">Load Frame</button>
+              <button type="button" class="tn-btn tn-btn-ghost" id="tn-capture-insight">Capture Insight</button>
+            </div>
+
+            <div class="tn-kpi-row" aria-label="Key metrics">
+              <div class="tn-stat-card">
+                <span class="tn-stat-card__label">Congestion</span>
+                <strong class="tn-stat-card__value" id="tn-kpi-congestion">—</strong>
+              </div>
+              <div class="tn-stat-card">
+                <span class="tn-stat-card__label">Vehicles</span>
+                <strong class="tn-stat-card__value" id="tn-kpi-vehicles">0</strong>
+              </div>
+              <div class="tn-stat-card">
+                <span class="tn-stat-card__label">Est. Delay</span>
+                <strong class="tn-stat-card__value" id="tn-kpi-delay">—</strong>
+              </div>
+              <div class="tn-stat-card">
+                <span class="tn-stat-card__label">Criticality</span>
+                <strong class="tn-stat-card__value" id="tn-kpi-criticality">—</strong>
+              </div>
+            </div>
+          </div>
+
+          <aside class="tn-side-stack">
+            <div class="tn-decision-card tn-glass-card">
+              <div class="tn-decision-card__head">
+                <h3 class="tn-decision-card__title">Decision Summary</h3>
+                <span class="tn-risk-pill" id="tn-decision-risk-badge">—</span>
+              </div>
+              <div class="tn-decision-card__hero">
+                <div class="tn-circle-score" id="tn-decision-score" aria-label="Criticality score">—</div>
+                <div class="tn-decision-card__action-wrap">
+                  <span class="tn-decision-card__eyebrow">Recommended Action</span>
+                  <p class="tn-decision-card__action" id="tn-decision-action">Awaiting analysis</p>
+                </div>
+              </div>
+              <dl class="tn-decision-metrics">
+                <div><dt>Traffic Status</dt><dd id="tn-insight-status">—</dd></div>
+                <div><dt>Congestion</dt><dd id="tn-insight-congestion">—</dd></div>
+                <div><dt>Vehicle Count</dt><dd id="tn-insight-vehicles">0</dd></div>
+                <div><dt>Risk Level</dt><dd id="tn-insight-risk">—</dd></div>
+                <div class="tn-decision-metrics__full"><dt>Recommendation</dt><dd id="tn-insight-reco">Run analysis for recommendations.</dd></div>
+              </dl>
+              <p class="tn-decision-explainer" id="tn-decision-explainer">Analyze the live feed to receive AI-powered mobility recommendations.</p>
+            </div>
+
+            <div class="tn-insight-snap tn-glass-card" id="tn-insight-snap">No snapshot insight yet</div>
+
+            <div class="tn-report-compact tn-glass-card">
+              <h3 class="tn-section-title">Executive Reporting</h3>
+              <p class="tn-report-desc">Generate presentation-ready summaries for stakeholders and city decision makers.</p>
+              <label class="tn-help" for="tn-report-period">Report period</label>
+              <select id="tn-report-period" disabled aria-disabled="true">
+                <option>Daily (last 24h)</option>
+              </select>
+              <p class="tn-info-banner" id="tn-report-banner">No report data yet. Run analysis to collect insights.</p>
+              <button type="button" class="tn-btn tn-btn--block" id="tn-export-pdf">Export PDF</button>
+            </div>
+
+            <details class="tn-activity-fold tn-glass-card">
+              <summary class="tn-section-title">System Activity</summary>
+              <ul id="tn-esp32-event-log" class="tn-activity-list"></ul>
+            </details>
+          </aside>
         </div>
-        <div id="tn-upload-video-wrap" class="tn-embed-shell" style="display:none;">
-          <video id="tn-html5-video" controls playsinline preload="metadata"></video>
+
+        <div class="tn-results-panel" id="tn-results" style="display:none;">
+          <img id="tn-out-img" class="tn-out-img" alt="Annotated analysis" hidden />
+          <div id="tn-decisions" class="tn-premium-block"></div>
+          <div class="tn-insight-row">
+            <div id="tn-xai" class="tn-premium-block"></div>
+          </div>
+          <div id="tn-agents" class="tn-premium-block"></div>
+          <div id="tn-overview" class="tn-premium-block tn-overview-slot" hidden></div>
+          <div id="tn-counts" class="tn-premium-block"></div>
+          <p id="tn-esp32-line" class="tn-help tn-esp32-line"></p>
+          <details class="tn-activity-fold tn-activity-fold--inline">
+            <summary>Agent Activity Log</summary>
+            <ul id="tn-log" class="tn-activity-list"></ul>
+          </details>
         </div>
-        <div id="tn-live-placeholder" class="tn-embed-placeholder is-visible">Collez une URL YouTube ou choisissez une vidéo, puis « Charger le cadre de référence » pour activer le lecteur.</div>
-      </div>
-      <div class="tn-stage-cell tn-stage-roi">
-        <div class="tn-stage-label">Référence ROI (première image — même source que la vidéo)</div>
-        <div class="tn-canvas-wrap">
-          <canvas id="tn-canvas" style="display:none;"></canvas>
-          <div id="tn-placeholder" class="tn-help" style="padding:28px;text-align:center;">Chargez une source pour afficher le cadre.</div>
-        </div>
-      </div>
-    </div>
-
-    <p id="tn-zone-count" class="tn-zone-line">Zones : 0</p>
-    <p id="tn-selected-points" class="tn-help" style="margin-top:-8px;">Selected points: 0</p>
-
-    <div class="tn-card" style="margin-bottom:14px;padding:12px 14px;">
-      <div class="tn-stage-label" style="margin-bottom:6px;">Journal ESP32 (sous la vidéo)</div>
-      <ul id="tn-esp32-event-log" style="margin:0;padding-left:20px;font-size:0.78rem;color:#9ecbff;max-height:140px;overflow-y:auto;line-height:1.45;"></ul>
-    </div>
-
-    <div class="tn-actions-row">
-      <button type="button" class="tn-btn" id="tn-analyze">Analyser ce cadre</button>
-      <button type="button" class="tn-btn tn-btn-ghost" id="tn-quick-load">Charger cadre (rapide)</button>
-      <button type="button" class="tn-btn tn-btn-ghost" id="tn-capture-insight">Capture Insight</button>
-    </div>
-
-    <div class="tn-insights">
-      <div class="tn-insight-card"><b>Traffic Status</b><span id="tn-insight-status">—</span></div>
-      <div class="tn-insight-card"><b>Vehicle Count</b><span id="tn-insight-vehicles">0</span></div>
-      <div class="tn-insight-card"><b>Risk Level</b><span id="tn-insight-risk">—</span></div>
-      <div class="tn-insight-card"><b>Recommendation</b><span id="tn-insight-reco">Run detection to get recommendation.</span></div>
-    </div>
-    <div class="tn-insight-snap" id="tn-insight-snap">No insight captured.</div>
-
-    <section class="tn-dash-section">
-      <h2>Traffic Operations Dashboard</h2>
-      <div class="tn-report-card">
-        <h3>Report Generator (PDF / CSV)</h3>
-        <label class="tn-help" for="tn-report-period" style="display:block;margin-bottom:4px;">Report period</label>
-        <select id="tn-report-period" disabled aria-disabled="true">
-          <option>Daily (last 24h)</option>
-        </select>
-        <p class="tn-info-banner" id="tn-report-banner">No report data yet. Run detection to collect KPI snapshots.</p>
-        <button type="button" class="tn-btn" id="tn-export-pdf" style="margin-top:10px;">Export PDF Jury</button>
-      </div>
-    </section>
-
-    <div class="tn-card" id="tn-results" style="display:none;">
-      <img id="tn-out-img" class="tn-out-img" alt="Annotated" />
-      <div id="tn-overview" class="tn-premium-block"></div>
-      <div id="tn-xai" class="tn-premium-block"></div>
-      <div id="tn-agents" class="tn-premium-block"></div>
-      <div id="tn-decisions" class="tn-premium-block"></div>
-      <div id="tn-counts" class="tn-premium-block"></div>
-      <div id="tn-esp32-line" class="tn-help" style="margin-top:10px;"></div>
-      <ul id="tn-log" style="margin:10px 0 0;padding-left:18px;color:var(--muted);font-size:0.82rem;"></ul>
-    </div>
-
-      </div>
+      </main>
     </div>
   </div>
 </div>
@@ -773,22 +482,40 @@
 
   var canvas = document.getElementById("tn-canvas");
   var ctx = canvas.getContext("2d");
+  var detOverlayCanvas = document.getElementById("tn-det-overlay");
   var imgNatural = { w: 0, h: 0 };
   var imageBase64 = "";
   var points = [];
   var zones = [];
   var zonesRect = [];
+  var activePolyZones = {};
+  var activeRectZones = {};
+  var ZONE_STROKE_COLORS = ["#5050ff", "#50dc50", "#ffaa50", "#ff78dc", "#50dcff"];
   var boxDraft = null;
   var boxPreview = null;
   var liveSessionId = null;
   var liveTickCount = 0;
-  var liveAutoTimer = null;
+  var liveAutoActive = false;
   var liveFrameCounter = 0;
   var uploadBlobUrl = null;
   var esp32BridgeState = {};
   var displayState = {};
   var latestResult = null;
   var capturedInsightText = "";
+  var vehicleFocusMode = false;
+  var handOverlayCanvas = document.getElementById("tn-hand-overlay");
+  var visionFullscreenOpen = false;
+  var hudSlot = document.getElementById("tn-hud-slot");
+  var hudFrame = document.getElementById("tn-hud-frame");
+  var gesturePreviewSlot = document.getElementById("tn-gesture-preview-slot");
+  var gesturePreviewWrap = document.getElementById("tn-gesture-preview-wrap");
+  var visionFsStage = document.getElementById("tn-vision-fs-stage");
+  var visionFsCam = document.getElementById("tn-vision-fs-cam");
+  var visionFsInsight = document.getElementById("tn-vision-fs-insight");
+  var vehicleInsightSlot = document.getElementById("tn-vehicle-insight-slot");
+  var vehicleInsightPanel = document.getElementById("tn-vehicle-insight");
+  var visionFsRoot = document.getElementById("tn-vision-fs");
+  var latestVehicleDetections = [];
 
   function _loadCurrentPolygonPoints() {
     try {
@@ -820,7 +547,227 @@
     if (sessionStorage.getItem("tn.turbo_local_playback") === "1") {
       document.getElementById("tn-turbo-local").checked = true;
     }
+    var _aiRate = sessionStorage.getItem("tn.ai_rate_fps");
+    if (_aiRate) {
+      var aiEl = document.getElementById("tn-ai-rate");
+      if (aiEl) aiEl.value = _aiRate;
+    }
   } catch (e) {}
+
+  function getSourceLabel() {
+    var r = document.querySelector('input[name="tn-src-type"]:checked');
+    if (!r) return "—";
+    if (r.value === "youtube") return "YouTube";
+    if (r.value === "upload") return "Upload";
+    return "Local";
+  }
+
+  function clientOverlayEnabled() {
+    var dm = (document.getElementById("tn-display-mode").value || "normal_detection").trim();
+    return dm !== "congestion_heatmap";
+  }
+
+  function isPolyZoneActive(idx) {
+    return activePolyZones[idx] !== false;
+  }
+
+  function isRectZoneActive(idx) {
+    return activeRectZones[idx] !== false;
+  }
+
+  function getActiveRoiPayload() {
+    var polys = [];
+    zones.forEach(function (z, i) {
+      if (isPolyZoneActive(i)) polys.push(z);
+    });
+    var rects = [];
+    zonesRect.forEach(function (r, i) {
+      if (isRectZoneActive(i)) rects.push(r);
+    });
+    return { polygons: polys, rectangles: rects };
+  }
+
+  function countActiveZones() {
+    var n = 0;
+    zones.forEach(function (_, i) { if (isPolyZoneActive(i)) n++; });
+    zonesRect.forEach(function (_, i) { if (isRectZoneActive(i)) n++; });
+    return n;
+  }
+
+  function zoneStrokeColor(zi) {
+    return ZONE_STROKE_COLORS[zi % ZONE_STROKE_COLORS.length];
+  }
+
+  function drawRoiOnCanvas() {
+    if (!canvas.width || !canvas.height) return;
+    zones.forEach(function (z, i) {
+      if (z.length < 2) return;
+      var active = isPolyZoneActive(i);
+      ctx.beginPath();
+      ctx.strokeStyle = active ? zoneStrokeColor(i) : "rgba(160,160,160,0.55)";
+      ctx.lineWidth = active ? 2 : 1.5;
+      ctx.setLineDash(active ? [] : [5, 4]);
+      ctx.moveTo(z[0][0], z[0][1]);
+      for (var ii = 1; ii < z.length; ii++) ctx.lineTo(z[ii][0], z[ii][1]);
+      ctx.closePath();
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.font = "600 10px Inter, sans-serif";
+      ctx.fillStyle = active ? zoneStrokeColor(i) : "rgba(160,160,160,0.75)";
+      ctx.fillText("Z" + (i + 1), z[0][0] + 4, z[0][1] + 12);
+    });
+    zonesRect.forEach(function (r, i) {
+      var colorIdx = zones.length + i;
+      var activeR = isRectZoneActive(i);
+      ctx.strokeStyle = activeR ? zoneStrokeColor(colorIdx) : "rgba(160,160,160,0.55)";
+      ctx.lineWidth = activeR ? 2 : 1.5;
+      ctx.setLineDash(activeR ? [] : [5, 4]);
+      ctx.strokeRect(r[0], r[1], r[2] - r[0], r[3] - r[1]);
+      ctx.setLineDash([]);
+      ctx.font = "600 10px Inter, sans-serif";
+      ctx.fillStyle = activeR ? zoneStrokeColor(colorIdx) : "rgba(160,160,160,0.75)";
+      ctx.fillText("Z" + (colorIdx + 1), r[0] + 4, r[1] + 12);
+    });
+    if (boxPreview) {
+      ctx.strokeStyle = "#ffb74d";
+      ctx.setLineDash([6, 4]);
+      ctx.strokeRect(boxPreview[0], boxPreview[1], boxPreview[2] - boxPreview[0], boxPreview[3] - boxPreview[1]);
+      ctx.setLineDash([]);
+    }
+    if (points.length) {
+      ctx.beginPath();
+      ctx.strokeStyle = "#ffb74d";
+      ctx.lineWidth = 2;
+      ctx.moveTo(points[0][0], points[0][1]);
+      for (var j = 1; j < points.length; j++) ctx.lineTo(points[j][0], points[j][1]);
+      if (points.length >= 3) ctx.lineTo(points[0][0], points[0][1]);
+      ctx.stroke();
+      points.forEach(function (p) {
+        ctx.fillStyle = "#fff";
+        ctx.beginPath();
+        ctx.arc(p[0], p[1], 4, 0, Math.PI * 2);
+        ctx.fill();
+      });
+    }
+    if (boxDraft && boxDraft.length === 2) {
+      ctx.fillStyle = "#fff";
+      ctx.beginPath();
+      ctx.arc(boxDraft[0], boxDraft[1], 5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  function initVisionStream() {
+    if (!window.TnVisionStream) return;
+    window.TnVisionStream.init({
+      canvas: canvas,
+      ctx: ctx,
+      detOverlay: detOverlayCanvas,
+      uploadVideo: document.getElementById("tn-html5-video"),
+      aiFps: parseInt(document.getElementById("tn-ai-rate").value, 10) || 10,
+      showConfidence: function () { return document.getElementById("tn-show-conf").checked; },
+      onCanvasResize: function (w, h) {
+        imgNatural.w = w;
+        imgNatural.h = h;
+        if (window.TnVehicleFocus && window.TnVehicleFocus.syncOverlaySize) {
+          window.TnVehicleFocus.syncOverlaySize();
+        }
+        if (window.TnVisionStream) window.TnVisionStream.syncDetOverlaySize();
+      },
+      onImageBase64: function (b64) {
+        imageBase64 = b64;
+        updatePerfControlsAvailability();
+      },
+      hidePlaceholder: function () {
+        var ph = document.getElementById("tn-placeholder");
+        if (ph) ph.style.display = "none";
+        var livePh = document.getElementById("tn-live-placeholder");
+        if (livePh) livePh.classList.remove("is-visible");
+      },
+      drawRoi: drawRoiOnCanvas,
+      drawGestureOverlay: function () {
+        if (window.TnVehicleFocus && window.TnVehicleFocus.drawOverlay) {
+          window.TnVehicleFocus.drawOverlay();
+        }
+      },
+      syncGestureOverlay: function () {
+        if (window.TnVehicleFocus && window.TnVehicleFocus.syncOverlaySize) {
+          window.TnVehicleFocus.syncOverlaySize();
+        }
+      },
+      runInference: function () {
+        if (!liveSessionId || !liveAutoActive) return Promise.resolve();
+        return runLiveTickAsync();
+      },
+      getImageBase64: function () { return imageBase64; },
+      indicators: {
+        video: document.getElementById("tn-ind-video"),
+        ai: document.getElementById("tn-ind-ai"),
+        gesture: document.getElementById("tn-ind-gesture"),
+        source: document.getElementById("tn-ind-source"),
+      },
+      gestureActive: function () {
+        return vehicleFocusMode && window.TnVehicleFocus && window.TnVehicleFocus.isEnabled();
+      },
+      getSourceLabel: getSourceLabel,
+    });
+    window.TnVisionStream.start();
+    window.TnVisionStream.updateIndicators();
+  }
+
+  function renderZoneList() {
+    var ul = document.getElementById("tn-zone-list");
+    if (!ul) return;
+    ul.innerHTML = "";
+    var total = zones.length + zonesRect.length;
+    if (!total) return;
+    var activeN = countActiveZones();
+    var head = document.createElement("li");
+    head.className = "tn-zone-list__head";
+    head.textContent = "Active zones for detection (" + activeN + "/" + total + ")";
+    ul.appendChild(head);
+    zones.forEach(function (z, i) {
+      var li = document.createElement("li");
+      li.className = "tn-zone-list__item";
+      var cb = document.createElement("input");
+      cb.type = "checkbox";
+      cb.id = "tn-zone-poly-" + i;
+      cb.checked = isPolyZoneActive(i);
+      cb.addEventListener("change", function () {
+        activePolyZones[i] = cb.checked;
+        updateZoneCount();
+        redrawOverlay();
+      });
+      var lbl = document.createElement("label");
+      lbl.setAttribute("for", cb.id);
+      lbl.textContent = "Zone " + (i + 1) + " · Polygon (" + z.length + " pts)";
+      lbl.style.borderLeftColor = zoneStrokeColor(i);
+      li.appendChild(cb);
+      li.appendChild(lbl);
+      ul.appendChild(li);
+    });
+    zonesRect.forEach(function (r, i) {
+      var colorIdx = zones.length + i;
+      var li2 = document.createElement("li");
+      li2.className = "tn-zone-list__item";
+      var cb2 = document.createElement("input");
+      cb2.type = "checkbox";
+      cb2.id = "tn-zone-rect-" + i;
+      cb2.checked = isRectZoneActive(i);
+      cb2.addEventListener("change", function () {
+        activeRectZones[i] = cb2.checked;
+        updateZoneCount();
+        redrawOverlay();
+      });
+      var lbl2 = document.createElement("label");
+      lbl2.setAttribute("for", cb2.id);
+      lbl2.textContent = "Zone " + (colorIdx + 1) + " · Rectangle";
+      lbl2.style.borderLeftColor = zoneStrokeColor(colorIdx);
+      li2.appendChild(cb2);
+      li2.appendChild(lbl2);
+      ul.appendChild(li2);
+    });
+  }
 
   function extractYoutubeId(url) {
     if (!url || typeof url !== "string") return null;
@@ -1009,6 +956,9 @@
       showSpeed.disabled = true;
     }
     displayState = {};
+    if (window.TnVisionStream) {
+      window.TnVisionStream.setDisplayMode(dm);
+    }
   }
 
   document.querySelectorAll('input[name="tn-analysis"]').forEach(function (el) {
@@ -1042,10 +992,27 @@
     try {
       sessionStorage.setItem("tn.turbo_local_playback", this.checked ? "1" : "0");
     } catch (e) {}
-    if (liveSessionId && liveAutoTimer) {
-      startLiveAutoNow();
+    if (liveSessionId && liveAutoActive) {
+      syncLiveStreamMode();
     }
   });
+
+  document.getElementById("tn-ai-rate").addEventListener("change", function () {
+    try { sessionStorage.setItem("tn.ai_rate_fps", this.value); } catch (e) {}
+    if (window.TnVisionStream) window.TnVisionStream.setAiFps(this.value);
+  });
+
+  function syncLiveStreamMode() {
+    if (!window.TnVisionStream) return;
+    var src = document.querySelector('input[name="tn-src-type"]:checked').value;
+    var f = document.getElementById("tn-file").files[0];
+    var hasVideo = f && (f.type || "").startsWith("video");
+    var turbo = document.getElementById("tn-turbo-local").checked;
+    var useUploadVideo = liveAutoActive && src === "upload" && hasVideo && !turbo;
+    window.TnVisionStream.setUploadVideoMode(useUploadVideo);
+    window.TnVisionStream.setDisplayMode((document.getElementById("tn-display-mode").value || "normal_detection").trim());
+    window.TnVisionStream.updateIndicators();
+  }
 
   function updatePerfControlsAvailability() {
     var hasFrame = !!imageBase64;
@@ -1081,6 +1048,7 @@
       document.getElementById("wrap-upload").style.display = v === "upload" ? "block" : "none";
       refreshStageForSourceType();
       updatePerfControlsAvailability();
+      if (window.TnVisionStream) window.TnVisionStream.updateIndicators();
     });
   });
 
@@ -1114,8 +1082,18 @@
     el.style.color = isErr ? "#ffcdd2" : "#c8e6c9";
   }
 
-  function setFrameFromBase64(b64) {
+  function setFrameFromBase64(b64, opts) {
+    opts = opts || {};
+    if (!b64) return;
     imageBase64 = b64;
+    if (window.TnVisionStream) {
+      window.TnVisionStream.setFrameFromBase64(b64, opts);
+      if (!opts.storeOnly) {
+        window.TnVisionStream.redrawRoiOnly();
+      }
+      updatePerfControlsAvailability();
+      return;
+    }
     var im = new Image();
     im.onload = function () {
       imgNatural.w = im.width;
@@ -1125,6 +1103,9 @@
       ctx.drawImage(im, 0, 0);
       canvas.style.display = "block";
       document.getElementById("tn-placeholder").style.display = "none";
+      if (window.TnVehicleFocus && window.TnVehicleFocus.syncOverlaySize) {
+        window.TnVehicleFocus.syncOverlaySize();
+      }
       redrawOverlay();
       updatePerfControlsAvailability();
     };
@@ -1139,54 +1120,255 @@
   }
 
   function redrawOverlay() {
+    if (window.TnVisionStream) {
+      window.TnVisionStream.redrawRoiOnly();
+      return;
+    }
     if (!imgNatural.w) return;
     var im = new Image();
     im.onload = function () {
       ctx.drawImage(im, 0, 0);
-      zones.forEach(function (z, zi) {
-        if (z.length < 2) return;
-        ctx.beginPath();
-        ctx.strokeStyle = zi % 2 ? "#43a047" : "#2F80ED";
-        ctx.lineWidth = 2;
-        ctx.moveTo(z[0][0], z[0][1]);
-        for (var i = 1; i < z.length; i++) ctx.lineTo(z[i][0], z[i][1]);
-        ctx.closePath();
-        ctx.stroke();
-      });
-      zonesRect.forEach(function (r, zi) {
-        ctx.strokeStyle = zi % 2 ? "#ab47bc" : "#2F80ED";
-        ctx.lineWidth = 2;
-        ctx.strokeRect(r[0], r[1], r[2] - r[0], r[3] - r[1]);
-      });
-      if (boxPreview) {
-        ctx.strokeStyle = "#ffb74d";
-        ctx.setLineDash([6, 4]);
-        ctx.strokeRect(boxPreview[0], boxPreview[1], boxPreview[2] - boxPreview[0], boxPreview[3] - boxPreview[1]);
-        ctx.setLineDash([]);
+      drawRoiOnCanvas();
+      if (window.TnVehicleFocus && window.TnVehicleFocus.syncOverlaySize) {
+        window.TnVehicleFocus.syncOverlaySize();
       }
-      if (points.length) {
-        ctx.beginPath();
-        ctx.strokeStyle = "#ffb74d";
-        ctx.lineWidth = 2;
-        ctx.moveTo(points[0][0], points[0][1]);
-        for (var j = 1; j < points.length; j++) ctx.lineTo(points[j][0], points[j][1]);
-        if (points.length >= 3) ctx.lineTo(points[0][0], points[0][1]);
-        ctx.stroke();
-        points.forEach(function (p) {
-          ctx.fillStyle = "#fff";
-          ctx.beginPath();
-          ctx.arc(p[0], p[1], 4, 0, Math.PI * 2);
-          ctx.fill();
-        });
-      }
-      if (boxDraft && boxDraft.length === 2) {
-        ctx.fillStyle = "#fff";
-        ctx.beginPath();
-        ctx.arc(boxDraft[0], boxDraft[1], 5, 0, Math.PI * 2);
-        ctx.fill();
+      if (window.TnVehicleFocus && window.TnVehicleFocus.drawOverlay) {
+        window.TnVehicleFocus.drawOverlay();
       }
     };
     im.src = "data:image/jpeg;base64," + imageBase64;
+  }
+
+  function addPointAt(xy) {
+    if (!xy || xy.length < 2) return;
+    points.push([xy[0], xy[1]]);
+    _saveCurrentPolygonPoints();
+    updateSelectedPoints();
+    redrawOverlay();
+  }
+
+  function saveCurrentPolygonZone(successMsg) {
+    if (points.length < 3) {
+      showMsg("Add at least 3 points", true);
+      return false;
+    }
+    zones.push(points.map(function (p) { return [p[0], p[1]]; }));
+    points = [];
+    _saveCurrentPolygonPoints();
+    updateSelectedPoints();
+    updateZoneCount();
+    redrawOverlay();
+    showMsg(successMsg || "Zone saved", false);
+    var rb = document.getElementById("tn-report-banner");
+    if (rb) rb.textContent = "Zones defined — run analysis or live session to populate KPIs.";
+    return true;
+  }
+
+  function updateGestureCamStatus(detected) {
+    var el = document.getElementById("tn-gesture-cam-status");
+    if (!el) return;
+    el.textContent = detected ? "Hand detected" : "Waiting for hand";
+    el.className = "tn-gesture-preview__status" + (detected ? " is-active" : "");
+  }
+
+  function syncFsRoiBadge() {
+    var n = zones.length + zonesRect.length;
+    var fsBadge = document.getElementById("tn-fs-roi-badge");
+    if (fsBadge) fsBadge.style.display = n > 0 ? "inline-flex" : "none";
+  }
+
+  function syncFsFocusBadge() {
+    var badge = document.getElementById("tn-fs-focus-badge");
+    if (badge) badge.hidden = !vehicleFocusMode;
+  }
+
+  function extractVehicleDetections(d) {
+    if (!d) return [];
+    var list = d.vehicle_detections;
+    if (Array.isArray(list) && list.length) return list;
+    var ds = d.display_state || {};
+    if (Array.isArray(ds.vehicle_detections) && ds.vehicle_detections.length) {
+      return ds.vehicle_detections;
+    }
+    var tracks = ds.track_state && ds.track_state.tracks;
+    if (!tracks || typeof tracks !== "object") return [];
+    var cw = canvas.width || imgNatural.w || 640;
+    var ch = canvas.height || imgNatural.h || 480;
+    var halfW = Math.max(35, Math.round(cw * 0.045));
+    var halfH = Math.max(28, Math.round(ch * 0.04));
+    var out = [];
+    Object.keys(tracks).forEach(function (tid) {
+      var pt = tracks[tid];
+      if (!Array.isArray(pt) || pt.length < 2) return;
+      var cx = Number(pt[0]);
+      var cy = Number(pt[1]);
+      if (isNaN(cx) || isNaN(cy)) return;
+      out.push({
+        track_id: Number(tid),
+        label: "car",
+        conf: 0.65,
+        x1: Math.max(0, Math.round(cx - halfW)),
+        y1: Math.max(0, Math.round(cy - halfH)),
+        x2: Math.min(cw - 1, Math.round(cx + halfW)),
+        y2: Math.min(ch - 1, Math.round(cy + halfH)),
+        zone_idx: 0,
+        speed_px: 0,
+        speed_status: "Medium",
+      });
+    });
+    return out;
+  }
+
+  function renderVehicleInsight(v) {
+    var emptyEl = document.getElementById("tn-vehicle-insight-empty");
+    var bodyEl = document.getElementById("tn-vehicle-insight-body");
+    var badge = document.getElementById("tn-vehicle-selected-badge");
+    if (!emptyEl || !bodyEl) return;
+    if (!v) {
+      emptyEl.hidden = true;
+      emptyEl.style.display = "block";
+      bodyEl.hidden = true;
+      bodyEl.style.display = "none";
+      if (badge) { badge.hidden = true; badge.style.display = "none"; }
+      emptyEl.textContent = latestVehicleDetections.length
+        ? "Point at any detected vehicle to reveal AI-powered mobility insights."
+        : "Run Analyze Frame first, then point at a detected vehicle.";
+      emptyEl.hidden = false;
+      return;
+    }
+    emptyEl.hidden = true;
+    emptyEl.style.display = "none";
+    bodyEl.hidden = false;
+    bodyEl.style.display = "block";
+    if (badge) { badge.hidden = false; badge.style.display = "inline-flex"; }
+    var speedEl = document.getElementById("tn-vi-speed");
+    var speedUnit = document.getElementById("tn-vi-speed-unit");
+    if (v.speed_kmh === null || v.speed_kmh === undefined || isNaN(v.speed_kmh)) {
+      if (speedEl) speedEl.textContent = "Calculating...";
+      if (speedUnit) speedUnit.style.display = "none";
+    } else {
+      if (speedEl) speedEl.textContent = String(Math.round(v.speed_kmh));
+      if (speedUnit) speedUnit.style.display = "";
+    }
+    document.getElementById("tn-vi-id").textContent = v.vehicle_id || "—";
+    document.getElementById("tn-vi-type").textContent = v.type || "—";
+    document.getElementById("tn-vi-direction").textContent = v.direction || "—";
+    document.getElementById("tn-vi-status").textContent = v.status || "—";
+    document.getElementById("tn-vi-zone").textContent = v.zone || "—";
+    document.getElementById("tn-vi-conf").textContent = (v.confidence != null ? v.confidence : "—") + (v.confidence != null ? "%" : "");
+    document.getElementById("tn-vi-tracked").textContent = v.time_tracked_s != null
+      ? v.time_tracked_s.toFixed(1) + " s" : "—";
+    var riskEl = document.getElementById("tn-vi-risk");
+    if (riskEl) {
+      riskEl.textContent = v.risk || "—";
+      riskEl.className = "tn-vi-risk tn-vi-risk--" + String(v.risk || "low").toLowerCase();
+    }
+    document.getElementById("tn-vi-note").textContent = v.smart_note || "—";
+    var riskFill = document.getElementById("tn-vi-risk-fill");
+    if (riskFill) {
+      var riskPct = v.risk === "High" ? 88 : (v.risk === "Medium" ? 52 : 28);
+      riskFill.style.width = riskPct + "%";
+      riskFill.className = "tn-vehicle-insight__risk-fill tn-vi-risk-fill--" + String(v.risk || "low").toLowerCase();
+    }
+  }
+
+  function pushVehicleDetectionsFromResult(d) {
+    if (!d) return;
+    latestVehicleDetections = extractVehicleDetections(d);
+    if (window.TnVehicleFocus) {
+      window.TnVehicleFocus.updateDetections(latestVehicleDetections, Date.now());
+    }
+    if (vehicleFocusMode) {
+      if (latestVehicleDetections.length === 0) {
+        setGestureStatus("No trackable vehicles — run Analyze Frame", "warn");
+      } else {
+        setGestureStatus(latestVehicleDetections.length + " vehicles ready — point or click", "active");
+      }
+    }
+  }
+
+  function enterVisionFullscreen() {
+    if (!imageBase64 || !imgNatural.w || visionFullscreenOpen) return;
+    visionFullscreenOpen = true;
+    visionFsRoot.hidden = false;
+    visionFsRoot.setAttribute("aria-hidden", "false");
+    document.body.classList.add("tn-vision-fs-open");
+    visionFsStage.appendChild(hudFrame);
+    if (vehicleFocusMode && gesturePreviewWrap && visionFsCam) {
+      visionFsCam.appendChild(gesturePreviewWrap);
+    }
+    if (visionFsInsight && vehicleInsightPanel) {
+      visionFsInsight.appendChild(vehicleInsightPanel);
+    }
+    syncFsRoiBadge();
+    syncFsFocusBadge();
+    if (window.TnVehicleFocus && window.TnVehicleFocus.syncOverlaySize) {
+      window.TnVehicleFocus.syncOverlaySize();
+    }
+    redrawOverlay();
+  }
+
+  function exitVisionFullscreen() {
+    if (!visionFullscreenOpen) return;
+    visionFullscreenOpen = false;
+    visionFsRoot.hidden = true;
+    visionFsRoot.setAttribute("aria-hidden", "true");
+    document.body.classList.remove("tn-vision-fs-open");
+    if (hudSlot && hudFrame) hudSlot.appendChild(hudFrame);
+    if (gesturePreviewSlot && gesturePreviewWrap) gesturePreviewSlot.appendChild(gesturePreviewWrap);
+    if (vehicleInsightSlot && vehicleInsightPanel) vehicleInsightSlot.appendChild(vehicleInsightPanel);
+    if (window.TnVehicleFocus && window.TnVehicleFocus.syncOverlaySize) {
+      window.TnVehicleFocus.syncOverlaySize();
+    }
+    redrawOverlay();
+  }
+
+  function toggleVisionFullscreen() {
+    if (visionFullscreenOpen) exitVisionFullscreen();
+    else enterVisionFullscreen();
+  }
+
+  function setGestureStatus(text, kind) {
+    var el = document.getElementById("tn-gesture-status");
+    if (!el) return;
+    el.textContent = text || "—";
+    el.className = "tn-gesture-status tn-gesture-status--" + (kind || "idle");
+  }
+
+  function setInteractionMode(mode) {
+    var isFocus = mode === "focus";
+    if (!isFocus) {
+      vehicleFocusMode = false;
+      if (window.TnVehicleFocus) window.TnVehicleFocus.setEnabled(false);
+    } else {
+      vehicleFocusMode = true;
+    }
+    document.getElementById("tn-mode-mouse").classList.toggle("tn-draw-mode__btn--active", !isFocus);
+    document.getElementById("tn-mode-focus").classList.toggle("tn-draw-mode__btn--active", isFocus);
+    document.getElementById("tn-mode-mouse").setAttribute("aria-pressed", isFocus ? "false" : "true");
+    document.getElementById("tn-mode-focus").setAttribute("aria-pressed", isFocus ? "true" : "false");
+    document.getElementById("tn-gesture-card").hidden = !isFocus;
+    document.getElementById("tn-focus-instruction").hidden = !isFocus;
+    syncFsFocusBadge();
+    if (isFocus && latestResult) {
+      pushVehicleDetectionsFromResult(latestResult);
+    }
+    if (isFocus) {
+      if (window.TnVehicleFocus) {
+        window.TnVehicleFocus.setEnabled(true).then(function () {
+          if (!window.TnVehicleFocus.isEnabled()) {
+            vehicleFocusMode = false;
+            document.getElementById("tn-gesture-card").hidden = true;
+            document.getElementById("tn-focus-instruction").hidden = true;
+            document.getElementById("tn-mode-mouse").classList.add("tn-draw-mode__btn--active");
+            document.getElementById("tn-mode-focus").classList.remove("tn-draw-mode__btn--active");
+            syncFsFocusBadge();
+          } else if (visionFullscreenOpen && gesturePreviewWrap && visionFsCam) {
+            visionFsCam.appendChild(gesturePreviewWrap);
+          }
+        });
+      }
+    }
   }
 
   function updateSelectedPoints() {
@@ -1207,6 +1389,11 @@
   canvas.addEventListener("click", function (ev) {
     if (!imageBase64 || !imgNatural.w) return;
     var xy = canvasCoords(ev);
+    if (window.TnVehicleFocus) {
+      window.TnVehicleFocus.pointerAtCanvasCoords(xy[0], xy[1], true);
+      if (window.TnVehicleFocus.getSelectedVehicle()) return;
+    }
+    if (vehicleFocusMode) return;
     if (roiTool() === "polygon") {
       points.push(xy);
       _saveCurrentPolygonPoints();
@@ -1224,24 +1411,25 @@
     redrawOverlay();
   });
 
+  canvas.addEventListener("mousemove", function (ev) {
+    if (!imageBase64 || !imgNatural.w || !window.TnVehicleFocus) return;
+    if (vehicleFocusMode && window.TnVehicleFocus.isHandDetected && window.TnVehicleFocus.isHandDetected()) return;
+    var xy = canvasCoords(ev);
+    window.TnVehicleFocus.pointerAtCanvasCoords(xy[0], xy[1], false);
+  });
+
+  canvas.addEventListener("mouseleave", function () {
+    if (window.TnVehicleFocus) window.TnVehicleFocus.drawOverlay();
+  });
+
   document.getElementById("tn-close-poly").onclick = function () {
-    if (points.length >= 3) {
-      updateSelectedPoints();
-      redrawOverlay();
-    }
-    else showMsg("Au moins 3 points pour fermer une zone.", true);
+    if (points.length >= 3) saveCurrentPolygonZone("Zone saved — draw the next zone or uncheck zones below.");
+    else showMsg("Add at least 3 points to close a zone.", true);
   };
 
   document.getElementById("tn-save-zone").onclick = function () {
     if (roiTool() === "polygon") {
-      if (points.length < 3) {
-        showMsg("Select at least 3 points", true);
-        return;
-      }
-      zones.push(points.map(function (p) { return [p[0], p[1]]; }));
-      points = [];
-      _saveCurrentPolygonPoints();
-      updateSelectedPoints();
+      saveCurrentPolygonZone();
     } else {
       if (!boxPreview) {
         showMsg("Tracez un rectangle (2 clics) avant d’enregistrer.", true);
@@ -1249,17 +1437,22 @@
       }
       zonesRect.push(boxPreview.slice());
       boxPreview = null;
+      updateZoneCount();
+      redrawOverlay();
+      showMsg("Zone enregistrée.", false);
+      var rb = document.getElementById("tn-report-banner");
+      if (rb) rb.textContent = "Zones définies — lancez une analyse ou une session live pour alimenter les KPI.";
     }
-    updateZoneCount();
-    redrawOverlay();
-    showMsg("Zone enregistrée.", false);
-    var rb = document.getElementById("tn-report-banner");
-    if (rb) rb.textContent = "Zones définies — lancez une analyse ou une session live pour alimenter les KPI.";
   };
 
   function updateZoneCount() {
     var n = zones.length + zonesRect.length;
-    document.getElementById("tn-zone-count").textContent = "Zones : " + n;
+    var activeN = countActiveZones();
+    document.getElementById("tn-zone-count").textContent = "Monitored zones: " + n + (n ? " (" + activeN + " active)" : "");
+    var badge = document.getElementById("tn-roi-filter-badge");
+    if (badge) badge.style.display = activeN > 0 ? "inline-flex" : "none";
+    syncFsRoiBadge();
+    renderZoneList();
   }
 
   document.getElementById("tn-clear-last").onclick = function () {
@@ -1316,7 +1509,7 @@
         setTimeout(function () {
           document.getElementById("tn-live-init").click();
           setTimeout(function () {
-            if (!liveAutoTimer) document.getElementById("tn-live-auto").click();
+            if (!liveAutoActive) document.getElementById("tn-live-auto").click();
           }, 700);
         }, 200);
       }).catch(function () { showMsg("Erreur réseau.", true); });
@@ -1368,6 +1561,8 @@
   function resetZones() {
     zones = [];
     zonesRect = [];
+    activePolyZones = {};
+    activeRectZones = {};
     points = [];
     _saveCurrentPolygonPoints();
     updateSelectedPoints();
@@ -1381,10 +1576,11 @@
 
   function buildAnalyzeBody(metaOpt) {
     var meta = metaOpt || gatherMetaPayload();
+    var roi = getActiveRoiPayload();
     return {
       image_base64: imageBase64,
-      polygons: zones,
-      rectangles: zonesRect,
+      polygons: roi.polygons,
+      rectangles: roi.rectangles,
       mode: meta.mode,
       model: meta.model,
       model_mode: meta.model_mode,
@@ -1405,6 +1601,7 @@
       esp32_bridge_state: esp32BridgeState,
       display_state: displayState,
       turbo_local: !!meta.turbo_local,
+      overlay_on_client: clientOverlayEnabled(),
     };
   }
 
@@ -1414,6 +1611,29 @@
     }
   }
 
+  function tnHumanizeLog(line) {
+    var s = String(line || "");
+    if (/esp32.*skip.*disabled/i.test(s) || /disabled.*esp32/i.test(s)) return "External camera inactive";
+    return s
+      .replace(/\bdetections\b/gi, "vehicles detected")
+      .replace(/\bavg congestion\b/gi, "average congestion")
+      .replace(/\bROI\b/g, "monitoring zone");
+  }
+
+  function tnFormatLevel(level) {
+    var s = String(level || "unknown").toLowerCase();
+    if (s === "unknown") return "Awaiting analysis";
+    return s.charAt(0).toUpperCase() + s.slice(1);
+  }
+
+  function tnFormatSignalAction(action) {
+    var a = String(action || "").toLowerCase();
+    if (a === "adaptive_cycle") return "Adaptive signal timing";
+    if (a === "extend_green") return "Extend green phase";
+    if (a === "hold_red") return "Hold red phase";
+    return action || "Adaptive signal timing";
+  }
+
   function renderEsp32Logs(d) {
     var ul = document.getElementById("tn-esp32-event-log");
     if (!ul) return;
@@ -1421,7 +1641,7 @@
     var lines = (d && d.esp32_logs) ? d.esp32_logs : [];
     lines.forEach(function (line) {
       var li = document.createElement("li");
-      li.textContent = line;
+      li.textContent = tnHumanizeLog(line);
       ul.appendChild(li);
     });
   }
@@ -1433,14 +1653,19 @@
     var esp = d.esp32 || {};
     var parts = [];
     if (esp.raw_emergency !== undefined) {
-      parts.push("Brut: emergency=" + esp.raw_emergency + ", zone=" + esp.raw_priority_zone);
+      parts.push("Priority signal: zone " + esp.raw_priority_zone);
     }
-    if (esp.confirmed_emergency !== undefined) {
-      parts.push("Confirmé: emergency=" + esp.confirmed_emergency + ", zone=" + esp.confirmed_priority_zone);
+    if (esp.confirmed_emergency !== undefined && esp.confirmed_emergency) {
+      parts.push("Confirmed priority response active");
     }
     if (ep) {
-      if (ep.skipped) parts.push("HTTP " + (ep.reason || "skipped"));
-      else parts.push("POST " + (ep.ok ? "OK" : "échec") + (ep.detail ? " — " + ep.detail : ""));
+      if (ep.skipped) {
+        var reason = String(ep.reason || "").toLowerCase();
+        if (reason.indexOf("disabled") >= 0) parts.push("External camera inactive");
+        else parts.push("Edge sync paused");
+      } else {
+        parts.push("Edge camera " + (ep.ok ? "updated" : "unreachable"));
+      }
     }
     esp32el.textContent = parts.join(" · ") || "";
   }
@@ -1460,6 +1685,20 @@
       "</svg>";
   }
 
+  function tnAgentDisplayName(name) {
+    var map = {
+      "Perception Agent": "Vision Intelligence",
+      "Traffic Control Agent": "Flow Optimization",
+      "Emergency Agent": "Priority Response",
+      "Violation Agent": "Compliance Monitor",
+      "Prediction Agent": "Trend Forecasting",
+      "Rerouting Agent": "Adaptive Routing",
+      "XAI Agent": "Decision Insight",
+      "Supervisor Agent": "Decision Supervisor",
+    };
+    return map[name] || name;
+  }
+
   function renderResults(d) {
     if (d && d.display_state && typeof d.display_state === "object") {
       displayState = d.display_state;
@@ -1467,28 +1706,55 @@
     latestResult = d;
     document.getElementById("tn-results").style.display = "block";
     var ov = d.overview || {};
-    document.getElementById("tn-overview").innerHTML =
-      "<h3 class='tn-premium-title'>📊 Traffic Operations Dashboard</h3>" +
-      "<div class='tn-kpi-strip'>" +
-      "<div class='tn-kpi-mini'><b>Congestion</b><span>" + (((ov.avg_density || 0) * 100).toFixed(1)) + "%</span></div>" +
-      "<div class='tn-kpi-mini'><b>Vehicle count</b><span>" + (ov.total_vehicles || 0) + "</span></div>" +
-      "<div class='tn-kpi-mini'><b>Waiting (min)</b><span>" + (((d.decisions && d.decisions[0]) ? Number(d.decisions[0].estimated_waiting_time_min || 0) : 0).toFixed(1)) + "</span></div>" +
-      "<div class='tn-kpi-mini'><b>Criticality</b><span>" + (ov.global_criticality || 0) + "/100</span></div>" +
-      "</div>";
-    var risk = (ov.global_criticality || 0) >= 70 ? "High" : ((ov.global_criticality || 0) >= 35 ? "Medium" : "Low");
+    var congestionPct = ((ov.avg_density || 0) * 100).toFixed(1);
+    var delayMin = ((d.decisions && d.decisions[0]) ? Number(d.decisions[0].estimated_waiting_time_min || 0) : 0);
+    var crit = Number(ov.global_criticality || 0);
+    var risk = crit >= 70 ? "High" : (crit >= 35 ? "Medium" : "Low");
     var recommendation = "Maintain adaptive signal timing.";
     if (d.decisions && d.decisions.length) recommendation = d.decisions[0].final_recommendation || recommendation;
-    document.getElementById("tn-insight-status").textContent = String(ov.global_level || "unknown");
+
+    document.getElementById("tn-kpi-congestion").textContent = congestionPct + "%";
+    document.getElementById("tn-kpi-vehicles").textContent = String(ov.total_vehicles || 0);
+    document.getElementById("tn-kpi-delay").textContent = delayMin.toFixed(1) + " min";
+    document.getElementById("tn-kpi-criticality").textContent = crit + "/100";
+
+    document.getElementById("tn-insight-status").textContent = tnFormatLevel(ov.global_level);
+    document.getElementById("tn-insight-congestion").textContent = congestionPct + "%";
     document.getElementById("tn-insight-vehicles").textContent = String(ov.total_vehicles || 0);
     document.getElementById("tn-insight-risk").textContent = risk;
     document.getElementById("tn-insight-reco").textContent = recommendation;
+
+    var scoreEl = document.getElementById("tn-decision-score");
+    if (scoreEl) scoreEl.textContent = crit;
+    var riskBadge = document.getElementById("tn-decision-risk-badge");
+    if (riskBadge) {
+      riskBadge.textContent = risk;
+      riskBadge.className = "tn-risk-pill tn-risk-pill--" + risk.toLowerCase();
+    }
+    var actionEl = document.getElementById("tn-decision-action");
+    if (actionEl) actionEl.textContent = recommendation;
+    var xPreview = (d.xai_zones && d.xai_zones[0]) || {};
+    var explainer = document.getElementById("tn-decision-explainer");
+    if (explainer) {
+      explainer.textContent = xPreview.message
+        ? String(xPreview.message)
+        : "Traffic conditions are being evaluated across monitored zones.";
+    }
+
+    document.getElementById("tn-overview").innerHTML = "";
     mergeEsp32BridgeFromResponse(d);
     renderEsp32Logs(d);
     updateEsp32SummaryRow(d);
 
     document.getElementById("tn-out-img").src = "data:image/jpeg;base64," + (d.annotated_image_base64 || "");
+    if (d.annotated_image_base64) {
+      setFrameFromBase64(d.annotated_image_base64);
+      if (window.TnVisionStream && clientOverlayEnabled()) {
+        window.TnVisionStream.updateDetections(extractVehicleDetections(d));
+      }
+    }
 
-    var countsHtml = "<h3 class='tn-premium-title'>Zone counts</h3><div class='tn-agent-grid'>";
+    var countsHtml = "<h3 class='tn-premium-title'>Monitored Zones</h3><div class='tn-agent-grid'>";
     (d.per_zone_counts || []).forEach(function (row, i) {
       var cells = Object.keys(row).map(function (k) { return k + ": " + row[k]; }).join(", ") || "—";
       countsHtml += "<div class='tn-agent-tile'><strong>Zone " + (i + 1) + "</strong><br/>" + cells + "</div>";
@@ -1496,41 +1762,43 @@
     countsHtml += "</div>";
     document.getElementById("tn-counts").innerHTML = countsHtml;
 
-    var decHtml = "<h3 class='tn-premium-title'>🧭 SMART RECOMMENDATIONS</h3>";
+    var decHtml = "<h3 class='tn-premium-title'>Final AI Recommendation</h3>";
     (d.decisions || []).forEach(function (dec, i) {
       var lvl = String(dec.congestion_level || "medium").toLowerCase();
       var pClass = lvl === "high" ? "tn-priority-high" : (lvl === "low" ? "tn-priority-low" : "tn-priority-medium");
       var wait = Number(dec.estimated_waiting_time_min || 0);
-      var crit = Number(dec.traffic_criticality_score || 0);
+      var decCrit = Number(dec.traffic_criticality_score || 0);
+      var signalLabel = tnFormatSignalAction(dec.signal_action);
       decHtml += "<div class='tn-reco-card'>" +
-        "<strong>Zone " + (i + 1) + "<span class='tn-badge-med " + pClass + "'>" + String(dec.congestion_level || "medium").toUpperCase() + "</span></strong>" +
-        "<div style='display:flex;gap:12px;align-items:center;justify-content:space-between;margin-top:8px;'>" +
-        "<div style='flex:1;'>" +
-        "Signal action: <b>" + (dec.signal_action || "adaptive_cycle") + "</b><br/>" +
-        "Green light: <b>" + (dec.green_time_s != null && dec.green_time_s !== undefined ? dec.green_time_s : "—") + " s</b> · Red light: <b>" + (dec.red_time_s != null && dec.red_time_s !== undefined ? dec.red_time_s : "—") + " s</b><br/>" +
-        "Waiting time: <b>" + wait.toFixed(1) + " min</b><br/>" +
-        "Criticality score: <b>" + crit + "/100</b><br/>" +
-        "Final: <b>" + (dec.final_recommendation || "").replace(/</g, "&lt;") + "</b>" +
+        "<strong>Zone " + (i + 1) + " · Recommended action <span class='tn-badge-med " + pClass + "'>" + String(dec.congestion_level || "medium").toUpperCase() + "</span></strong>" +
+        "<div class='tn-reco-card__body'>" +
+        "<div class='tn-reco-card__copy'>" +
+        "Signal plan: <b>" + signalLabel + "</b><br/>" +
+        "Green phase: <b>" + (dec.green_time_s != null && dec.green_time_s !== undefined ? dec.green_time_s : "—") + " s</b> · Red phase: <b>" + (dec.red_time_s != null && dec.red_time_s !== undefined ? dec.red_time_s : "—") + " s</b><br/>" +
+        "Estimated delay: <b>" + wait.toFixed(1) + " min</b><br/>" +
+        "Criticality score: <b>" + decCrit + "/100</b><br/>" +
+        "Recommended action: <b class='tn-reco-highlight'>" + (dec.final_recommendation || "").replace(/</g, "&lt;") + "</b>" +
         "</div>" +
-        "<div class='tn-circle-score'>" + crit + "/100</div>" +
+        "<div class='tn-circle-score tn-circle-score--lg'>" + decCrit + "</div>" +
         "</div>" +
         "<div class='tn-bars'>" +
-        "<div class='tn-bar-row'><label>Waiting time</label><div class='tn-bar-bg'><div class='tn-bar-fill' style='width:" + Math.min(100, wait * 8) + "%'></div></div></div>" +
-        "<div class='tn-bar-row'><label>Criticality</label><div class='tn-bar-bg'><div class='tn-bar-fill' style='width:" + Math.min(100, crit) + "%'></div></div></div>" +
+        "<div class='tn-bar-row'><label>Estimated delay</label><div class='tn-bar-bg'><div class='tn-bar-fill' style='width:" + Math.min(100, wait * 8) + "%'></div></div></div>" +
+        "<div class='tn-bar-row'><label>Criticality score</label><div class='tn-bar-bg'><div class='tn-bar-fill' style='width:" + Math.min(100, decCrit) + "%'></div></div></div>" +
         "</div>" +
       "</div>";
     });
-    decHtml += "<p class='tn-help'><span class='tn-live-dot'></span>LIVE · Green wave plan: " + JSON.stringify(d.green_wave || []) + "</p>";
+    decHtml += "<p class='tn-help tn-help--compact'><span class='tn-live-dot'></span>Live adaptive routing active</p>";
     document.getElementById("tn-decisions").innerHTML = decHtml;
 
     var x = (d.xai_zones && d.xai_zones[0]) || {};
     var fx = x.features || {};
-    var xaiHtml = "<h3 class='tn-premium-title'>🧠 XAI</h3>" +
-      "<div class='tn-agent-tile'><strong>❓ Why this decision?</strong><br/>" + String(x.message || "No XAI message").replace(/</g, "&lt;") + "</div>" +
+    var xaiHtml = "<h3 class='tn-premium-title'>Decision Insight</h3>" +
+      "<div class='tn-xai-pulse' aria-hidden='true'></div>" +
+      "<div class='tn-agent-tile'><strong>Why this recommendation?</strong><br/>" + String(x.message || "Analysis will explain the recommendation once traffic data is available.").replace(/</g, "&lt;") + "</div>" +
       "<div class='tn-bars'>" +
-      "<div class='tn-bar-row'><label>Congestion level: " + Number(fx.congestion_pct || 0).toFixed(1) + "%</label><div class='tn-bar-bg'><div class='tn-bar-fill' style='width:" + Math.min(100, Number(fx.congestion_pct || 0)) + "%'></div></div></div>" +
+      "<div class='tn-bar-row'><label>Average congestion: " + Number(fx.congestion_pct || 0).toFixed(1) + "%</label><div class='tn-bar-bg'><div class='tn-bar-fill' style='width:" + Math.min(100, Number(fx.congestion_pct || 0)) + "%'></div></div></div>" +
       "<div class='tn-bar-row'><label>Criticality score: " + Number(fx.criticality || 0).toFixed(1) + "/100</label><div class='tn-bar-bg'><div class='tn-bar-fill' style='width:" + Math.min(100, Number(fx.criticality || 0)) + "%'></div></div></div>" +
-      "<div class='tn-bar-row'><label>Estimated waiting: " + Number(fx.waiting_min || 0).toFixed(1) + " min</label><div class='tn-bar-bg'><div class='tn-bar-fill' style='width:" + Math.min(100, Number(fx.waiting_min || 0) * 8) + "%'></div></div></div>" +
+      "<div class='tn-bar-row'><label>Estimated delay: " + Number(fx.waiting_min || 0).toFixed(1) + " min</label><div class='tn-bar-bg'><div class='tn-bar-fill' style='width:" + Math.min(100, Number(fx.waiting_min || 0) * 8) + "%'></div></div></div>" +
       "</div>";
     document.getElementById("tn-xai").innerHTML = xaiHtml;
 
@@ -1564,11 +1832,12 @@
       return "tn-status-standby";
     }
 
-    var agHtml = "<h3 class='tn-premium-title'>🧠 Agentic AI Control Center</h3>" +
-      "<p class='tn-help' style='margin-top:0;margin-bottom:10px;'><span class='tn-live-dot'></span>LIVE multi-agent runtime</p>" +
+    var agHtml = "<h3 class='tn-premium-title'>AI Coordination Hub</h3>" +
+      "<p class='tn-help tn-help--compact'><span class='tn-live-dot'></span>Collaborative AI specialists coordinating traffic intelligence</p>" +
       "<div class='tn-agent-grid-3'>";
     agents.forEach(function (a) {
       var n = String(a.agent || "?");
+      var displayName = tnAgentDisplayName(n);
       var skin = tnAgentSkin(n);
       var em = skin.em;
       var sClass = tnAgentStatusClass(a.status);
@@ -1583,7 +1852,7 @@
       var spark = tnSparkline([12, 18, 15, 22, 16, 24], sparkCol);
       agHtml += "<div class='tn-agent-tile " + skin.cls + (sup ? " tn-agent-supervisor" : "") + "' title='Role: " + cat + " agent'>" +
         "<span class='tn-agent-cat'>" + cat + "</span><br/>" +
-        "<strong>" + em + " " + n + "</strong><br/>" +
+        "<strong>" + em + " " + displayName + "</strong><br/>" +
         "<span class='tn-agent-status " + sClass + "'>" + (a.status || "standby") + "</span><br/>" +
         "<span style='color:var(--muted);font-size:0.8rem;'>" + (a.output || "").replace(/</g, "&lt;") + "</span>" +
         spark +
@@ -1602,11 +1871,12 @@
 
     var rb = document.getElementById("tn-report-banner");
     if (rb) {
-      rb.textContent = "KPI snapshot recorded — export PDF/CSV peut être branché sur ces données.";
+      rb.textContent = "Insights recorded — ready for executive export.";
       if (d.api_key_configured === false) {
-        rb.textContent = "API key not configured. Using local fallback.";
+        rb.textContent = "Running in local demo mode.";
       }
     }
+    pushVehicleDetectionsFromResult(d);
   }
 
   document.getElementById("tn-capture-insight").onclick = function () {
@@ -1614,9 +1884,9 @@
     var vehicles = document.getElementById("tn-insight-vehicles").textContent || "0";
     var risk = document.getElementById("tn-insight-risk").textContent || "—";
     var reco = document.getElementById("tn-insight-reco").textContent || "—";
-    capturedInsightText = "Traffic=" + status + " · Vehicles=" + vehicles + " · Risk=" + risk + " · Reco=" + reco;
-    document.getElementById("tn-insight-snap").textContent = "Captured: " + capturedInsightText;
-    showMsg("Insight capturé.", false);
+    capturedInsightText = "Status=" + status + " · Vehicles=" + vehicles + " · Risk=" + risk + " · Action=" + reco;
+    document.getElementById("tn-insight-snap").textContent = "Snapshot saved: " + capturedInsightText;
+    showMsg("Insight captured.", false);
   };
 
   document.getElementById("tn-export-pdf").onclick = function () {
@@ -1665,9 +1935,12 @@
       showMsg("Chargez d’abord un cadre.", true);
       return;
     }
-    if (analysisMode() === "vehicle" && zones.length === 0 && zonesRect.length === 0) {
-      showMsg("Mode comptage : sauvegardez au moins une zone ROI.", true);
-      return;
+    if (analysisMode() === "vehicle") {
+      var roi = getActiveRoiPayload();
+      if (roi.polygons.length === 0 && roi.rectangles.length === 0) {
+        showMsg("Save and enable at least one monitoring zone.", true);
+        return;
+      }
     }
     postJSON(ANALYZE_URL, buildAnalyzeBody()).then(function (x) {
       if (!x.ok || !x.j.success) {
@@ -1680,26 +1953,23 @@
   };
 
   function stopLiveAuto() {
-    if (liveAutoTimer) {
-      clearInterval(liveAutoTimer);
-      liveAutoTimer = null;
+    liveAutoActive = false;
+    if (window.TnVisionStream) {
+      window.TnVisionStream.setLiveInferenceEnabled(false);
+      window.TnVisionStream.setUploadVideoMode(false);
+      window.TnVisionStream.updateIndicators();
     }
-  }
-
-  /** Interval between live ticks: shorter when Turbo + fichier local/upload for smoother playback. */
-  function getLiveTickIntervalMs() {
-    var r = document.querySelector('input[name="tn-src-type"]:checked');
-    var src = r ? r.value : "youtube";
-    var turboEl = document.getElementById("tn-turbo-local");
-    if (turboEl && turboEl.checked && (src === "local" || src === "upload")) {
-      return 420;
-    }
-    return 800;
   }
 
   function startLiveAutoNow() {
     stopLiveAuto();
-    liveAutoTimer = setInterval(runLiveTick, getLiveTickIntervalMs());
+    liveAutoActive = true;
+    if (window.TnVisionStream) {
+      syncLiveStreamMode();
+      window.TnVisionStream.setLiveInferenceEnabled(true);
+      window.TnVisionStream.start();
+      window.TnVisionStream.updateIndicators();
+    }
   }
 
   function closeLiveSession() {
@@ -1806,52 +2076,76 @@
     }).catch(function () { showMsg("Erreur réseau.", true); });
   };
 
+  function applyLiveTickResult(x, quiet) {
+    if (x.j.ended) {
+      showMsg("Fin de vidéo.", false);
+      closeLiveSession();
+      return false;
+    }
+    if (!x.ok || !x.j.success) {
+      if (!quiet) showMsg((x.j && x.j.message) || "Tick échoué", true);
+      return false;
+    }
+    liveTickCount++;
+    liveFrameCounter++;
+    mergeEsp32BridgeFromResponse(x.j);
+    renderEsp32Logs(x.j);
+    updateEsp32SummaryRow(x.j);
+    latestResult = x.j;
+    if (x.j.display_state && typeof x.j.display_state === "object") {
+      displayState = x.j.display_state;
+    }
+    if (x.j.annotated_image_base64) {
+      var useClient = clientOverlayEnabled();
+      if (window.TnVisionStream && useClient) {
+        window.TnVisionStream.setFrameFromBase64(x.j.annotated_image_base64);
+        window.TnVisionStream.updateDetections(extractVehicleDetections(x.j));
+      } else {
+        setFrameFromBase64(x.j.annotated_image_base64);
+      }
+      document.getElementById("tn-results").style.display = "block";
+      document.getElementById("tn-out-img").src = "data:image/jpeg;base64," + x.j.annotated_image_base64;
+    }
+    var refresh = parseInt(document.getElementById("tn-dash-refresh").value, 10) || 1;
+    if ((liveFrameCounter - 1) % refresh === 0) {
+      renderResults(x.j);
+    } else {
+      pushVehicleDetectionsFromResult(x.j);
+    }
+    document.getElementById("tn-session-pill").textContent = "Session · cadre #" + (x.j.frame_index || liveTickCount);
+    if (!quiet) showMsg("Tick " + (x.j.frame_index || "") + " OK.", false);
+    if (window.TnVisionStream) window.TnVisionStream.updateIndicators();
+    return true;
+  }
+
+  function runLiveTickAsync() {
+    if (!liveSessionId) return Promise.resolve();
+    if (!imageBase64 && !(window.TnVisionStream && window.TnVisionStream.setUploadVideoMode)) return Promise.resolve();
+    var meta = gatherLiveMetaPayload();
+    var body = Object.assign(buildAnalyzeBody(meta), { session_id: liveSessionId, frame_skip: meta.frame_skip });
+    return postJSON(LIVE_TICK_URL, body).then(function (x) {
+      applyLiveTickResult(x, true);
+    }).catch(function () {
+      showMsg("Erreur réseau.", true);
+    });
+  }
+
   function runLiveTick() {
     if (!liveSessionId) {
       showMsg("Démarrez d’abord une session live.", true);
       return;
     }
     if (!imageBase64) return;
-    var meta = gatherLiveMetaPayload();
-    var body = Object.assign(buildAnalyzeBody(meta), { session_id: liveSessionId, frame_skip: meta.frame_skip });
-    postJSON(LIVE_TICK_URL, body).then(function (x) {
-      if (x.j.ended) {
-        showMsg("Fin de vidéo.", false);
-        closeLiveSession();
-        return;
-      }
-      if (!x.ok || !x.j.success) {
-        showMsg((x.j && x.j.message) || "Tick échoué", true);
-        return;
-      }
-      liveTickCount++;
-      liveFrameCounter++;
-      mergeEsp32BridgeFromResponse(x.j);
-      renderEsp32Logs(x.j);
-      updateEsp32SummaryRow(x.j);
-      latestResult = x.j;
-      if (x.j.display_state && typeof x.j.display_state === "object") {
-        displayState = x.j.display_state;
-      }
-      if (x.j.annotated_image_base64) {
-        setFrameFromBase64(x.j.annotated_image_base64);
-        document.getElementById("tn-results").style.display = "block";
-        document.getElementById("tn-out-img").src = "data:image/jpeg;base64," + x.j.annotated_image_base64;
-      }
-      /* Dashboard refresh (frames): repaint KPI cards / graphs / insight strip every N ticks only; video canvas updates every tick. */
-      var refresh = parseInt(document.getElementById("tn-dash-refresh").value, 10) || 1;
-      if ((liveFrameCounter - 1) % refresh === 0) {
-        renderResults(x.j);
-      }
-      document.getElementById("tn-session-pill").textContent = "Session · cadre #" + (x.j.frame_index || liveTickCount);
-      showMsg("Tick " + (x.j.frame_index || "") + " OK.", false);
-    }).catch(function () { showMsg("Erreur réseau.", true); });
+    if (window.TnVisionStream && window.TnVisionStream.isInferenceRunning && window.TnVisionStream.isInferenceRunning()) {
+      return;
+    }
+    runLiveTickAsync().then(function () {});
   }
 
   document.getElementById("tn-live-tick").onclick = runLiveTick;
 
   document.getElementById("tn-live-auto").onclick = function () {
-    if (liveAutoTimer) {
+    if (liveAutoActive) {
       stopLiveAuto();
       showMsg("Lecture auto arrêtée.", false);
       return;
@@ -1861,7 +2155,8 @@
       return;
     }
     startLiveAutoNow();
-    showMsg("Lecture auto (≈" + getLiveTickIntervalMs() + " ms / tick).", false);
+    var fps = window.TnVisionStream ? window.TnVisionStream.getAiFps() : 10;
+    showMsg("Smart stream ON · AI ~" + fps + " FPS · video stays smooth.", false);
   };
 
   fetch(MODELS_URL).then(function (r) { return r.json(); }).then(function (j) {
@@ -1884,6 +2179,94 @@
   updateSelectedPoints();
   refreshStageForSourceType();
   updatePerfControlsAvailability();
+  initVisionStream();
+
+  document.getElementById("tn-mode-mouse").onclick = function () { setInteractionMode("mouse"); };
+  document.getElementById("tn-mode-focus").onclick = function () {
+    if (!imageBase64 || !imgNatural.w) {
+      showMsg("Load a reference frame before Gesture Vehicle Focus.", true);
+      return;
+    }
+    setInteractionMode("focus");
+  };
+
+  document.getElementById("tn-mpp").addEventListener("change", function () {
+    if (window.TnVehicleFocus) window.TnVehicleFocus.setMetersPerPixel(this.value);
+  });
+
+  if (window.TnVehicleFocus) {
+    window.TnVehicleFocus.init({
+      canvas: canvas,
+      overlayCanvas: handOverlayCanvas,
+      videoEl: document.getElementById("tn-hand-webcam"),
+      metersPerPixel: parseFloat(document.getElementById("tn-mpp").value) || 0.05,
+      getZoneName: function (zoneIdx) {
+        if (zoneIdx >= 0) return "Zone " + (zoneIdx + 1);
+        return null;
+      },
+      setStatus: setGestureStatus,
+      showMsg: showMsg,
+      updateCamStatus: updateGestureCamStatus,
+      onSelectionChange: renderVehicleInsight,
+      onDetectionCount: function (n) {
+        if (window.TnVehicleFocus && window.TnVehicleFocus.getSelectedVehicle()) return;
+        var empty = document.getElementById("tn-vehicle-insight-empty");
+        if (empty && n === 0) {
+          empty.textContent = "Run Analyze Frame first, then point at a detected vehicle.";
+        }
+      },
+      onModeChange: function (active) {
+        vehicleFocusMode = active;
+        if (window.TnVisionStream) window.TnVisionStream.updateIndicators();
+        document.getElementById("tn-focus-instruction").hidden = !active;
+        syncFsFocusBadge();
+        if (visionFullscreenOpen && gesturePreviewWrap) {
+          if (active && visionFsCam) visionFsCam.appendChild(gesturePreviewWrap);
+          else if (gesturePreviewSlot) gesturePreviewSlot.appendChild(gesturePreviewWrap);
+        }
+        if (!active) {
+          document.getElementById("tn-mode-mouse").classList.add("tn-draw-mode__btn--active");
+          document.getElementById("tn-mode-focus").classList.remove("tn-draw-mode__btn--active");
+        }
+      },
+    });
+  }
+
+  document.getElementById("tn-fullscreen-vision").onclick = function () {
+    if (!imageBase64 || !imgNatural.w) {
+      showMsg("Load a reference frame before fullscreen vision.", true);
+      return;
+    }
+    enterVisionFullscreen();
+  };
+  document.getElementById("tn-fs-exit").onclick = exitVisionFullscreen;
+  document.getElementById("tn-fs-analyze").onclick = function () {
+    document.getElementById("tn-analyze").click();
+  };
+  document.getElementById("tn-fs-save-zone").onclick = function () {
+    document.getElementById("tn-save-zone").click();
+  };
+  document.getElementById("tn-fs-clear-points").onclick = function () {
+    document.getElementById("tn-clear-points").click();
+  };
+
+  document.addEventListener("keydown", function (ev) {
+    if (ev.key === "Escape" && visionFullscreenOpen) exitVisionFullscreen();
+  });
+
+  window.addEventListener("resize", function () {
+    if (window.TnVehicleFocus && window.TnVehicleFocus.syncOverlaySize) window.TnVehicleFocus.syncOverlaySize();
+    if (window.TnVisionStream) window.TnVisionStream.syncDetOverlaySize();
+    redrawOverlay();
+  });
+
+  window.addEventListener("beforeunload", function () {
+    if (window.TnVisionStream) window.TnVisionStream.stop();
+    if (window.TnVehicleFocus) window.TnVehicleFocus.destroy();
+  });
 })();
 </script>
+{% endblock %}
+
+{% block extra_js %}
 {% endblock %}

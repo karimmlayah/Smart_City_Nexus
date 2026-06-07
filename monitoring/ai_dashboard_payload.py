@@ -76,10 +76,37 @@ def _demo_metrics(model_id: str, rng: random.Random) -> tuple[int, int, float]:
     return requests, avg_ms, err
 
 
+_TRAFFIC_DISPLAY: dict[str, str] = {
+    "yolov8n": "Traffic Monitoring",
+    "yolov8m": "Traffic Monitoring Pro",
+    "yolo_congestion": "Congestion Detection",
+    "best": "Traffic Analysis",
+}
+
+_ROAD_VISION_DISPLAY: dict[str, str] = {
+    "yolov8n_100ep": "Road Damage Detection",
+    "rtdetr": "Road Damage Detection",
+    "model_road_damage": "Road Damage Detection",
+}
+
+
+def _traffic_service_name(key: str, path: str) -> str:
+    return _TRAFFIC_DISPLAY.get(key, f"Traffic Analysis ({key})")
+
+
+def _road_vision_display(key: str, fallback: str) -> str:
+    if key in _ROAD_VISION_DISPLAY:
+        return _ROAD_VISION_DISPLAY[key]
+    low = (fallback or key).lower()
+    if "road" in low or "damage" in low or "rtdetr" in low:
+        return "Road Damage Detection"
+    return fallback or "Road Analysis"
+
+
 def collect_project_ai_models(rng: random.Random) -> list[dict[str, Any]]:
     """
-    Une ligne par rôle configuré dans Django (même fichier physique peut apparaître plusieurs fois).
-    Chaque ligne inclut ``domain`` pour la palette sémantique (dashboard).
+    One row per configured AI role in Django settings.
+    Each row includes ``domain`` for semantic chart colors.
     """
     rows: list[dict[str, Any]] = []
 
@@ -100,17 +127,15 @@ def collect_project_ai_models(rng: random.Random) -> list[dict[str, Any]]:
 
         if status_override:
             status = status_override
-        elif provider == "Groq":
+        elif provider in ("Cloud AI", "Groq"):
             status = "active" if _groq_active() else "down"
-        elif provider == "Sightengine":
+        elif provider in ("Cloud Service", "Sightengine"):
             status = "active" if _sightengine_active() else "down"
-        elif provider == "DeepFace":
-            status = "active"
         else:
             status = "active" if _local_model_active(ref) else "down"
 
         req, avg_ms, err = _demo_metrics(mid, rng)
-        if status == "down" and provider not in ("Groq", "Sightengine"):
+        if status == "down" and provider not in ("Cloud AI", "Cloud Service", "Groq", "Sightengine"):
             err = min(5.0, err + 2.5)
 
         rows.append(
@@ -126,68 +151,68 @@ def collect_project_ai_models(rng: random.Random) -> list[dict[str, Any]]:
             }
         )
 
-    # --- Feu / fumée ONNX ---
+    # --- Fire & smoke ---
     append_row(
         "fire-onnx",
-        f"Feu / fumée — {Path(str(getattr(settings, 'FIRE_ONNX_MODEL_PATH', '') or '')).name or 'ONNX'}",
-        "Local (ONNX)",
+        "Fire and Smoke Detection",
+        "On-device",
         str(getattr(settings, "FIRE_ONNX_MODEL_PATH", "") or ""),
         domain="safety",
     )
 
-    # --- MJPEG / foule ---
+    # --- Crowd / video monitoring ---
     append_row(
         "yolo-surveillance",
-        f"YOLO foule / sources vidéo — {Path(str(getattr(settings, 'YOLO_MODEL_PATH', '') or '')).name}",
-        "Local (Ultralytics)",
+        "City Monitoring",
+        "On-device",
         str(getattr(settings, "YOLO_MODEL_PATH", "") or ""),
         domain="safety",
     )
 
-    # --- Combat ---
+    # --- Violence detection ---
     append_row(
         "fight-classifier",
-        f"Classif. combat — {Path(str(getattr(settings, 'FIGHT_CLASSIFIER_PATH', '') or '')).name}",
-        "Local (Ultralytics)",
+        "Violence Detection",
+        "On-device",
         str(getattr(settings, "FIGHT_CLASSIFIER_PATH", "") or ""),
         domain="safety",
     )
     append_row(
         "fight-person-yolo",
-        f"YOLO personnes (fusion) — {getattr(settings, 'FIGHT_PERSON_MODEL_PATH', '')}",
-        "Local (Ultralytics / hub)",
+        "People Detection",
+        "On-device",
         str(getattr(settings, "FIGHT_PERSON_MODEL_PATH", "") or ""),
         domain="safety",
     )
 
-    # --- Armes ---
+    # --- Security ---
     append_row(
         "weapon-detector",
-        f"Détection armes (fusion) — {Path(str(getattr(settings, 'WEAPON_DETECTOR_PATH', '') or '')).name}",
-        "Local (Ultralytics)",
+        "Weapon Detection",
+        "On-device",
         str(getattr(settings, "WEAPON_DETECTOR_PATH", "") or ""),
         domain="safety",
     )
     append_row(
         "weapon-test",
-        f"Weapon test — {getattr(settings, 'WEAPON_TEST_MODEL_PATH', '')}",
-        "Local (Ultralytics / hub)",
+        "Security Object Detection",
+        "On-device",
         str(getattr(settings, "WEAPON_TEST_MODEL_PATH", "") or ""),
         domain="safety",
     )
     append_row(
         "weapon-gun",
-        f"Gun test — {Path(str(getattr(settings, 'WEAPON_GUN_TEST_MODEL_PATH', '') or '')).name}",
-        "Local (Ultralytics)",
+        "Gun Detection",
+        "On-device",
         str(getattr(settings, "WEAPON_GUN_TEST_MODEL_PATH", "") or ""),
         domain="safety",
     )
 
-    # --- Route : segmentation + classification ---
+    # --- Road analysis ---
     append_row(
         "road-damage-seg",
-        f"Route (segmentation) — {Path(str(getattr(settings, 'ROAD_DAMAGE_MODEL_PATH', '') or '')).name}",
-        "Local (Ultralytics)",
+        "Road Damage Detection",
+        "On-device",
         str(getattr(settings, "ROAD_DAMAGE_MODEL_PATH", "") or ""),
         domain="infra",
     )
@@ -197,38 +222,38 @@ def collect_project_ai_models(rng: random.Random) -> list[dict[str, Any]]:
         if key not in rvm:
             continue
         path_str = rvm[key]
-        label = rvl.get(key, key)
+        label = _road_vision_display(key, rvl.get(key, key))
         append_row(
             f"road-cls-{key}",
             str(label)[:80],
-            "Local",
+            "On-device",
             str(path_str),
             domain="infra",
         )
 
-    # --- Déchets ---
+    # --- Waste ---
     wmp = getattr(settings, "WASTE_MODEL_PATH", "") or ""
     if str(wmp).strip():
         append_row(
             "waste-yolo",
-            f"Détection déchets — {Path(str(wmp)).name}",
-            "Local (Ultralytics)",
+            "Waste Detection",
+            "On-device",
             str(wmp),
             domain="environment",
         )
 
-    # --- UAV Keras ---
+    # --- Drone ---
     uav = getattr(settings, "UAV_MODEL_PATH", "") or ""
     if str(uav).strip():
         append_row(
             "uav-cnn-keras",
-            f"UAV structure — {Path(str(uav)).name}",
-            "Local (Keras)",
+            "Drone Structure Analysis",
+            "On-device",
             str(uav),
             domain="aerial",
         )
 
-    # --- Traffic Nexus ---
+    # --- Traffic ---
     tn = getattr(settings, "TRAFFIC_NEXUS_MODEL_PATHS", {}) or {}
     for t_key, t_path in tn.items():
         ps = (t_path or "").strip()
@@ -236,39 +261,39 @@ def collect_project_ai_models(rng: random.Random) -> list[dict[str, Any]]:
             continue
         append_row(
             f"traffic-{t_key}",
-            f"Traffic Nexus — {t_key} ({Path(ps).name})",
-            "Local (Ultralytics)",
+            _traffic_service_name(t_key, ps),
+            "On-device",
             ps,
             domain="traffic",
         )
 
-    # --- Groq (rapports route) ---
+    # --- AI assistant (Groq) ---
     groq_model = getattr(settings, "GROQ_MODEL", "") or "llama-3.3-70b-versatile"
     append_row(
         "groq-llm",
-        str(groq_model),
-        "Groq",
+        "AI Assistant",
+        "Cloud AI",
         groq_model,
         domain="cloud_api",
         status_override=("active" if _groq_active() else "down"),
     )
 
-    # --- Sightengine ---
+    # --- Video safety ---
     append_row(
         "sightengine-api",
-        "Sightengine (vidéo / modération)",
-        "Sightengine",
+        "Video Safety Analysis",
+        "Cloud Service",
         "sightengine",
         domain="cloud_api",
         status_override=("active" if _sightengine_active() else "down"),
     )
 
-    # --- DeepFace / Facenet (fusion biométrie) ---
+    # --- Face recognition ---
     face_name = getattr(settings, "FACE_EMBED_MODEL_NAME", "") or "Facenet"
     append_row(
         "face-embedding",
-        f"Empreinte faciale — {face_name}",
-        "DeepFace",
+        "Face Recognition",
+        "On-device",
         f"deepface:{face_name}",
         domain="biometric",
         status_override="active",
@@ -366,53 +391,50 @@ def _requests_over_time_series(
 
 
 def _activity_from_project() -> list[dict[str, Any]]:
-    groq = getattr(settings, "GROQ_MODEL", "") or "Groq LLM"
-    fire_name = Path(str(getattr(settings, "FIRE_ONNX_MODEL_PATH", "") or "best.onnx")).name
-    fight_name = Path(str(getattr(settings, "FIGHT_CLASSIFIER_PATH", "") or "fight.pt")).name
     return [
         {
             "time": (datetime.now() - timedelta(minutes=3)).strftime("%H:%M"),
-            "type": "api",
+            "type": "system",
             "severity": "info",
-            "message": f"Pipeline feu/caméra — inférence ONNX ({fire_name})",
+            "message": "Fire and smoke detection updated",
         },
         {
             "time": (datetime.now() - timedelta(minutes=8)).strftime("%H:%M"),
-            "type": "api",
+            "type": "system",
             "severity": "warn" if not _sightengine_active() else "info",
             "message": (
-                "Sightengine — identifiants manquants ou quota"
+                "Video safety service needs configuration"
                 if not _sightengine_active()
-                else "Sightengine — analyse vidéo terminée"
+                else "Video analysis completed"
             ),
         },
         {
             "time": (datetime.now() - timedelta(minutes=15)).strftime("%H:%M"),
-            "type": "api",
+            "type": "system",
             "severity": "info",
-            "message": f"Fusion hub — classif. combat ({fight_name})",
+            "message": "Violence detection model checked",
         },
         {
             "time": (datetime.now() - timedelta(minutes=24)).strftime("%H:%M"),
             "type": "user",
             "severity": "info",
-            "message": "Réclamation IA — scoring vision route + agents Groq",
+            "message": "Road report processed",
         },
         {
             "time": (datetime.now() - timedelta(minutes=36)).strftime("%H:%M"),
-            "type": "api",
+            "type": "system",
             "severity": "error" if not _groq_active() else "info",
             "message": (
-                f"Groq indisponible — clé API absente ({groq})"
+                "AI assistant unavailable — check configuration"
                 if not _groq_active()
-                else f"Groq — complétion modèle {groq}"
+                else "AI assistant response generated"
             ),
         },
         {
             "time": (datetime.now() - timedelta(minutes=50)).strftime("%H:%M"),
-            "type": "api",
+            "type": "system",
             "severity": "info",
-            "message": "Traffic Nexus — inférence YOLO sélectionnée",
+            "message": "Traffic analysis selected",
         },
     ]
 
@@ -514,40 +536,40 @@ def build_ai_dashboard_summary(
     auto_refresh = int(getattr(settings, "AI_DASHBOARD_AUTO_REFRESH_SECONDS", 45) or 45)
 
     ui = {
-        "hero_title": "AI Command Center",
-        "hero_subtitle": "Live fleet health · Smart City Platform — all panels refresh from the API.",
-        "nav_tag": "AI analytics · observability",
-        "generated_label": "Updated",
+        "hero_title": "MedinaMind Control Center",
+        "hero_subtitle": "Monitor city safety, traffic, roads, waste, and alerts from one intelligent dashboard.",
+        "nav_tag": "Urban Intelligence · Live Monitoring",
+        "generated_label": "Last updated",
         "panels": {
             "line": {
-                "kicker": "Throughput",
-                "title": "Inference load over time",
-                "hint": "Indexed volume — scales with selected model filter and date window.",
+                "kicker": "Activity",
+                "title": "AI Activity Over Time",
+                "hint": "Total platform activity for the selected period.",
             },
             "bar": {
-                "kicker": "Volume",
-                "title": "Load by endpoint",
-                "hint": "Bar colors follow domain (safety, traffic, infra…).",
+                "kicker": "Usage",
+                "title": "Activity by Service",
+                "hint": "Compare activity across Smart City services.",
             },
             "pie": {
-                "kicker": "Mix",
-                "title": "Share by endpoint",
-                "hint": "Same weights as the bar chart — proportional split.",
+                "kicker": "Distribution",
+                "title": "Service Usage Distribution",
+                "hint": "Share of activity by service type.",
             },
             "table": {
-                "kicker": "Registry",
-                "title": "Models & integrations",
-                "hint": "Paths and API keys resolved from Django settings.",
+                "kicker": "Services",
+                "title": "AI Services",
+                "hint": "All AI services connected to the MedinaMind platform.",
             },
             "feed": {
-                "kicker": "Operations",
-                "title": "Recent activity",
-                "hint": "Snapshot — refreshed with each pull.",
+                "kicker": "Live Activity",
+                "title": "Latest Platform Events",
+                "hint": "Recent events across the platform.",
             },
         },
         "toolbar": {
-            "model_label": "Endpoint",
-            "model_all": "All endpoints",
+            "model_label": "Service",
+            "model_all": "All services",
             "from_label": "From",
             "to_label": "To",
             "auto_refresh": auto_refresh,
@@ -555,11 +577,11 @@ def build_ai_dashboard_summary(
             "refresh": "Refresh",
         },
         "table_headers": {
-            "name": "Endpoint",
-            "provider": "Provider",
-            "requests": "Load index",
-            "avg_ms": "Latency",
-            "error_rate": "Error rate",
+            "name": "Service",
+            "provider": "Source",
+            "requests": "Activity",
+            "avg_ms": "Speed",
+            "error_rate": "Errors",
             "status": "Status",
         },
         "status_labels": {"active": "Online", "down": "Offline"},
@@ -568,8 +590,8 @@ def build_ai_dashboard_summary(
     kpi_cards = [
         {
             "kpi": "total_models",
-            "label": "Registered endpoints",
-            "hint": "Slots wired in configuration",
+            "label": "Connected Services",
+            "hint": "Services configured in the platform",
             "icon": "◎",
             "format": "int",
             "trend_key": "total_models",
@@ -577,8 +599,8 @@ def build_ai_dashboard_summary(
         },
         {
             "kpi": "total_requests",
-            "label": "Inference load index",
-            "hint": "Normalized traffic — subset when filtered",
+            "label": "AI Activity",
+            "hint": "Total AI activity during the selected period",
             "icon": "📡",
             "format": "int",
             "trend_key": "total_requests",
@@ -586,8 +608,8 @@ def build_ai_dashboard_summary(
         },
         {
             "kpi": "success_rate",
-            "label": "Fleet reliability",
-            "hint": "100% − weighted error index",
+            "label": "System Reliability",
+            "hint": "Overall system stability",
             "icon": "✓",
             "format": "pct",
             "trend_key": "success_rate",
@@ -595,8 +617,8 @@ def build_ai_dashboard_summary(
         },
         {
             "kpi": "avg_response_ms",
-            "label": "Latency index",
-            "hint": "Weighted mean response (ms)",
+            "label": "Response Time",
+            "hint": "Average response speed",
             "icon": "⏱",
             "format": "ms",
             "trend_key": "avg_response_ms",
@@ -604,8 +626,8 @@ def build_ai_dashboard_summary(
         },
         {
             "kpi": "online_services",
-            "label": "Online services",
-            "hint": "Reachable weights / APIs",
+            "label": "Active Services",
+            "hint": "Services currently available",
             "icon": "●",
             "format": "int",
             "trend_key": "online_services",
@@ -613,8 +635,8 @@ def build_ai_dashboard_summary(
         },
         {
             "kpi": "offline_services",
-            "label": "Needs attention",
-            "hint": "Missing files or API credentials",
+            "label": "Alerts",
+            "hint": "Issues that require action",
             "icon": "⚠",
             "format": "int",
             "trend_key": "offline_services",
@@ -624,10 +646,10 @@ def build_ai_dashboard_summary(
 
     chart_theme = {
         "requests_line": {
-            "label": "Throughput",
-            "borderColor": "rgba(14, 165, 233, 0.92)",
-            "backgroundColor": "rgba(14, 165, 233, 0.12)",
-            "meaning": "Orchestration / pipeline activity (semantic: network blue)",
+            "label": "Activity",
+            "borderColor": "rgba(0, 213, 255, 0.92)",
+            "backgroundColor": "rgba(0, 213, 255, 0.12)",
+            "meaning": "Platform activity over time",
         },
     }
 

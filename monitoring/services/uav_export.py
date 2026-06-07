@@ -13,6 +13,17 @@ from django.utils import timezone
 from monitoring.models import UavStructuralAnalysis
 
 
+def _display_label(label: str) -> str:
+    mapping = {
+        "Endommagé": "Damaged",
+        "Effondré": "Collapsed",
+        "Critique": "Critical",
+        "Modéré": "Moderate",
+        "Faible": "Low",
+    }
+    return mapping.get(label or "", label or "—")
+
+
 def history_csv_response() -> HttpResponse:
     qs = UavStructuralAnalysis.objects.order_by("-created_at")[:500]
     buf = io.StringIO()
@@ -75,15 +86,15 @@ def build_multipage_pdf() -> bytes:
         leftMargin=1.5 * cm,
         topMargin=1.5 * cm,
         bottomMargin=1.5 * cm,
-        title="Smart City UAV — Rapport",
+        title="Smart City UAV — Report",
     )
     styles = getSampleStyleSheet()
     story: list[Any] = []
 
-    story.append(Paragraph("<b>Smart City — Dashboard UAV</b>", styles["Title"]))
+    story.append(Paragraph("<b>Smart City — UAV Mission Dashboard</b>", styles["Title"]))
     story.append(
         Paragraph(
-            f"Généré le {timezone.now().strftime('%Y-%m-%d %H:%M')} · Moteur d’analyse plateforme.",
+            f"Generated on {timezone.now().strftime('%Y-%m-%d %H:%M')} · Platform analysis engine.",
             styles["Normal"],
         )
     )
@@ -91,20 +102,20 @@ def build_multipage_pdf() -> bytes:
 
     qs = list(UavStructuralAnalysis.objects.order_by("-created_at")[:15])
     total = UavStructuralAnalysis.objects.count()
-    story.append(Paragraph(f"<b>Analyses en base :</b> {total}", styles["Heading3"]))
+    story.append(Paragraph(f"<b>Analyses on record:</b> {total}", styles["Heading3"]))
     story.append(Spacer(1, 0.2 * cm))
 
     if qs:
-        data = [["ID", "Date", "Prédiction", "Conf.", "Risque /10", "Niveau", "CO₂ (t)", "Zone"]]
+        data = [["ID", "Date", "Prediction", "Conf.", "Risk /10", "Level", "CO₂ (t)", "Zone"]]
         for r in qs[:10]:
             data.append(
                 [
                     str(r.pk),
                     r.created_at.strftime("%Y-%m-%d %H:%M"),
-                    r.prediction_label,
+                    _display_label(r.prediction_label),
                     f"{r.confidence * 100:.1f}%",
                     f"{r.risk_score:.1f}",
-                    r.operational_level,
+                    _display_label(r.operational_level),
                     f"{r.co2_estimate_kg / 1000:.3f}",
                     r.zone,
                 ]
@@ -125,10 +136,10 @@ def build_multipage_pdf() -> bytes:
         story.append(Spacer(1, 0.6 * cm))
 
         latest = qs[0]
-        story.append(Paragraph("<b>Dernière analyse (aperçu visuel)</b>", styles["Heading3"]))
+        story.append(Paragraph("<b>Latest analysis (visual preview)</b>", styles["Heading3"]))
         story.append(
             Paragraph(
-                f"{latest.prediction_label} · confiance {latest.confidence * 100:.1f}% · risque {latest.risk_score:.1f}/10 · {latest.operational_level}",
+                f"{_display_label(latest.prediction_label)} · confidence {latest.confidence * 100:.1f}% · risk {latest.risk_score:.1f}/10 · {_display_label(latest.operational_level)}",
                 styles["Normal"],
             )
         )
@@ -149,11 +160,11 @@ def build_multipage_pdf() -> bytes:
             except Exception:
                 pass
 
-        try_img(latest.primary_original_url, "Image drone (référence)")
-        try_img(latest.primary_gradcam_url, "Carte d’attention IA")
-        try_img(latest.primary_saliency_url, "Mise en évidence fine")
+        try_img(latest.primary_original_url, "Drone image (reference)")
+        try_img(latest.primary_gradcam_url, "AI attention map")
+        try_img(latest.primary_saliency_url, "Detailed signal focus")
     else:
-        story.append(Paragraph("Aucune analyse enregistrée pour le moment.", styles["Normal"]))
+        story.append(Paragraph("No analyses recorded yet.", styles["Normal"]))
 
     doc.build(story)
     return buf.getvalue()
@@ -163,7 +174,7 @@ def history_pdf_response() -> HttpResponse:
     pdf_bytes = build_multipage_pdf()
     if not pdf_bytes:
         return HttpResponse(
-            "PDF indisponible (reportlab manquant).",
+            "PDF unavailable (reportlab not installed).",
             status=500,
             content_type="text/plain; charset=utf-8",
         )

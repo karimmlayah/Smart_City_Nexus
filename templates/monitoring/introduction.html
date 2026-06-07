@@ -1,412 +1,170 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}MedinaMind — Introduction Interactive{% endblock %}
+{% block title %}MedinaMind AR Control{% endblock %}
+{% block body_class %}ar-page mm-dash-body ai-dashboard-sc{% endblock %}
+{% block sidebar %}{% endblock %}
 
 {% block extra_head %}
-<link rel="stylesheet" href="{% static 'monitoring/introduction.css' %}">
+<link rel="stylesheet" href="{% static 'monitoring/theme-tokens.css' %}?v=3">
+<link rel="stylesheet" href="{% static 'monitoring/introduction.css' %}?v=16">
+<link rel="stylesheet" href="{% static 'monitoring/hologram-cinematic.css' %}?v=14">
 {% endblock %}
 
 {% block content %}
-<div class="ar-hud-root">
-  <!-- Background Camera -->
-  <video id="camVideo" autoplay playsinline muted class="hud-video"></video>
-  <canvas id="camCanvas" class="hud-canvas"></canvas>
-  <div class="hud-overlay-dark"></div>
+<div class="ar-hud-root" id="arHudRoot">
+  <div class="ar-layout">
 
-  <!-- Top Banner -->
-  <div class="hud-top-banner">
-    <span class="hud-info-icon">i</span>
-    Ouvrez vos mains pour faire apparaître la ville intelligente.
-  </div>
-
-  <!-- Hologram City Layer -->
-  <div class="holo-city-wrap" id="holoCityWrap">
-    <!-- Base Plate Hexagon -->
-    <svg class="holo-base-svg" viewBox="0 0 1200 800" preserveAspectRatio="xMidYMid meet">
-      <defs>
-        <linearGradient id="baseGlow" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stop-color="#06B6D4" stop-opacity="0"/>
-          <stop offset="50%" stop-color="#06B6D4" stop-opacity="0.15"/>
-          <stop offset="100%" stop-color="#2563EB" stop-opacity="0.5"/>
-        </linearGradient>
-        <filter id="megaGlow">
-          <feGaussianBlur stdDeviation="6" result="b1"/>
-          <feGaussianBlur stdDeviation="12" result="b2"/>
-          <feMerge><feMergeNode in="b2"/><feMergeNode in="b1"/><feMergeNode in="SourceGraphic"/></feMerge>
-        </filter>
-        <filter id="glow">
-          <feGaussianBlur stdDeviation="4" result="b1"/>
-          <feMerge><feMergeNode in="b1"/><feMergeNode in="SourceGraphic"/></feMerge>
-        </filter>
-        <linearGradient id="bldCore" x1="0" y1="1" x2="0" y2="0">
-          <stop offset="0%" stop-color="#2563EB" stop-opacity="0.9"/>
-          <stop offset="40%" stop-color="#06B6D4" stop-opacity="0.6"/>
-          <stop offset="100%" stop-color="#22D3EE" stop-opacity="0.1"/>
-        </linearGradient>
-        <linearGradient id="bldCoreDark" x1="0" y1="1" x2="0" y2="0">
-          <stop offset="0%" stop-color="#1E3A8A" stop-opacity="0.9"/>
-          <stop offset="50%" stop-color="#1D4ED8" stop-opacity="0.4"/>
-          <stop offset="100%" stop-color="#3B82F6" stop-opacity="0.1"/>
-        </linearGradient>
-      </defs>
-
-      <!-- Isometric Base Platform -->
-      <g transform="translate(600, 550)">
-        <!-- Outer Glowing Hexagon -->
-        <polygon points="0,-250 450,-80 400,150 0,220 -400,150 -450,-80" fill="url(#baseGlow)" stroke="#22D3EE" stroke-width="2" filter="url(#megaGlow)"/>
-        <polygon points="0,-250 450,-80 400,150 0,220 -400,150 -450,-80" fill="none" stroke="#FFFFFF" stroke-width="1" stroke-opacity="0.4"/>
-        
-        <!-- Inner Circuit Grid -->
-        <g stroke="#06B6D4" stroke-opacity="0.3" stroke-width="1">
-          <!-- Cross roads -->
-          <path d="M-400,-20 L400,-20 M-400,20 L400,20" stroke="#22D3EE" stroke-width="2" stroke-opacity="0.8" filter="url(#glow)"/>
-          <path d="M-50,-200 L-50,200 M50,-200 L50,200" stroke="#22D3EE" stroke-width="2" stroke-opacity="0.8" filter="url(#glow)"/>
-          <rect x="-40" y="-15" width="80" height="30" fill="#22D3EE" fill-opacity="0.4" filter="url(#glow)"/>
-          
-          <!-- Diagonal roads -->
-          <path d="M-300,-150 L300,150 M-300,150 L300,-150" stroke="#06B6D4" stroke-width="1.5" stroke-opacity="0.6" stroke-dasharray="10 5"/>
-          
-          <!-- Grid blocks -->
-          <path d="M-350,50 L-100,50 M-100,50 L-100,180"/>
-          <path d="M350,50 L100,50 M100,50 L100,180"/>
-          <path d="M-350,-50 L-100,-50 M-100,-50 L-100,-180"/>
-          <path d="M350,-50 L100,-50 M100,-50 L100,-180"/>
-          <!-- Minor grid lines -->
-          <line x1="-300" y1="-80" x2="-100" y2="-80"/>
-          <line x1="-200" y1="-50" x2="-200" y2="-150"/>
-          <line x1="100" y1="-80" x2="300" y2="-80"/>
-          <line x1="200" y1="-50" x2="200" y2="-150"/>
-          <line x1="-300" y1="80" x2="-100" y2="80"/>
-          <line x1="-200" y1="50" x2="-200" y2="150"/>
-          <line x1="100" y1="80" x2="300" y2="80"/>
-          <line x1="200" y1="50" x2="200" y2="150"/>
-        </g>
-
-        <!-- Vertical City Blocks (Pseudo-3D) -->
-        <!-- Background Layer -->
-        <g class="holo-bld-group" transform="translate(-250, -100)">
-          <rect x="0" y="-200" width="40" height="200" fill="url(#bldCoreDark)" stroke="#06B6D4" stroke-width="1"/>
-          <rect x="40" y="-180" width="30" height="180" fill="url(#bldCore)" stroke="#22D3EE" stroke-width="1.5"/>
-        </g>
-        <g class="holo-bld-group" transform="translate(-150, -120)">
-          <rect x="0" y="-150" width="50" height="150" fill="url(#bldCore)" stroke="#06B6D4" stroke-width="1"/>
-          <line x1="25" y1="-150" x2="25" y2="-190" stroke="#22D3EE" stroke-width="2"/>
-        </g>
-        <g class="holo-bld-group" transform="translate(120, -140)">
-          <rect x="0" y="-250" width="60" height="250" fill="url(#bldCoreDark)" stroke="#22D3EE" stroke-width="1.5"/>
-          <polygon points="0,-250 30,-280 60,-250" fill="#22D3EE" fill-opacity="0.3"/>
-          <line x1="30" y1="-280" x2="30" y2="-320" stroke="#22D3EE" stroke-width="1.5" filter="url(#glow)"/>
-        </g>
-        <g class="holo-bld-group" transform="translate(250, -80)">
-          <rect x="0" y="-180" width="45" height="180" fill="url(#bldCore)" stroke="#06B6D4" stroke-width="1"/>
-          <!-- Windows -->
-          <rect x="10" y="-160" width="6" height="120" fill="none" stroke="#22D3EE" stroke-dasharray="2 4"/>
-          <rect x="25" y="-160" width="6" height="120" fill="none" stroke="#22D3EE" stroke-dasharray="2 4"/>
-        </g>
-
-        <!-- Midground Layer -->
-        <g class="holo-bld-group" transform="translate(-320, 30)">
-          <rect x="0" y="-150" width="40" height="150" fill="url(#bldCoreDark)" stroke="#22D3EE" stroke-width="1"/>
-        </g>
-        <g class="holo-bld-group" transform="translate(-200, 40)">
-          <rect x="0" y="-280" width="70" height="280" fill="url(#bldCore)" stroke="#22D3EE" stroke-width="2" filter="url(#glow)"/>
-          <rect x="10" y="-270" width="50" height="260" fill="none" stroke="#06B6D4" stroke-width="0.5"/>
-          <!-- Window grid -->
-          <line x1="10" y1="-270" x2="10" y2="-10" stroke="#22D3EE" stroke-dasharray="3 5"/>
-          <line x1="30" y1="-270" x2="30" y2="-10" stroke="#22D3EE" stroke-dasharray="3 5"/>
-          <line x1="50" y1="-270" x2="50" y2="-10" stroke="#22D3EE" stroke-dasharray="3 5"/>
-        </g>
-        <g class="holo-bld-group" transform="translate(-100, 20)">
-          <rect x="0" y="-120" width="40" height="120" fill="url(#bldCoreDark)" stroke="#06B6D4" stroke-width="1"/>
-        </g>
-        <g class="holo-bld-group" transform="translate(180, 40)">
-          <rect x="0" y="-220" width="55" height="220" fill="url(#bldCore)" stroke="#06B6D4" stroke-width="1"/>
-          <rect x="0" y="-220" width="30" height="240" fill="url(#bldCoreDark)" stroke="#22D3EE" stroke-width="1.5"/>
-        </g>
-        <g class="holo-bld-group" transform="translate(280, 60)">
-          <rect x="0" y="-160" width="50" height="160" fill="url(#bldCore)" stroke="#22D3EE" stroke-width="1"/>
-        </g>
-
-        <!-- Foreground Layer (Mega Structures) -->
-        <g class="holo-bld-group" transform="translate(-80, 100)">
-          <rect x="0" y="-350" width="80" height="350" fill="url(#bldCoreDark)" stroke="#22D3EE" stroke-width="2.5" filter="url(#glow)"/>
-          <polygon points="0,-350 40,-400 80,-350" fill="#22D3EE" fill-opacity="0.3" stroke="#22D3EE" stroke-width="2"/>
-          <circle cx="40" cy="-400" r="5" fill="#FFFFFF" filter="url(#megaGlow)" class="holo-pulse-fast"/>
-          <rect x="20" y="-330" width="40" height="300" fill="none" stroke="#06B6D4" stroke-width="1"/>
-          <!-- Windows -->
-          <path d="M30,-310 L30,-50 M50,-310 L50,-50" stroke="#22D3EE" stroke-width="4" stroke-dasharray="2 10" opacity="0.8"/>
-        </g>
-        
-        <g class="holo-bld-group" transform="translate(20, 80)">
-          <rect x="0" y="-450" width="90" height="450" fill="url(#bldCore)" stroke="#22D3EE" stroke-width="3" filter="url(#megaGlow)"/>
-          <rect x="10" y="-430" width="70" height="410" fill="none" stroke="#FFFFFF" stroke-opacity="0.4" stroke-width="1"/>
-          <!-- Rings -->
-          <ellipse cx="45" cy="-350" rx="60" ry="15" fill="none" stroke="#22D3EE" stroke-width="2" filter="url(#glow)" class="holo-ring-spin"/>
-          <ellipse cx="45" cy="-200" rx="60" ry="15" fill="none" stroke="#06B6D4" stroke-width="1.5" class="holo-ring-spin-reverse"/>
-          <ellipse cx="45" cy="-50"  rx="60" ry="15" fill="none" stroke="#22D3EE" stroke-width="2" filter="url(#glow)" class="holo-ring-spin"/>
-          <line x1="45" y1="-450" x2="45" y2="-520" stroke="#FFFFFF" stroke-width="3" filter="url(#megaGlow)"/>
-          <!-- Vertical lines -->
-          <line x1="25" y1="-430" x2="25" y2="-20" stroke="#22D3EE" stroke-width="1" stroke-dasharray="4 6"/>
-          <line x1="45" y1="-430" x2="45" y2="-20" stroke="#FFFFFF" stroke-width="2" stroke-opacity="0.8"/>
-          <line x1="65" y1="-430" x2="65" y2="-20" stroke="#22D3EE" stroke-width="1" stroke-dasharray="4 6"/>
-        </g>
-
-        <!-- Lower Foreground Blocks -->
-        <g class="holo-bld-group" transform="translate(-250, 150)">
-          <rect x="0" y="-100" width="60" height="100" fill="url(#bldCore)" stroke="#06B6D4" stroke-width="1.5"/>
-        </g>
-        <g class="holo-bld-group" transform="translate(150, 160)">
-          <rect x="0" y="-120" width="70" height="120" fill="url(#bldCoreDark)" stroke="#22D3EE" stroke-width="1.5"/>
-          <path d="M10,-100 L10,-20 M35,-100 L35,-20 M60,-100 L60,-20" stroke="#22D3EE" stroke-width="2" stroke-dasharray="2 6"/>
-        </g>
-
-        <!-- Floating Particles -->
-        <g class="holo-particles">
-          <circle cx="-150" cy="-350" r="3" fill="#FFFFFF" filter="url(#glow)" class="holo-particle"/>
-          <circle cx="200" cy="-400" r="4" fill="#22D3EE" filter="url(#glow)" class="holo-particle" style="animation-delay: 1s;"/>
-          <circle cx="-300" cy="-100" r="3" fill="#06B6D4" filter="url(#glow)" class="holo-particle" style="animation-delay: 2s;"/>
-          <circle cx="350" cy="-150" r="2.5" fill="#22D3EE" filter="url(#glow)" class="holo-particle" style="animation-delay: 0.5s;"/>
-          <circle cx="-50" cy="-550" r="4" fill="#FFFFFF" filter="url(#megaGlow)" class="holo-particle" style="animation-delay: 1.5s;"/>
-        </g>
-
-      </g>
-    </svg>
-
-    <!-- Floating Cards (Absolutely positioned over the SVG) -->
-    <div class="holo-chip holo-chip-traffic" id="holoCardTraffic">
-      <div class="holo-chip-line"></div>
-      <div class="holo-chip-content">
-        <div class="holo-chip-icon">🚗</div>
-        <div class="holo-chip-text">
-          <div class="holo-chip-title">TRAFIC</div>
-          <div class="holo-chip-sub">Fluide</div>
-          <div class="holo-chip-val">85%</div>
+    <!-- Left panel -->
+    <aside class="ar-left-panel">
+      <div class="mm-ar-card">
+        <div class="hud-logo">
+          <span class="hud-brand">MedinaMind</span>
+          <span class="hud-tag">Tunis · Smart City AR</span>
+        </div>
+        <div class="ar-live-data-bar">
+          <span class="ar-live-badge"><span class="ar-live-dot"></span> Live Data</span>
+          <span data-api-status class="ar-api-status loading">Loading...</span>
+          <span class="ar-live-data-bar__label">Updated <span data-stat="last-updated">Loading...</span></span>
+        </div>
+        <div class="hud-panel-title">Modules</div>
+        <div class="hud-module-list ar-modules-list" id="moduleList">
+          <div class="hud-module active" data-mod="traffic">
+            <span class="hud-mod-icon">🚗</span> <span class="hud-mod-name">Traffic</span>
+            <span class="hud-mod-arrow">›</span>
+          </div>
+          <div class="hud-module" data-mod="energy">
+            <span class="hud-mod-icon">⚡</span> <span class="hud-mod-name">Energy</span>
+            <span class="hud-mod-arrow">›</span>
+          </div>
+          <div class="hud-module" data-mod="pollution">
+            <span class="hud-mod-icon">☁</span> <span class="hud-mod-name">Pollution</span>
+            <span class="hud-mod-arrow">›</span>
+          </div>
+          <div class="hud-module" data-mod="security">
+            <span class="hud-mod-icon">🛡</span> <span class="hud-mod-name">Security</span>
+            <span class="hud-mod-arrow">›</span>
+          </div>
         </div>
       </div>
-    </div>
-    
-    <div class="holo-chip holo-chip-energy" id="holoCardEnergy">
-      <div class="holo-chip-line"></div>
-      <div class="holo-chip-content">
-        <div class="holo-chip-icon">⚡</div>
-        <div class="holo-chip-text">
-          <div class="holo-chip-title">ÉNERGIE</div>
-          <div class="holo-chip-sub">Consommation</div>
-          <div class="holo-chip-val">120 MW</div>
+      <div class="mm-ar-card">
+        <div class="hud-panel-title">Tunis Live Stats</div>
+        <div class="hud-stat-list ar-stats-list">
+          <div class="hud-stat-item"><span>City</span> <span class="hud-stat-val" data-stat="city">Tunis</span></div>
+          <div class="hud-stat-item"><span>Population</span> <span class="hud-stat-val" data-stat="population">—</span></div>
+          <div class="hud-stat-item"><span>Energy Usage</span> <span class="hud-stat-val" data-stat="energy-usage">—</span></div>
+          <div class="hud-stat-item"><span>Air Quality</span> <span class="hud-stat-val" data-stat="air-quality">—</span></div>
+          <div class="hud-stat-item"><span>Safety</span> <span class="hud-stat-val" data-stat="safety">—</span></div>
+          <div class="hud-stat-item"><span>Parking Spots</span> <span class="hud-stat-val" data-stat="parking-spots">—</span></div>
+          <div class="hud-stat-item"><span>Traffic</span> <span class="hud-stat-val" data-stat="traffic">—</span></div>
         </div>
       </div>
-    </div>
-    
-    <div class="holo-chip holo-chip-pollution" id="holoCardPollution">
-      <div class="holo-chip-line"></div>
-      <div class="holo-chip-content">
-        <div class="holo-chip-icon">☁</div>
-        <div class="holo-chip-text">
-          <div class="holo-chip-title">POLLUTION</div>
-          <div class="holo-chip-sub">Air Quality</div>
-          <div class="holo-chip-val">Bon</div>
-        </div>
-      </div>
-    </div>
-    
-    <div class="holo-chip holo-chip-security" id="holoCardSecurity">
-      <div class="holo-chip-line"></div>
-      <div class="holo-chip-content">
-        <div class="holo-chip-icon">🛡</div>
-        <div class="holo-chip-text">
-          <div class="holo-chip-title">SÉCURITÉ</div>
-          <div class="holo-chip-sub">Zones sûres</div>
-          <div class="holo-chip-val">98%</div>
-        </div>
-      </div>
-    </div>
+    </aside>
 
-    <div class="holo-chip holo-chip-parking" id="holoCardParking">
-      <div class="holo-chip-line"></div>
-      <div class="holo-chip-content">
-        <div class="holo-chip-icon">🅿</div>
-        <div class="holo-chip-text">
-          <div class="holo-chip-title">PARKING</div>
-          <div class="holo-chip-sub">Disponibles</div>
-          <div class="holo-chip-val">256</div>
+    <!-- Camera stage -->
+    <main class="ar-camera-stage" id="arCameraStage">
+      <video id="camVideo" autoplay playsinline muted class="hud-video"></video>
+      <canvas id="camCanvas" class="hud-canvas"></canvas>
+      <div class="hud-overlay-dark"></div>
+
+      <div class="hud-top-banner">
+        <span class="hud-info-icon">i</span>
+        Show both open hands to reveal the smart city.
+      </div>
+
+      <div class="ar-toast gesture-toast" id="arToast" role="status" aria-live="polite"></div>
+
+      <div class="module-float-card" id="moduleFloatCard">
+        <strong id="moduleFloatTitle">Traffic Monitoring</strong>
+        <span id="moduleFloatText">Live road flow and congestion insights.</span>
+      </div>
+
+  {% include "monitoring/partials/ar_hologram_panel.html" %}
+
+      <div class="hud-control-bar ar-bottom-controls">
+        <button type="button" class="hud-ctrl-btn" id="btnPrev" title="Previous module">←</button>
+        <a href="{% url 'monitoring:home' %}" class="hud-ctrl-btn hud-ctrl-home" id="btnHome" title="Back to homepage" aria-label="Back to homepage">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        </a>
+        <button type="button" class="hud-ctrl-btn" id="btnNext" title="Next module">→</button>
+        <div class="hud-ctrl-divider"></div>
+        <button type="button" class="hud-ctrl-btn" id="demoBtn">Demo Mode: Off</button>
+        <div class="hud-ctrl-divider"></div>
+        <div class="hud-zoom-display">Holo: <span id="zoomVal">1.0x</span></div>
+        <button type="button" class="hud-ctrl-btn" id="btnZoomIn" title="Zoom in">+</button>
+        <button type="button" class="hud-ctrl-btn" id="btnZoomOut" title="Zoom out">−</button>
+        <div class="hud-ctrl-divider"></div>
+        <button type="button" class="hud-ctrl-btn" id="btnFullscreen" title="Fullscreen">⛶</button>
+      </div>
+
+      <div class="cam-no-cam" id="noCam">
+        <div class="cam-no-cam-icon">📷</div>
+        <div class="cam-no-cam-txt">Camera unavailable</div>
+        <div class="cam-no-cam-sub">Allow camera access to enable AR mode</div>
+        <button type="button" class="hud-ctrl-btn" id="retryBtn">Retry</button>
+      </div>
+    </main>
+
+    <!-- Right panel -->
+    <aside class="ar-right-panel">
+      <div class="mm-ar-card">
+        <div class="hud-panel-title">Hand Detection</div>
+        <div class="hud-hand-illustration">
+          <svg viewBox="0 0 100 120" class="hud-hand-svg">
+            <path d="M50,110 L45,60 L20,40 M45,60 L30,20 M45,60 L50,10 M45,60 L70,15 M45,60 L85,45" stroke="#00D5FF" stroke-width="1.5" fill="none" opacity="0.6"/>
+            <circle cx="45" cy="60" r="4" fill="#00D5FF"/>
+          </svg>
+        </div>
+        <div class="hud-stat-row"><span>Status:</span> <span id="gestureState" class="hud-highlight" data-hand="status">Searching</span></div>
+        <div class="hud-stat-row"><span>Detected Points:</span> <span id="pointsDetected" class="hud-highlight" data-hand="points">0/42</span></div>
+        <div class="hud-stat-row"><span>Current Gesture:</span> <span id="currentGesture" class="hud-highlight" data-hand="gesture">Waiting</span></div>
+      </div>
+
+      <div class="mm-ar-card">
+        <div class="hud-panel-title">Gesture Controls</div>
+        <div class="hud-gesture-grid ar-gestures-list">
+          <div class="hud-gesture-item"><span class="hud-gesture-icon">🖐🖐</span><div class="hud-gesture-text"><div class="hud-gesture-name">Two Open Hands</div><div class="hud-gesture-desc">Show smart city</div></div></div>
+          <div class="hud-gesture-item"><span class="hud-gesture-icon">✊✊</span><div class="hud-gesture-text"><div class="hud-gesture-name">Two Fists</div><div class="hud-gesture-desc">Hide smart city</div></div></div>
+          <div class="hud-gesture-item"><span class="hud-gesture-icon">🤏</span><div class="hud-gesture-text"><div class="hud-gesture-name">Pinch</div><div class="hud-gesture-desc">Select module</div></div></div>
+          <div class="hud-gesture-item"><span class="hud-gesture-icon">✌️</span><div class="hud-gesture-text"><div class="hud-gesture-name">Peace — Left Hand</div><div class="hud-gesture-desc">Previous module</div></div></div>
+          <div class="hud-gesture-item"><span class="hud-gesture-icon">✌️</span><div class="hud-gesture-text"><div class="hud-gesture-name">Peace — Right Hand</div><div class="hud-gesture-desc">Next module</div></div></div>
+          <div class="hud-gesture-item"><span class="hud-gesture-icon">🤲</span><div class="hud-gesture-text"><div class="hud-gesture-name">Spread / Close Hands</div><div class="hud-gesture-desc">Zoom hologram in / out</div></div></div>
         </div>
       </div>
-    </div>
-  </div>
 
-  <!-- Left Panel Top (Modules) -->
-  <div class="hud-panel hud-panel-left-top">
-    <div class="hud-logo">
-      <span class="hud-brand">MedinaMind</span>
-      <span class="hud-tag">Smart City AR</span>
-    </div>
-    <div class="hud-panel-title">MODULES</div>
-    <div class="hud-module-list" id="moduleList">
-      <div class="hud-module active" data-mod="traffic">
-        <span class="hud-mod-icon">🚗</span> <span class="hud-mod-name">Trafic</span>
-        <span class="hud-mod-arrow">›</span>
-      </div>
-      <div class="hud-module" data-mod="energy">
-        <span class="hud-mod-icon">⚡</span> <span class="hud-mod-name">Énergie</span>
-        <span class="hud-mod-arrow">›</span>
-      </div>
-      <div class="hud-module" data-mod="pollution">
-        <span class="hud-mod-icon">☁</span> <span class="hud-mod-name">Pollution</span>
-        <span class="hud-mod-arrow">›</span>
-      </div>
-      <div class="hud-module" data-mod="security">
-        <span class="hud-mod-icon">🛡</span> <span class="hud-mod-name">Sécurité</span>
-        <span class="hud-mod-arrow">›</span>
-      </div>
-      <div class="hud-module" data-mod="parking">
-        <span class="hud-mod-icon">🅿</span> <span class="hud-mod-name">Parking</span>
-        <span class="hud-mod-arrow">›</span>
-      </div>
-    </div>
-  </div>
-
-  <!-- Left Panel Bottom (Stats) -->
-  <div class="hud-panel hud-panel-left-bottom">
-    <div class="hud-panel-title">STATISTIQUES GLOBALES</div>
-    <div class="hud-stat-list">
-      <div class="hud-stat-item"><span>Population</span> <span class="hud-stat-val">1.2 M</span></div>
-      <div class="hud-stat-item"><span>Consommation Énergie</span> <span class="hud-stat-val">120 MW</span></div>
-      <div class="hud-stat-item"><span>Qualité de l'air</span> <span class="hud-stat-val">Bonne</span></div>
-      <div class="hud-stat-item"><span>Sécurité</span> <span class="hud-stat-val">98%</span></div>
-      <div class="hud-stat-item"><span>Places de Parking</span> <span class="hud-stat-val">256</span></div>
-    </div>
-  </div>
-
-  <!-- Right Panel Top (Detection) -->
-  <div class="hud-panel hud-panel-right-top">
-    <div class="hud-panel-title">DÉTECTION MAIN</div>
-    
-    <!-- Wireframe Hand Illustration -->
-    <div class="hud-hand-illustration">
-      <svg viewBox="0 0 100 120" class="hud-hand-svg">
-        <path d="M50,110 L45,60 L20,40 M45,60 L30,20 M45,60 L50,10 M45,60 L70,15 M45,60 L85,45 M20,40 L15,35 M30,20 L28,15 M50,10 L50,5 M70,15 L72,10 M85,45 L90,40 M50,110 L60,110 L55,60 Z" stroke="#06B6D4" stroke-width="1.5" fill="none" opacity="0.6"/>
-        <circle cx="20" cy="40" r="2" fill="#22D3EE"/>
-        <circle cx="30" cy="20" r="2" fill="#22D3EE"/>
-        <circle cx="50" cy="10" r="2" fill="#22D3EE"/>
-        <circle cx="70" cy="15" r="2" fill="#22D3EE"/>
-        <circle cx="85" cy="45" r="2" fill="#22D3EE"/>
-        <circle cx="50" cy="110" r="3" fill="#22D3EE"/>
-        <circle cx="45" cy="60" r="4" fill="#22D3EE"/>
-        <circle cx="15" cy="35" r="2" fill="#22D3EE"/>
-        <circle cx="28" cy="15" r="2" fill="#22D3EE"/>
-        <circle cx="50" cy="5" r="2" fill="#22D3EE"/>
-        <circle cx="72" cy="10" r="2" fill="#22D3EE"/>
-        <circle cx="90" cy="40" r="2" fill="#22D3EE"/>
-      </svg>
-    </div>
-
-    <div class="hud-stat-row">
-      <span>État:</span> <span id="gestureState" class="hud-highlight" style="color: #10B981;">Main ouverte</span>
-    </div>
-    <div class="hud-stat-row">
-      <span>Points détectés:</span> <span id="pointsDetected" class="hud-highlight" style="color: #22D3EE;">21/21</span>
-    </div>
-  </div>
-
-  <!-- Right Panel Middle (Gestures) -->
-  <div class="hud-panel hud-panel-right-middle">
-    <div class="hud-panel-title">GESTES</div>
-    <div class="hud-gesture-grid">
-      <div class="hud-gesture-item">
-        <span class="hud-gesture-icon">🖐</span>
-        <div class="hud-gesture-text">
-          <div class="hud-gesture-name">Main ouverte</div>
-          <div class="hud-gesture-desc">Afficher la ville</div>
+      <div class="mm-ar-card ar-live-info">
+        <div class="hud-panel-title">Tunis Live Info</div>
+        <div class="hud-city-block">
+          <div class="hud-city-name" data-live="city">Tunis, Tunisia</div>
+          <div class="hud-city-meta"><span data-live="weekday">—</span> · <span data-live="timezone">Africa/Tunis</span></div>
+        </div>
+        <div class="hud-time-block">
+          <div class="hud-time" id="clockTime" data-live="time">--:--:--</div>
+          <div class="hud-date" id="clockDate" data-live="date">--/--/----</div>
+        </div>
+        <div class="hud-weather-block">
+          <span class="hud-weather-icon">🌤</span>
+          <div class="hud-weather-text">
+            <div class="hud-temp" data-weather="temperature">—</div>
+            <div class="hud-cond" data-weather="condition">—</div>
+            <div class="hud-weather-extra">
+              <span data-weather="humidity">—</span> humidity ·
+              <span data-weather="wind">—</span> wind ·
+              feels <span data-weather="feels-like">—</span>
+            </div>
+          </div>
         </div>
       </div>
-      <div class="hud-gesture-item">
-        <span class="hud-gesture-icon">✊</span>
-        <div class="hud-gesture-text">
-          <div class="hud-gesture-name">Poing</div>
-          <div class="hud-gesture-desc">Masquer la ville</div>
-        </div>
-      </div>
-      <div class="hud-gesture-item">
-        <span class="hud-gesture-icon">🤏</span>
-        <div class="hud-gesture-text">
-          <div class="hud-gesture-name">Pinch</div>
-          <div class="hud-gesture-desc">Sélectionner</div>
-        </div>
-      </div>
-      <div class="hud-gesture-item">
-        <span class="hud-gesture-icon">↔</span>
-        <div class="hud-gesture-text">
-          <div class="hud-gesture-name">Gauche / Droite</div>
-          <div class="hud-gesture-desc">Changer de module</div>
-        </div>
-      </div>
-      <div class="hud-gesture-item">
-        <span class="hud-gesture-icon">↕</span>
-        <div class="hud-gesture-text">
-          <div class="hud-gesture-name">Haut / Bas</div>
-          <div class="hud-gesture-desc">Zoom</div>
-        </div>
-      </div>
-      <div class="hud-gesture-item">
-        <span class="hud-gesture-icon">🙌</span>
-        <div class="hud-gesture-text">
-          <div class="hud-gesture-name">Deux mains</div>
-          <div class="hud-gesture-desc">Mode AR</div>
-        </div>
-      </div>
-    </div>
-  </div>
+    </aside>
 
-  <!-- Bottom Right (Weather / Time) -->
-  <div class="hud-panel hud-panel-right-bottom">
-    <div class="hud-time-block">
-      <div class="hud-time" id="clockTime">15:42:30</div>
-      <div class="hud-date" id="clockDate">20/05/2024</div>
-    </div>
-    <div class="hud-weather-block">
-      <span class="hud-weather-icon">🌤</span>
-      <div class="hud-weather-text">
-        <div class="hud-temp">22°C</div>
-        <div class="hud-cond">Ensoleillé</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Bottom Center Control Bar -->
-  <div class="hud-control-bar">
-    <button class="hud-ctrl-btn">←</button>
-    <a href="{% url 'monitoring:ai_dashboard' %}" class="hud-ctrl-btn hud-ctrl-home">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
-    </a>
-    <button class="hud-ctrl-btn">→</button>
-    <div class="hud-ctrl-divider"></div>
-    <button class="hud-ctrl-btn" id="demoBtn">Mode Démo</button>
-    <div class="hud-ctrl-divider"></div>
-    <div class="hud-zoom-display">Zoom: <span id="zoomVal">1.0x</span></div>
-    <button class="hud-ctrl-btn">+</button>
-    <button class="hud-ctrl-btn">-</button>
-    <div class="hud-ctrl-divider"></div>
-    <button class="hud-ctrl-btn">⛶</button>
-  </div>
-
-  <!-- Fallback if camera is unavailable -->
-  <div class="cam-no-cam" id="noCam">
-    <div class="cam-no-cam-icon">📷</div>
-    <div class="cam-no-cam-txt">Caméra non disponible</div>
-    <div class="cam-no-cam-sub">Autorisez l'accès à la caméra pour activer l'AR</div>
-    <button class="hud-ctrl-btn" id="retryBtn" style="margin-top: 1rem; width: 150px; text-align: center;">Réessayer</button>
-  </div>
+  </div><!-- /ar-layout -->
 
 </div><!-- /ar-hud-root -->
 {% endblock %}
 
 {% block extra_js %}
-<script>
-  window.STATIC_URL = "{% static '' %}";
-</script>
-<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
-<script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+<script src="{% static 'monitoring/ar-live-data.js' %}?v=14"></script>
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
-<script src="{% static 'monitoring/introduction.js' %}"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+<script src="{% static 'monitoring/introduction.js' %}?v=17"></script>
 {% endblock %}

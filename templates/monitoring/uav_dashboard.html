@@ -1,552 +1,273 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}Smart City · UAV — Pilotage infrastructure{% endblock %}
-{% block body_class %}cockpit fusion-hub-sc road-damage-sc uav-dash-sc{% endblock %}
+{% block title %}Smart City · Drone Mission Intelligence{% endblock %}
+{% block body_class %}cockpit fusion-hub-sc road-damage-sc uav-dash-sc ai-dashboard-sc mm-dash-body{% endblock %}
 
 {% block extra_head %}
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{% static 'monitoring/fusion_hub_dashboard.css' %}">
   <link rel="stylesheet" href="{% static 'monitoring/fusion_hub_smartcity.css' %}">
   <link rel="stylesheet" href="{% static 'monitoring/road_damage_theme.css' %}">
+  <link rel="stylesheet" href="{% static 'monitoring/uav-dashboard-modern.css' %}?v=1">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
-<style>
-  :root {
-    --uav-navy: #041e42;
-    --uav-card: #082b5f;
-    --uav-accent: #2f80ed;
-    --uav-text: #e8f0ff;
-    --uav-muted: #8ca0c4;
-    --uav-ok: #43a047;
-    --uav-warn: #fb8c00;
-    --uav-crit: #e53935;
-  }
-  /* Corps sous la même barre que Road Command Center */
-  .ai-dash.ai-dash--uav {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    padding: 0 !important;
-    margin: -8px 0 0 !important;
-    background: transparent !important;
-    min-height: 0;
-  }
-  .uav-shell {
-    font-family: Inter, system-ui, sans-serif;
-    background: transparent;
-    color: var(--uav-text);
-    flex: 1;
-    display: flex;
-    align-items: stretch;
-    min-height: calc(100vh - 88px);
-  }
-  body.fusion-hub-sc.road-damage-sc .uav-shell {
-    --uav-navy: transparent;
-    --uav-card: var(--card);
-    --uav-accent: var(--accent);
-    --uav-text: var(--text);
-    --uav-muted: var(--muted);
-    --uav-ok: var(--ok);
-    --uav-warn: var(--warn);
-    --uav-crit: var(--crit);
-  }
-  body.fusion-hub-sc.road-damage-sc .uav-sidebar {
-    background: linear-gradient(180deg, rgba(17, 24, 39, 0.95) 0%, rgba(3, 4, 10, 0.35) 100%);
-  }
-  .uav-sidebar {
-    width: 340px;
-    flex-shrink: 0;
-    background: linear-gradient(180deg, #061732 0%, var(--uav-navy) 100%);
-    border-right: 1px solid rgba(47,128,237,0.2);
-    padding: 18px 18px 28px;
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-    box-sizing: border-box;
-  }
-  .uav-brand {
-    display: flex;
-    align-items: flex-start;
-    gap: 12px;
-    padding-bottom: 12px;
-    border-bottom: 1px solid rgba(255,255,255,0.08);
-  }
-  .uav-logo {
-    font-size: 2rem;
-    line-height: 1;
-  }
-  .uav-brand h1 {
-    margin: 0;
-    font-size: 1.05rem;
-    font-weight: 800;
-    letter-spacing: 0.03em;
-  }
-  .uav-brand p { margin: 4px 0 0; font-size: 0.78rem; color: var(--uav-muted); line-height: 1.4; }
-  .uav-acc {
-    margin-left: auto;
-    text-align: right;
-  }
-  .uav-acc-badge {
-    display: inline-block;
-    padding: 6px 12px;
-    border-radius: 999px;
-    background: rgba(67,160,71,0.2);
-    border: 1px solid rgba(67,160,71,0.45);
-    font-size: 0.72rem;
-    font-weight: 800;
-    color: #c8e6c9;
-  }
-  .uav-acc-badge span { font-size: 1rem; display: block; margin-top: 2px; color: #fff; }
-  .uav-card {
-    background: var(--uav-card);
-    border-radius: 14px;
-    border: 1px solid rgba(47,128,237,0.22);
-    padding: 14px 16px;
-    box-shadow: 0 10px 36px rgba(0,0,0,0.35);
-  }
-  .uav-card h2 {
-    margin: 0 0 12px;
-    font-size: 0.82rem;
-    font-weight: 800;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: var(--uav-muted);
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-  .uav-card h2 i {
-    width: 3px;
-    height: 14px;
-    background: var(--uav-accent);
-    border-radius: 2px;
-    font-style: normal;
-  }
-  .uav-field { margin-bottom: 12px; }
-  .uav-field label {
-    display: block;
-    font-size: 0.72rem;
-    font-weight: 700;
-    color: var(--uav-muted);
-    margin-bottom: 6px;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-  }
-  .uav-field input[type="file"],
-  .uav-field input[type="number"],
-  .uav-field select {
-    width: 100%;
-    padding: 10px 11px;
-    border-radius: 10px;
-    border: 1px solid rgba(255,255,255,0.12);
-    background: rgba(0,0,0,0.35);
-    color: var(--uav-text);
-    font-size: 0.88rem;
-    box-sizing: border-box;
-  }
-  .uav-field input[type="file"] { padding: 9px; border-style: dashed; }
-  .uav-btn-row { display: flex; flex-direction: column; gap: 9px; margin-top: 6px; }
-  .uav-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    padding: 11px 16px;
-    border-radius: 11px;
-    font-weight: 800;
-    font-size: 0.88rem;
-    cursor: pointer;
-    border: none;
-    background: linear-gradient(135deg, var(--uav-accent), #2563c9);
-    color: #fff;
-  }
-  .uav-btn:disabled { opacity: 0.55; cursor: not-allowed; }
-  .uav-btn-ghost {
-    background: rgba(255,255,255,0.06);
-    border: 1px solid rgba(255,255,255,0.18);
-    color: var(--uav-text);
-  }
-  .uav-main {
-    flex: 1;
-    min-width: 0;
-    padding: 18px 22px 40px;
-    overflow-y: auto;
-    box-sizing: border-box;
-  }
-  .uav-strip {
-    padding: 12px 18px;
-    border-radius: 12px;
-    background: rgba(47,128,237,0.12);
-    border: 1px solid rgba(47,128,237,0.28);
-    font-weight: 700;
-    font-size: 0.9rem;
-    margin-bottom: 18px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-  .uav-strip .dot {
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    background: var(--uav-accent);
-    animation: uav-pulse 1.4s ease-in-out infinite;
-  }
-  .uav-strip.idle .dot { animation: none; background: var(--uav-muted); }
-  @keyframes uav-pulse { 50% { opacity: 0.35; transform: scale(0.9); } }
-  .uav-tri {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 14px;
-    margin-bottom: 20px;
-  }
-  @media (max-width: 1100px) { .uav-tri { grid-template-columns: 1fr; } }
-  .uav-img-card {
-    background: var(--uav-card);
-    border-radius: 14px;
-    border: 1px solid rgba(255,255,255,0.08);
-    overflow: hidden;
-  }
-  .uav-img-card h3 {
-    margin: 0;
-    padding: 10px 14px;
-    font-size: 0.78rem;
-    font-weight: 800;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: var(--uav-muted);
-    border-bottom: 1px solid rgba(255,255,255,0.06);
-  }
-  .uav-img-card .box {
-    aspect-ratio: 4/3;
-    background: #000;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 160px;
-  }
-  .uav-img-card img { max-width: 100%; max-height: 260px; object-fit: contain; }
-  .uav-img-ph { color: var(--uav-muted); font-size: 0.85rem; padding: 24px; text-align: center; }
-  .uav-diag-grid {
-    display: grid;
-    grid-template-columns: minmax(220px, 280px) 1fr minmax(200px, 260px);
-    gap: 16px;
-    margin-bottom: 20px;
-    align-items: stretch;
-  }
-  @media (max-width: 1000px) { .uav-diag-grid { grid-template-columns: 1fr; } }
-  .uav-badge-big {
-    border-radius: 16px;
-    padding: 22px;
-    text-align: center;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    gap: 8px;
-    font-weight: 800;
-    border: 2px solid rgba(255,255,255,0.12);
-  }
-  .uav-badge-big.intact { background: rgba(67,160,71,0.18); border-color: rgba(67,160,71,0.5); color: #c8e6c9; }
-  .uav-badge-big.damaged { background: rgba(251,140,0,0.15); border-color: rgba(251,140,0,0.45); color: #ffe0b2; }
-  .uav-badge-big.collapsed { background: rgba(229,57,53,0.18); border-color: rgba(229,57,53,0.5); color: #ffcdd2; }
-  .uav-badge-big .lbl { font-size: 0.72rem; opacity: 0.85; text-transform: uppercase; letter-spacing: 0.1em; }
-  .uav-badge-big .state { font-size: 1.45rem; }
-  .uav-badge-big .conf { font-size: 2rem; color: #fff; }
-  .uav-bars {
-    background: var(--uav-card);
-    border-radius: 14px;
-    border: 1px solid rgba(255,255,255,0.08);
-    padding: 16px 18px;
-  }
-  .uav-bars h4 { margin: 0 0 14px; font-size: 0.85rem; font-weight: 800; }
-  .uav-bar-row { margin-bottom: 10px; }
-  .uav-bar-row .lab { font-size: 0.78rem; color: var(--uav-muted); margin-bottom: 4px; display: flex; justify-content: space-between; }
-  .uav-bar-track { height: 10px; border-radius: 999px; background: rgba(0,0,0,0.35); overflow: hidden; }
-  .uav-bar-fill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--uav-accent), #64b5f6); transition: width 0.35s ease; }
-  .uav-side-metrics {
-    background: var(--uav-card);
-    border-radius: 14px;
-    border: 1px solid rgba(255,255,255,0.08);
-    padding: 16px;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
-  .uav-metric .k { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--uav-muted); font-weight: 700; }
-  .uav-metric .v { font-size: 1.65rem; font-weight: 800; margin-top: 4px; }
-  .uav-metric.level-critical .v { color: var(--uav-crit); }
-  .uav-metric.level-urgent .v { color: #ff9800; }
-  .uav-metric.level-moderate .v { color: #ffd54f; }
-  .uav-metric.level-low .v { color: var(--uav-ok); }
-  .uav-reco-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 16px;
-    margin-bottom: 20px;
-  }
-  @media (max-width: 900px) { .uav-reco-row { grid-template-columns: 1fr; } }
-  .uav-reco-box {
-    background: var(--uav-card);
-    border-radius: 14px;
-    border: 1px solid rgba(47,128,237,0.2);
-    padding: 16px 18px;
-    font-size: 0.88rem;
-    line-height: 1.55;
-  }
-  .uav-reco-box h4 { margin: 0 0 10px; font-size: 0.95rem; font-weight: 800; color: #9ecbff; }
-  .uav-reco-box ul { margin: 0; padding-left: 18px; }
-  .uav-reco-box li { margin-bottom: 6px; }
-  .prio-p1 { color: #ffcdd2; font-weight: 800; }
-  .uav-map-wrap, .uav-twin-wrap {
-    background: var(--uav-card);
-    border-radius: 16px;
-    border: 1px solid rgba(47,128,237,0.2);
-    overflow: hidden;
-    margin-bottom: 20px;
-  }
-  .uav-map-wrap h3, .uav-twin-wrap h3 {
-    margin: 0;
-    padding: 14px 18px;
-    font-size: 0.95rem;
-    font-weight: 800;
-    border-bottom: 1px solid rgba(255,255,255,0.08);
-  }
-  #uav-map { height: 360px; width: 100%; z-index: 1; }
-  .uav-map-legend {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 14px;
-    padding: 10px 16px;
-    font-size: 0.8rem;
-    color: var(--uav-muted);
-    border-top: 1px solid rgba(255,255,255,0.06);
-  }
-  .uav-map-legend span i {
-    display: inline-block;
-    width: 11px;
-    height: 11px;
-    border-radius: 50%;
-    margin-right: 6px;
-    vertical-align: middle;
-  }
-  #uav-twin-canvas { display: block; width: 100%; height: 380px; background: #020814; }
-  .uav-timeline {
-    padding: 12px 18px 18px;
-    border-top: 1px solid rgba(255,255,255,0.06);
-  }
-  .uav-timeline label { font-size: 0.78rem; color: var(--uav-muted); font-weight: 700; display: block; margin-bottom: 8px; }
-  .uav-timeline input[type="range"] { width: 100%; accent-color: var(--uav-accent); }
-  .uav-table-wrap {
-    background: var(--uav-card);
-    border-radius: 14px;
-    border: 1px solid rgba(255,255,255,0.08);
-    overflow: auto;
-  }
-  .uav-table-wrap h3 { margin: 0; padding: 14px 18px; font-size: 0.95rem; font-weight: 800; border-bottom: 1px solid rgba(255,255,255,0.08); }
-  .uav-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
-  .uav-table th, .uav-table td { padding: 10px 14px; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.06); }
-  .uav-table th { color: var(--uav-muted); font-weight: 700; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.06em; }
-  .uav-alert {
-    display: none;
-    padding: 12px 14px;
-    border-radius: 11px;
-    margin-bottom: 16px;
-    font-weight: 600;
-    font-size: 0.88rem;
-  }
-  .uav-alert.on { display: block; }
-  .uav-alert.err { background: rgba(229,57,53,0.18); border: 1px solid rgba(229,57,53,0.4); color: #ffcdd2; }
-  @media (max-width: 840px) {
-    .uav-shell { flex-direction: column; }
-    .uav-sidebar { width: 100%; border-right: none; border-bottom: 1px solid rgba(47,128,237,0.2); }
-  }
-</style>
 {% endblock %}
 
+{% block topbar %}{% include "monitoring/partials/mm_topbar.html" %}{% endblock %}
+
 {% block content %}
-<div class="fh-root">
-  <header class="fh-nav fh-glass" aria-label="Primary">
-    <div class="fh-nav-brand fh-brand-cluster">
-      <span class="fh-brand-orb" aria-hidden="true"></span>
-      <div class="fh-brand-text">
-        <h1 class="fh-nav-logo">Smart City Platform</h1>
-        <p class="fh-nav-tag">UAV Command Center</p>
-      </div>
-    </div>
-    <div class="fh-nav-meta">
-      <span class="fh-nav-loc" title="Module">Infrastructure · analyse drone</span>
-      <span class="fh-clock" id="fhClock" aria-live="polite">--:--:--</span>
-      <span class="fh-icon-chip" title="Notifications">🔔</span>
-      <span class="fh-nav-user" title="Operator" aria-hidden="true"></span>
-    </div>
-  </header>
-
+<div class="fh-root uav-root">
   <div class="ai-dash ai-dash--uav">
-  <div class="uav-shell">
-  <aside class="uav-sidebar">
-    <div class="uav-brand">
-      <div class="uav-logo" aria-hidden="true">🛰</div>
-      <div>
-        <h1>Smart City UAV</h1>
-        <p>Analyse d’infrastructure · drone · vision IA assistée</p>
-      </div>
-      <div class="uav-acc">
-        <div class="uav-acc-badge">Fiabilité de lecture<br><span id="uav-acc-val">—</span></div>
-      </div>
-    </div>
+    <div class="uav-page">
+      <div class="uav-page__bg" aria-hidden="true"></div>
+      <div class="uav-page__grid" aria-hidden="true"></div>
+      <div class="uav-page__particles" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
 
-    <div class="uav-card">
-      <h2><i></i> Contrôle mission</h2>
-      <form id="uav-form">
-        {% csrf_token %}
-        <div class="uav-field">
-          <label for="uav-primary">Image UAV (obligatoire)</label>
-          <input type="file" id="uav-primary" name="image_primary" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" required />
-        </div>
-        <div class="uav-field">
-          <label for="uav-compare">Image comparaison (optionnel)</label>
-          <input type="file" id="uav-compare" name="image_compare" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" />
-        </div>
-        <div class="uav-field">
-          <label for="uav-zone">Zone</label>
-          <select id="uav-zone" name="zone">
-            <option value="A">Zone A</option>
-            <option value="B" selected>Zone B</option>
-            <option value="C">Zone C</option>
-          </select>
-        </div>
-        <div class="uav-field">
-          <label for="uav-surface">Surface estimée (m²)</label>
-          <input type="number" id="uav-surface" name="surface_m2" min="0" step="1" placeholder="ex. 850" value="500" />
-        </div>
-        <div class="uav-btn-row">
-          <button type="submit" class="uav-btn" id="uav-submit">Analyser la mission</button>
-          <button type="button" class="uav-btn uav-btn-ghost" id="uav-csv">Exporter CSV</button>
-          <button type="button" class="uav-btn uav-btn-ghost" id="uav-pdf">Rapport PDF</button>
-        </div>
-      </form>
-    </div>
-    <p style="font-size:0.72rem;color:var(--uav-muted);line-height:1.45;margin:0;">
-      Moteur d’analyse hébergé sur la plateforme (réglage technique côté administration).
-    </p>
-  </aside>
-
-  <main class="uav-main">
-    <div id="uav-alert" class="uav-alert err" role="alert"></div>
-
-    <div class="uav-strip idle" id="uav-strip">
-      <span class="dot"></span>
-      <span id="uav-strip-text">En attente d’une image drone</span>
-    </div>
-
-    <section class="uav-tri" aria-label="Visualisation IA">
-      <div class="uav-img-card">
-        <h3>Image drone</h3>
-        <div class="box"><div class="uav-img-ph" id="uav-ph-o">Vue drone après traitement</div><img id="uav-img-o" alt="" style="display:none;" /></div>
-      </div>
-      <div class="uav-img-card">
-        <h3>Carte d’attention IA</h3>
-        <div class="box"><div class="uav-img-ph" id="uav-ph-g">Zones prioritaires mises en évidence</div><img id="uav-img-g" alt="" style="display:none;" /></div>
-      </div>
-      <div class="uav-img-card">
-        <h3>Mise en évidence fine</h3>
-        <div class="box"><div class="uav-img-ph" id="uav-ph-s">Détail des signaux visuels analysés</div><img id="uav-img-s" alt="" style="display:none;" /></div>
-      </div>
-    </section>
-
-    <section class="uav-diag-grid" aria-label="Diagnostic">
-      <div class="uav-badge-big intact" id="uav-badge">
-        <div class="lbl">Synthèse d’analyse</div>
-        <div class="state" id="uav-state-txt">—</div>
-        <div class="conf" id="uav-conf-txt">—</div>
-      </div>
-      <div class="uav-bars">
-        <h4>Répartition par scénario</h4>
-        <div id="uav-bars-host"></div>
-      </div>
-      <div class="uav-side-metrics">
-        <div class="uav-metric" id="uav-m-risk">
-          <div class="k">Score de risque /10</div>
-          <div class="v" id="uav-risk-val">—</div>
-        </div>
-        <div class="uav-metric level-low" id="uav-m-level">
-          <div class="k">Niveau opérationnel</div>
-          <div class="v" id="uav-level-val">—</div>
-        </div>
-        <div class="uav-metric">
-          <div class="k">Empreinte CO₂ estimée</div>
-          <div class="v" id="uav-co2-val">—</div>
-          <div style="font-size:0.72rem;color:var(--uav-muted);margin-top:4px;">Ordre de grandeur (réparation / reconstruction)</div>
-        </div>
-      </div>
-    </section>
-
-    <section class="uav-reco-row">
-      <div class="uav-reco-box">
-        <h4>Recommandations <span id="uav-prio" class="prio-p1"></span></h4>
-        <p style="margin:0 0 8px;color:var(--uav-muted);font-size:0.82rem;">Actions selon zone, confiance et gravité.</p>
-        <strong>Immédiat</strong>
-        <ul id="uav-list-immediate"></ul>
-        <strong>Court terme</strong>
-        <ul id="uav-list-short"></ul>
-        <strong>Veille</strong>
-        <ul id="uav-list-watch"></ul>
-        <strong style="color:#90caf9;">Limites IA</strong>
-        <ul id="uav-list-limits"></ul>
-      </div>
-      <div class="uav-reco-box">
-        <h4>Comparaison avant / après</h4>
-        <p id="uav-comp-placeholder" style="color:var(--uav-muted);margin:0;">Téléversez une deuxième image pour comparer les prédictions.</p>
-        <div id="uav-comp-detail" style="display:none;">
-          <p style="margin-top:0;"><b>Image 2 —</b> <span id="uav-comp-label"></span> · confiance <span id="uav-comp-conf"></span></p>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px;">
-            <div class="uav-img-card"><div class="box" style="min-height:120px;"><img id="uav-comp-img" alt="" style="max-height:140px;width:100%;object-fit:contain;" /></div></div>
-            <div class="uav-img-card"><div class="box" style="min-height:120px;"><img id="uav-comp-grad" alt="" style="max-height:140px;width:100%;object-fit:contain;" /></div></div>
+      <!-- Hero -->
+      <section class="uav-hero" aria-label="Drone Mission Intelligence Center">
+        <div class="uav-hero__sweep" aria-hidden="true"></div>
+        <div>
+          <h1 class="uav-hero__title">Drone Mission Intelligence Center</h1>
+          <p class="uav-hero__sub">AI-powered aerial inspection for urban damage assessment, priority mapping, and decision-ready mission insights.</p>
+          <div class="uav-hero__badges">
+            <span class="uav-hero-badge">UAV Vision</span>
+            <span class="uav-hero-badge">Urban Risk Scan</span>
+            <span class="uav-hero-badge">Smart Mapping</span>
+            <span class="uav-hero-badge">Mission Reporting</span>
           </div>
         </div>
-      </div>
-    </section>
+        <div class="uav-hero-holo" aria-hidden="true">
+          <span class="uav-hero-holo__ring"></span>
+          <span class="uav-hero-holo__ring"></span>
+          <div class="uav-hero-holo__scan"></div>
+          <svg viewBox="0 0 64 64" width="36" height="36" style="position:relative;z-index:1;opacity:0.65;" aria-hidden="true">
+            <path d="M32 8L38 22H50L40 30L44 44L32 36L20 44L24 30L14 22H26Z" fill="none" stroke="rgba(0,213,255,0.5)" stroke-width="1.5"/>
+            <circle cx="32" cy="32" r="4" fill="rgba(0,213,255,0.6)"/>
+          </svg>
+          <div class="uav-hero-holo__pipe">
+            <span>Upload</span><em>→</em><span>Analysis</span><em>→</em><span>Priority Map</span><em>→</em><span>3D Replica</span><em>→</em><span>Report</span>
+          </div>
+        </div>
+      </section>
 
-    <div class="uav-map-wrap">
-      <h3>Jumeau urbain · carte 2D</h3>
-      <div id="uav-map"></div>
-      <div class="uav-map-legend">
-        <span><i style="background:#43a047;"></i>Intact</span>
-        <span><i style="background:#fb8c00;"></i>Endommagé</span>
-        <span><i style="background:#e53935;"></i>Effondré</span>
+      <div class="uav-workspace">
+        <!-- Mission Control -->
+        <aside class="uav-sidebar">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+            <span class="uav-mission-chip" id="uav-mission-chip">Waiting for Image</span>
+            <div class="uav-acc-badge">Read Accuracy<br><span id="uav-acc-val">—</span></div>
+          </div>
+
+          <div class="uav-card">
+            <h2><i></i> Mission Control</h2>
+            <form id="uav-form">
+              {% csrf_token %}
+              <div class="uav-field">
+                <label for="uav-primary">Mission Image</label>
+                <input type="file" id="uav-primary" name="image_primary" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" required />
+              </div>
+              <div class="uav-field">
+                <label for="uav-compare">Comparison Image</label>
+                <input type="file" id="uav-compare" name="image_compare" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" />
+              </div>
+              <div class="uav-field">
+                <label for="uav-zone">Zone</label>
+                <select id="uav-zone" name="zone">
+                  <option value="A">Zone A</option>
+                  <option value="B" selected>Zone B</option>
+                  <option value="C">Zone C</option>
+                </select>
+              </div>
+              <div class="uav-field">
+                <label for="uav-surface">Estimated Area (m²)</label>
+                <input type="number" id="uav-surface" name="surface_m2" min="0" step="1" placeholder="e.g. 850" value="500" />
+              </div>
+              <div class="uav-btn-row">
+                <button type="submit" class="uav-btn" id="uav-submit">Analyze Mission</button>
+                <button type="button" class="uav-btn uav-btn-ghost" id="uav-csv">Export CSV</button>
+                <button type="button" class="uav-btn uav-btn-ghost" id="uav-pdf">Export PDF</button>
+              </div>
+            </form>
+          </div>
+          <p class="uav-sidebar-note">Platform-hosted analysis engine for structural aerial intelligence and mission reporting.</p>
+        </aside>
+
+        <main class="uav-main">
+          <div id="uav-alert" class="uav-alert err" role="alert"></div>
+
+          <div class="uav-strip idle" id="uav-strip">
+            <span class="dot"></span>
+            <span id="uav-strip-text">Waiting for drone mission image</span>
+          </div>
+
+          <!-- Analysis visuals -->
+          <section class="uav-tri" aria-label="AI visualization">
+            <div class="uav-img-card">
+              <div class="uav-img-card__head">
+                <h3>Drone View</h3>
+                <p class="uav-img-card__sub">Primary mission capture</p>
+              </div>
+              <div class="box">
+                <div class="uav-frame-scan" aria-hidden="true"></div>
+                <div class="uav-frame-corners" aria-hidden="true"></div>
+                <div class="uav-img-ph" id="uav-ph-o">Mission image will appear here after analysis</div>
+                <img id="uav-img-o" alt="Drone view" style="display:none;" />
+              </div>
+            </div>
+            <div class="uav-img-card">
+              <div class="uav-img-card__head">
+                <h3>AI Attention Map</h3>
+                <p class="uav-img-card__sub">Priority zones highlighted by vision AI</p>
+              </div>
+              <div class="box">
+                <div class="uav-frame-scan" aria-hidden="true"></div>
+                <div class="uav-frame-corners" aria-hidden="true"></div>
+                <div class="uav-img-ph" id="uav-ph-g">Priority zones will appear here</div>
+                <img id="uav-img-g" alt="Attention map" style="display:none;" />
+              </div>
+            </div>
+            <div class="uav-img-card">
+              <div class="uav-img-card__head">
+                <h3>Detailed Signal Focus</h3>
+                <p class="uav-img-card__sub">Fine-grained visual signal emphasis</p>
+              </div>
+              <div class="box">
+                <div class="uav-frame-scan" aria-hidden="true"></div>
+                <div class="uav-frame-corners" aria-hidden="true"></div>
+                <div class="uav-img-ph" id="uav-ph-s">Detailed visual signals will appear here</div>
+                <img id="uav-img-s" alt="Signal focus" style="display:none;" />
+              </div>
+            </div>
+          </section>
+
+          <!-- Summary / KPIs -->
+          <section class="uav-diag-grid" aria-label="Mission diagnostics">
+            <div class="uav-badge-big intact" id="uav-badge">
+              <div class="lbl">Mission Summary</div>
+              <div class="state" id="uav-state-txt">Waiting for analysis</div>
+              <div class="conf" id="uav-conf-txt">—</div>
+            </div>
+            <div class="uav-bars">
+              <h4>Scenario Breakdown</h4>
+              <div id="uav-bars-host"><p style="margin:0;font-size:0.68rem;color:var(--uav-muted);">Waiting for analysis</p></div>
+            </div>
+            <div class="uav-side-metrics">
+              <div class="uav-metric" id="uav-m-risk">
+                <div class="k">Risk Score</div>
+                <div class="v" id="uav-risk-val">—</div>
+              </div>
+              <div class="uav-metric level-low" id="uav-m-level">
+                <div class="k">Operational Readiness</div>
+                <div class="v" id="uav-level-val">—</div>
+              </div>
+              <div class="uav-metric">
+                <div class="k">Estimated CO₂ Impact</div>
+                <div class="v" id="uav-co2-val">—</div>
+                <div class="cap">Repair / reconstruction order of magnitude</div>
+              </div>
+            </div>
+          </section>
+
+          <!-- Recommendations + comparison -->
+          <section class="uav-reco-row">
+            <div class="uav-reco-box">
+              <h4>Decision Support <span id="uav-prio" class="prio-p1"></span></h4>
+              <p class="uav-reco-box__sub">Executive actions based on zone, confidence, and severity.</p>
+              <div class="uav-reco-section">
+                <strong>Immediate Action</strong>
+                <ul id="uav-list-immediate"></ul>
+              </div>
+              <div class="uav-reco-section">
+                <strong>Near-Term Action</strong>
+                <ul id="uav-list-short"></ul>
+              </div>
+              <div class="uav-reco-section">
+                <strong>Monitoring Plan</strong>
+                <ul id="uav-list-watch"></ul>
+              </div>
+              <div class="uav-reco-section uav-reco-section--limit">
+                <strong>AI Limitations</strong>
+                <ul id="uav-list-limits"></ul>
+              </div>
+            </div>
+            <div class="uav-reco-box">
+              <h4>Before / After Comparison</h4>
+              <p class="uav-reco-box__sub">Compare two aerial mission images to visualize change and impact.</p>
+              <p id="uav-comp-placeholder" style="color:var(--uav-muted);margin:0;font-size:0.72rem;">Upload a second image to compare mission evolution.</p>
+              <div id="uav-comp-detail" style="display:none;">
+                <p style="margin-top:0;font-size:0.75rem;"><b>Image 2 —</b> <span id="uav-comp-label"></span> · confidence <span id="uav-comp-conf"></span></p>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px;">
+                  <div class="uav-img-card"><div class="box" style="min-height:110px;"><img id="uav-comp-img" alt="" style="max-height:130px;width:100%;object-fit:contain;" /></div></div>
+                  <div class="uav-img-card"><div class="box" style="min-height:110px;"><img id="uav-comp-grad" alt="" style="max-height:130px;width:100%;object-fit:contain;" /></div></div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- Map -->
+          <div class="uav-map-wrap">
+            <div class="uav-section-head">
+              <div>
+                <h3>Urban Twin Map</h3>
+                <p>2D smart map of detected conditions and priority zones.</p>
+              </div>
+              <span class="uav-live-badge">AI Map</span>
+            </div>
+            <div class="uav-map-scan">
+              <div id="uav-map"></div>
+            </div>
+            <div class="uav-map-legend">
+              <span><i style="background:#34d399;"></i>Intact</span>
+              <span><i style="background:#fb923c;"></i>Damaged</span>
+              <span><i style="background:#ff4d6d;"></i>Collapsed</span>
+            </div>
+          </div>
+
+          <!-- History -->
+          <div class="uav-table-wrap">
+            <h3>Recent Mission Analyses</h3>
+            <table class="uav-table">
+              <thead>
+                <tr>
+                  <th>File</th>
+                  <th>Prediction</th>
+                  <th>Confidence</th>
+                  <th>Risk /10</th>
+                  <th>CO₂ (kg)</th>
+                  <th>Timestamp</th>
+                </tr>
+              </thead>
+              <tbody id="uav-history-body"><tr><td colspan="6" style="color:var(--uav-muted);">Loading…</td></tr></tbody>
+            </table>
+          </div>
+
+          <!-- 3D Replica -->
+          <div class="uav-twin-wrap">
+            <div class="uav-section-head">
+              <div>
+                <h3>3D Urban Replica</h3>
+                <p>Dynamic 3D approximation generated from the uploaded mission image and AI result.</p>
+              </div>
+            </div>
+            <div class="uav-twin-viewport">
+              <div class="uav-twin-empty" id="uav-twin-empty">
+                <div class="uav-twin-empty__grid" aria-hidden="true"></div>
+                <p class="uav-twin-empty__title">3D urban replica will be generated after mission analysis</p>
+                <p class="uav-twin-empty__hint">Upload a mission image and run analysis to see a dynamic city model reflecting prediction, risk, and zone parameters.</p>
+              </div>
+              <canvas id="uav-twin-canvas" width="900" height="360"></canvas>
+            </div>
+            <div class="uav-timeline">
+              <label for="uav-time">Mission Evolution Preview</label>
+              <input type="range" id="uav-time" min="0" max="100" value="0" />
+            </div>
+          </div>
+        </main>
       </div>
     </div>
-
-    <div class="uav-twin-wrap">
-      <h3>Réplique 3D · quartier (simulation)</h3>
-      <canvas id="uav-twin-canvas" width="900" height="380"></canvas>
-      <div class="uav-timeline">
-        <label for="uav-time">Timeline crise — évolution du quartier (pas de temps simulés)</label>
-        <input type="range" id="uav-time" min="0" max="100" value="0" />
-      </div>
-    </div>
-
-    <div class="uav-table-wrap">
-      <h3>Historique des 10 dernières analyses</h3>
-      <table class="uav-table">
-        <thead>
-          <tr>
-            <th>Fichier</th>
-            <th>Prédiction</th>
-            <th>Confiance</th>
-            <th>Risque /10</th>
-            <th>CO₂ (kg)</th>
-            <th>Horodatage</th>
-          </tr>
-        </thead>
-        <tbody id="uav-history-body"><tr><td colspan="6" style="color:var(--uav-muted);">Chargement…</td></tr></tbody>
-      </table>
-    </div>
-  </main>
-</div>
-</div>
+  </div>
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
@@ -571,6 +292,13 @@
     el.classList.toggle("on", !!msg);
   }
 
+  function setMissionChip(state) {
+    var chip = document.getElementById("uav-mission-chip");
+    if (!chip) return;
+    chip.className = "uav-mission-chip" + (state === "ready" ? " uav-mission-chip--ready" : state === "busy" ? " uav-mission-chip--busy" : "");
+    chip.textContent = state === "ready" ? "Ready for Analysis" : state === "busy" ? "Analyzing…" : "Waiting for Image";
+  }
+
   function setStrip(text, busy) {
     var s = document.getElementById("uav-strip");
     document.getElementById("uav-strip-text").textContent = text;
@@ -581,9 +309,42 @@
     return String(s == null ? "" : s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/"/g,"&quot;");
   }
 
+  function translateLabel(label) {
+    var map = {
+      "Endommagé": "Damaged",
+      "Effondré": "Collapsed",
+      "Intact": "Intact",
+      "Critique": "Critical",
+      "Modéré": "Moderate",
+      "Faible": "Low",
+      "Urgent": "Urgent",
+      "Analyse terminée": "Analysis complete"
+    };
+    return map[label] || label;
+  }
+
+  function predBadgeClass(label) {
+    var l = String(label || "").toLowerCase();
+    if (l.indexOf("effond") >= 0 || l.indexOf("collaps") >= 0) return "uav-pred-badge uav-pred-badge--collapsed";
+    if (l.indexOf("endom") >= 0 || l.indexOf("damag") >= 0) return "uav-pred-badge uav-pred-badge--damaged";
+    return "uav-pred-badge uav-pred-badge--intact";
+  }
+
+  function riskDotClass(score) {
+    var s = parseFloat(score);
+    if (isNaN(s)) return "uav-risk-dot";
+    if (s >= 7) return "uav-risk-dot uav-risk-dot--high";
+    if (s >= 4) return "uav-risk-dot uav-risk-dot--med";
+    return "uav-risk-dot uav-risk-dot--low";
+  }
+
   function fillBars(labels, probs) {
     var host = document.getElementById("uav-bars-host");
     host.innerHTML = "";
+    if (!labels || !labels.length) {
+      host.innerHTML = '<p style="margin:0;font-size:0.68rem;color:var(--uav-muted);">Waiting for analysis</p>';
+      return;
+    }
     for (var i = 0; i < labels.length; i++) {
       var p = Math.round((probs[i] || 0) * 1000) / 10;
       var row = document.createElement("div");
@@ -610,16 +371,16 @@
     var bk = pr.badge_key || "intact";
     var badge = document.getElementById("uav-badge");
     badge.className = "uav-badge-big " + (bk === "collapsed" ? "collapsed" : bk === "damaged" ? "damaged" : "intact");
-    document.getElementById("uav-state-txt").textContent = pr.predicted_label || "—";
+    document.getElementById("uav-state-txt").textContent = translateLabel(pr.predicted_label) || "—";
     document.getElementById("uav-conf-txt").textContent = Math.round(pr.confidence * 1000) / 10 + "%";
 
-    fillBars(pr.labels_order || [], pr.probabilities || []);
+    fillBars((pr.labels_order || []).map(translateLabel), pr.probabilities || []);
 
     document.getElementById("uav-risk-val").textContent = payload.risk_score != null ? payload.risk_score : "—";
     var lvl = payload.operational_level_key || "low";
     var ml = document.getElementById("uav-m-level");
     ml.className = "uav-metric level-" + lvl.replace("_", "-");
-    document.getElementById("uav-level-val").textContent = payload.operational_level || "—";
+    document.getElementById("uav-level-val").textContent = translateLabel(payload.operational_level) || "—";
 
     var co2 = payload.co2_estimate_kg;
     document.getElementById("uav-co2-val").textContent = co2 != null ? co2 + " kg" : "—";
@@ -653,7 +414,7 @@
     if (comp) {
       ph.style.display = "none";
       det.style.display = "block";
-      document.getElementById("uav-comp-label").textContent = comp.predicted_label || "—";
+      document.getElementById("uav-comp-label").textContent = translateLabel(comp.predicted_label) || "—";
       document.getElementById("uav-comp-conf").textContent = Math.round(comp.confidence * 1000) / 10 + "%";
       document.getElementById("uav-comp-img").src = absMedia(comp.original_image_url);
       document.getElementById("uav-comp-grad").src = absMedia(comp.gradcam_image_url);
@@ -664,8 +425,15 @@
 
     document.getElementById("uav-acc-val").textContent = payload.model_accuracy_display || "—";
 
-    if (window.uavTwinApplyRisk) window.uavTwinApplyRisk(payload.risk_score || 0, bk);
+    if (window.uavTwinApplyMission) window.uavTwinApplyMission(payload);
+    else if (window.uavTwinApplyRisk) window.uavTwinApplyRisk(payload.risk_score || 0, bk);
+
+    setMissionChip("ready");
   }
+
+  document.getElementById("uav-primary").addEventListener("change", function () {
+    setMissionChip(this.files && this.files[0] ? "ready" : "wait");
+  });
 
   document.getElementById("uav-form").addEventListener("submit", function (e) {
     e.preventDefault();
@@ -673,22 +441,25 @@
     var fd = new FormData(document.getElementById("uav-form"));
     var btn = document.getElementById("uav-submit");
     btn.disabled = true;
-    setStrip("Analyse en cours · cartes de lecture IA…", true);
+    setMissionChip("busy");
+    setStrip("Analysis in progress · generating AI attention maps…", true);
     fetch(ANALYZE_URL, { method: "POST", body: fd })
       .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
       .then(function (x) {
         if (!x.j.success) {
-          showErr(x.j.message || x.j.error || "Analyse impossible.");
-          setStrip("Analyse interrompue", false);
+          showErr(x.j.message || x.j.error || "Analysis failed.");
+          setStrip("Analysis interrupted", false);
+          setMissionChip("ready");
           return;
         }
         applyDiag(x.j);
-        setStrip(x.j.perception_status || "Analyse terminée", false);
+        setStrip(translateLabel(x.j.perception_status) || "Analysis complete", false);
         loadHistory();
       })
       .catch(function () {
-        showErr("Erreur réseau ou serveur.");
-        setStrip("Erreur réseau", false);
+        showErr("Network or server error.");
+        setStrip("Network error", false);
+        setMissionChip("ready");
       })
       .finally(function () { btn.disabled = false; });
   });
@@ -704,18 +475,19 @@
         tb.innerHTML = "";
         var rows = (d.rows || []);
         if (!rows.length) {
-          tb.innerHTML = '<tr><td colspan="6" style="color:#8ca0c4;">Aucune analyse.</td></tr>';
+          tb.innerHTML = '<tr><td colspan="6" style="color:#8aa4c9;">No analyses yet.</td></tr>';
           return;
         }
         rows.forEach(function (row) {
           var tr = document.createElement("tr");
           var dt = (row.created_at || "").replace("T", " ").slice(0, 19);
           var confPct = row.confidence != null ? Math.round(row.confidence * 1000) / 10 + "%" : "—";
+          var risk = row.risk_score != null ? row.risk_score : "—";
           tr.innerHTML =
             "<td>" + esc(row.filename) + "</td>" +
-            "<td>" + esc(row.prediction) + "</td>" +
+            '<td><span class="' + predBadgeClass(row.prediction) + '">' + esc(translateLabel(row.prediction)) + "</span></td>" +
             "<td>" + esc(confPct) + "</td>" +
-            "<td>" + esc(row.risk_score != null ? row.risk_score : "—") + "</td>" +
+            '<td><span class="' + riskDotClass(risk) + '"><i></i>' + esc(risk) + "</span></td>" +
             "<td>" + esc(row.co2_kg != null ? row.co2_kg : "—") + "</td>" +
             "<td>" + esc(dt) + "</td>";
           tb.appendChild(tr);
@@ -723,12 +495,22 @@
       })
       .catch(function () {
         document.getElementById("uav-history-body").innerHTML =
-          '<tr><td colspan="6" style="color:#ffcdd2;">Historique indisponible.</td></tr>';
+          '<tr><td colspan="6" style="color:#ffc9d4;">History unavailable.</td></tr>';
       });
   }
 
-  /* Leaflet */
+  /* Leaflet map */
   var map = null;
+  function mapPulseIcon(color) {
+    return L.divIcon({
+      className: "uav-map-marker-wrap",
+      html: '<span class="uav-map-marker-pulse" style="border-color:' + color + ';"></span>' +
+            '<span class="uav-map-marker-core" style="background:' + color + ';"></span>',
+      iconSize: [24, 24],
+      iconAnchor: [12, 12]
+    });
+  }
+
   function initMap(center, buildings) {
     if (!window.L) return;
     if (!map) {
@@ -739,11 +521,11 @@
       }).addTo(map);
     }
     map.eachLayer(function (layer) {
-      if (layer instanceof L.CircleMarker) map.removeLayer(layer);
+      if (layer instanceof L.Marker) map.removeLayer(layer);
     });
     (buildings || []).forEach(function (b) {
-      var col = b.state === "collapsed" ? "#e53935" : b.state === "damaged" ? "#fb8c00" : "#43a047";
-      L.circleMarker([b.lat, b.lng], { radius: 7, color: col, fillColor: col, fillOpacity: 0.9 })
+      var col = b.state === "collapsed" ? "#ff4d6d" : b.state === "damaged" ? "#fb923c" : "#34d399";
+      L.marker([b.lat, b.lng], { icon: mapPulseIcon(col) })
         .bindPopup(esc(b.label) + " · " + esc(b.state))
         .addTo(map);
     });
@@ -755,63 +537,210 @@
     .then(function (d) {
       var bs = d.buildings || [];
       if (!bs.length) return;
-      var c = { lat: bs[0].lat, lng: bs[0].lng };
-      initMap(c, bs);
+      initMap({ lat: bs[0].lat, lng: bs[0].lng }, bs);
     });
 
-  /* Three.js twin */
-  var twinScene, twinCamera, twinRenderer, twinMeshes = [], twinBase = [];
+  /* Three.js dynamic twin */
+  var twinScene, twinCamera, twinRenderer;
+  var twinMeshes = [], twinBase = [], twinHotspots = [];
+  var twinBuildingGroup, twinGroundGroup, twinScanMesh;
+  var twinMission = { analyzed: false, badgeKey: "intact", risk: 3, zone: "B", surface: 500, imageUrl: "", compareUrl: "", probs: [] };
+  var twinAnimT = 0;
+
+  function zoneTint(zone) {
+    if (zone === "A") return 0x00d5ff;
+    if (zone === "C") return 0x8b5cf6;
+    return 0x3d6fb8;
+  }
+
+  function clearGroup(grp) {
+    if (!grp) return;
+    while (grp.children.length) {
+      var c = grp.children[0];
+      if (c.geometry) c.geometry.dispose();
+      if (c.material) {
+        if (c.material.map) c.material.map.dispose();
+        c.material.dispose();
+      }
+      grp.remove(c);
+    }
+  }
+
+  function rebuildTwinCity() {
+    if (!twinBuildingGroup || !window.THREE) return;
+    clearGroup(twinBuildingGroup);
+    twinMeshes = [];
+    twinBase = [];
+    twinHotspots = [];
+
+    var badge = twinMission.badgeKey || "intact";
+    var risk = twinMission.risk || 3;
+    var surface = twinMission.surface || 500;
+    var gridN = Math.min(8, Math.max(4, Math.round(Math.sqrt(surface / 100))));
+    var spacing = 2.1;
+    var offset = (gridN - 1) * spacing / 2;
+    var baseTint = zoneTint(twinMission.zone);
+    var geom = new THREE.BoxGeometry(1, 1, 1);
+    var seed = 0;
+
+    for (var gx = 0; gx < gridN; gx++) {
+      for (var gz = 0; gz < gridN; gz++) {
+        seed++;
+        var irregular = badge === "collapsed" ? 0.85 : badge === "damaged" ? 0.45 : 0.1;
+        var probIdx = seed % (twinMission.probs.length || 1);
+        var probBoost = twinMission.probs[probIdx] || 0;
+        var bh = 2.5 + (gx + gz) % 4 * 1.2 + (surface / 500) * 0.8;
+        if (badge === "collapsed") bh *= 0.45 + Math.random() * 0.25;
+        else if (badge === "damaged") bh *= 0.65 + Math.random() * 0.2;
+
+        var bx = gx * spacing - offset + (Math.random() - 0.5) * irregular * 1.2;
+        var bz = gz * spacing - offset + (Math.random() - 0.5) * irregular * 1.2;
+        var tilt = badge === "collapsed" ? (Math.random() - 0.5) * 0.35 : badge === "damaged" ? (Math.random() - 0.5) * 0.12 : 0;
+
+        var col = new THREE.Color(baseTint);
+        if (badge === "collapsed" || probBoost > 0.5) col.lerp(new THREE.Color(0xff4d6d), 0.35 + probBoost * 0.3);
+        else if (badge === "damaged" || probBoost > 0.25) col.lerp(new THREE.Color(0xfb923c), 0.25 + probBoost * 0.2);
+
+        var mat = new THREE.MeshPhongMaterial({ color: col, emissive: col.clone().multiplyScalar(badge === "collapsed" ? 0.15 : 0.06) });
+        var mesh = new THREE.Mesh(geom, mat);
+        mesh.scale.set(1.4 + (Math.random() - 0.5) * irregular * 0.4, bh, 1.4 + (Math.random() - 0.5) * irregular * 0.4);
+        mesh.position.set(bx, bh / 2, bz);
+        mesh.rotation.z = tilt;
+        mesh.rotation.x = tilt * 0.5;
+        twinBuildingGroup.add(mesh);
+        twinMeshes.push(mesh);
+        twinBase.push({ h: bh, x: bx, z: bz, seed: seed % 7, tilt: tilt, hot: probBoost });
+      }
+    }
+
+    /* Hotspot markers for high-probability zones */
+    if (badge !== "intact") {
+      twinMeshes.forEach(function (m, i) {
+        if (twinBase[i].hot > 0.2 || (badge === "collapsed" && i % 3 === 0)) {
+          var sph = new THREE.Mesh(
+            new THREE.SphereGeometry(0.18, 8, 8),
+            new THREE.MeshBasicMaterial({ color: badge === "collapsed" ? 0xff4d6d : 0xfb923c, transparent: true, opacity: 0.85 })
+          );
+          sph.position.copy(m.position);
+          sph.position.y = m.scale.y + 0.3;
+          twinBuildingGroup.add(sph);
+          twinHotspots.push(sph);
+        }
+      });
+    }
+  }
+
+  function updateGroundTexture() {
+    if (!twinGroundGroup || !window.THREE) return;
+    clearGroup(twinGroundGroup);
+    var loader = new THREE.TextureLoader();
+    loader.crossOrigin = "anonymous";
+
+    function addPlane(url, xOff, w) {
+      if (!url) return;
+      loader.load(absMedia(url), function (tex) {
+        tex.minFilter = THREE.LinearFilter;
+        var mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, opacity: 0.88 });
+        var plane = new THREE.Mesh(new THREE.PlaneGeometry(w, w * 0.65), mat);
+        plane.rotation.x = -Math.PI / 2;
+        plane.position.set(xOff, 0.02, 0);
+        twinGroundGroup.add(plane);
+      });
+    }
+
+    if (twinMission.compareUrl) {
+      addPlane(twinMission.imageUrl, -3.5, 7);
+      addPlane(twinMission.compareUrl, 3.5, 7);
+    } else if (twinMission.imageUrl) {
+      addPlane(twinMission.imageUrl, 0, 14);
+    }
+  }
 
   function initTwin() {
     var canvas = document.getElementById("uav-twin-canvas");
     if (!window.THREE || !canvas) return;
-    var w = canvas.clientWidth || 900;
-    var h = 380;
+    var h = 360;
     twinScene = new THREE.Scene();
     twinScene.background = new THREE.Color(0x020814);
+    twinScene.fog = new THREE.Fog(0x020814, 30, 80);
+
+    var w = canvas.clientWidth || 900;
     twinCamera = new THREE.PerspectiveCamera(48, w / h, 0.1, 500);
-    twinCamera.position.set(18, 22, 28);
-    twinCamera.lookAt(0, 4, 0);
+    twinCamera.position.set(16, 20, 26);
+    twinCamera.lookAt(0, 3, 0);
+
     twinRenderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
     twinRenderer.setSize(w, h);
 
-    var amb = new THREE.AmbientLight(0x8899bb, 0.65);
-    twinScene.add(amb);
+    twinScene.add(new THREE.AmbientLight(0x8899bb, 0.6));
     var dir = new THREE.DirectionalLight(0xffffff, 0.85);
     dir.position.set(12, 28, 14);
     twinScene.add(dir);
+    var rim = new THREE.DirectionalLight(twinMission.analyzed ? 0xff6b35 : 0x00d5ff, 0.25);
+    rim.name = "rimLight";
+    twinScene.add(rim);
 
-    var grid = new THREE.GridHelper(48, 24, 0x2f80ed, 0x112244);
+    var grid = new THREE.GridHelper(48, 24, 0x00d5ff, 0x112244);
+    grid.material.opacity = 0.35;
+    grid.material.transparent = true;
     twinScene.add(grid);
 
-    var geom = new THREE.BoxGeometry(1, 1, 1);
-    for (var gx = 0; gx < 6; gx++) {
-      for (var gz = 0; gz < 6; gz++) {
-        var mat = new THREE.MeshPhongMaterial({ color: 0x3d6fb8 });
-        var mesh = new THREE.Mesh(geom, mat);
-        var bx = gx * 2.2 - 5.5;
-        var bz = gz * 2.2 - 5.5;
-        mesh.position.set(bx, 0, bz);
-        var bh = 3 + (gx + gz) % 4 * 1.1;
-        mesh.scale.set(1.6, bh, 1.6);
-        mesh.position.y = bh / 2;
-        twinScene.add(mesh);
-        twinMeshes.push(mesh);
-        twinBase.push({ h: bh, x: bx, z: bz, seed: (gx * 7 + gz * 13) % 5 });
-      }
-    }
+    twinBuildingGroup = new THREE.Group();
+    twinGroundGroup = new THREE.Group();
+    twinScene.add(twinGroundGroup);
+    twinScene.add(twinBuildingGroup);
+
+    var scanMat = new THREE.MeshBasicMaterial({ color: 0x00d5ff, transparent: true, opacity: 0.12, side: THREE.DoubleSide });
+    twinScanMesh = new THREE.Mesh(new THREE.PlaneGeometry(20, 20), scanMat);
+    twinScanMesh.rotation.x = -Math.PI / 2;
+    twinScanMesh.position.y = 0.5;
+    twinScene.add(twinScanMesh);
 
     function animate() {
       requestAnimationFrame(animate);
-      twinScene.rotation.y += 0.0018;
+      twinAnimT += 0.016;
+      if (twinMission.analyzed) {
+        twinScene.rotation.y = Math.sin(twinAnimT * 0.15) * 0.08 + twinAnimT * 0.08;
+        if (twinScanMesh) {
+          twinScanMesh.position.y = 0.5 + (Math.sin(twinAnimT * 0.8) * 0.5 + 0.5) * 10;
+          twinScanMesh.material.opacity = 0.08 + Math.sin(twinAnimT * 2) * 0.04;
+        }
+        twinHotspots.forEach(function (h, i) {
+          h.scale.setScalar(1 + Math.sin(twinAnimT * 3 + i) * 0.25);
+        });
+      } else {
+        twinScene.rotation.y += 0.001;
+      }
       twinRenderer.render(twinScene, twinCamera);
     }
     animate();
 
+    window.uavTwinApplyMission = function (payload) {
+      var pr = payload.primary || {};
+      twinMission.analyzed = true;
+      twinMission.badgeKey = pr.badge_key || "intact";
+      twinMission.risk = payload.risk_score || 3;
+      twinMission.zone = (document.getElementById("uav-zone") || {}).value || "B";
+      twinMission.surface = parseFloat((document.getElementById("uav-surface") || {}).value) || 500;
+      twinMission.imageUrl = pr.original_image_url || "";
+      twinMission.compareUrl = payload.comparison ? payload.comparison.original_image_url : "";
+      twinMission.probs = pr.probabilities || [];
+
+      var empty = document.getElementById("uav-twin-empty");
+      if (empty) empty.hidden = true;
+
+      var rimL = twinScene.getObjectByName("rimLight");
+      if (rimL) rimL.color.setHex(twinMission.badgeKey === "collapsed" ? 0xff4d6d : twinMission.badgeKey === "damaged" ? 0xfb923c : 0x00d5ff);
+
+      rebuildTwinCity();
+      updateGroundTexture();
+      applyTwinTimeline(parseFloat(document.getElementById("uav-time").value) / 100);
+    };
+
     window.uavTwinApplyRisk = function (risk, badgeKey) {
       window.__uavRisk = risk;
       window.__uavBadge = badgeKey || "intact";
-      applyTwinTimeline(parseFloat(document.getElementById("uav-time").value) / 100);
+      if (twinMission.analyzed) applyTwinTimeline(parseFloat(document.getElementById("uav-time").value) / 100);
     };
 
     document.getElementById("uav-time").addEventListener("input", function () {
@@ -828,21 +757,28 @@
 
   function applyTwinTimeline(t) {
     if (!twinMeshes.length) return;
-    var risk = window.__uavRisk || 3;
-    var badge = window.__uavBadge || "intact";
+    var risk = window.__uavRisk != null ? window.__uavRisk : twinMission.risk;
+    var badge = window.__uavBadge || twinMission.badgeKey || "intact";
+    var damageBase = badge === "collapsed" ? 0.92 : badge === "damaged" ? 0.58 : 0.22;
+
     twinMeshes.forEach(function (mesh, i) {
       var base = twinBase[i];
-      var local = (base.seed / 5) * t;
-      var damage = (badge === "collapsed" ? 0.95 : badge === "damaged" ? 0.55 : 0.25) * t + (risk / 10) * 0.35 * t;
-      damage = Math.min(1, damage + local * 0.25);
-      var crush = 1 - damage * 0.55;
+      if (!base) return;
+      var local = (base.seed / 7) * t;
+      var hot = base.hot || 0;
+      var damage = Math.min(1, damageBase * t + (risk / 10) * 0.4 * t + local * 0.2 + hot * 0.15 * t);
+      var crush = 1 - damage * (badge === "collapsed" ? 0.72 : 0.55);
       mesh.scale.y = base.h * crush;
       mesh.position.y = (base.h * crush) / 2;
+      mesh.rotation.z = base.tilt * (1 + t * 0.5);
+
       var c = new THREE.Color();
-      if (damage > 0.72) c.setHex(0xe53935);
-      else if (damage > 0.38) c.setHex(0xfb8c00);
-      else c.setHex(0x43a047);
+      var zoneC = new THREE.Color(zoneTint(twinMission.zone));
+      if (damage > 0.72) c.setHex(0xff4d6d);
+      else if (damage > 0.38) c.setHex(0xfb923c);
+      else c.copy(zoneC);
       mesh.material.color = c;
+      mesh.material.emissive = c.clone().multiplyScalar(0.08 + damage * 0.12);
     });
   }
 

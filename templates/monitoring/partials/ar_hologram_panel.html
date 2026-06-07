@@ -1,0 +1,262 @@
+{# Floating AR hologram — MedinaMind Smart City #}
+<div class="holo-city-wrap" id="holoCityWrap">
+  <div class="ar-hologram-scene" id="holoCityHub" data-module="traffic">
+
+    <div class="holo-float holo-float--brand holo-layer" data-layer="brand">
+      <span class="holo-live-dot" aria-hidden="true"></span>
+      <span class="holo-float__text">Tunis Smart City</span>
+    </div>
+
+    <div class="holo-float holo-float--badge holo-layer" data-layer="badge">
+      <span class="holo-module-badge" id="holoActiveModule" data-holo-module>Traffic Monitoring</span>
+    </div>
+
+    <div class="holo-float holo-float--meta holo-layer" data-layer="meta">
+      <span data-holo="city">Tunis, Tunisia</span>
+      <span class="holo-sep">·</span>
+      <span data-holo="time">--:--:--</span>
+    </div>
+
+    <div class="hologram-composition">
+      <aside class="holo-wing holo-wing--left">
+        <div class="hologram-stat-card holo-layer" data-metric="weather" data-layer="stat-l1" id="holoMetricWeather">
+          <span class="hologram-stat-card__connector" aria-hidden="true"></span>
+          <span class="hologram-stat-card__icon">🌤</span>
+          <span class="hologram-stat-card__body">
+            <span class="hologram-stat-card__label">Weather</span>
+            <span class="hologram-stat-card__val holo-value" data-holo="weather">—</span>
+          </span>
+        </div>
+        <div class="hologram-stat-card holo-layer" data-metric="traffic" data-layer="stat-l2" id="holoMetricTraffic">
+          <span class="hologram-stat-card__connector" aria-hidden="true"></span>
+          <span class="hologram-stat-card__icon">🚗</span>
+          <span class="hologram-stat-card__body">
+            <span class="hologram-stat-card__label">Traffic</span>
+            <span class="hologram-stat-card__val holo-value" data-holo="traffic">—</span>
+          </span>
+        </div>
+        <div class="hologram-stat-card holo-layer" data-metric="energy" data-layer="stat-l3" id="holoMetricEnergy">
+          <span class="hologram-stat-card__connector" aria-hidden="true"></span>
+          <span class="hologram-stat-card__icon">⚡</span>
+          <span class="hologram-stat-card__body">
+            <span class="hologram-stat-card__label">Energy</span>
+            <span class="hologram-stat-card__val holo-value" data-holo="energy">—</span>
+          </span>
+        </div>
+      </aside>
+
+      <div class="hologram-core">
+        <div class="holo-arc holo-arc--tl" aria-hidden="true"></div>
+        <div class="holo-arc holo-arc--tr" aria-hidden="true"></div>
+        <div class="holo-arc holo-arc--bl" aria-hidden="true"></div>
+        <div class="holo-arc holo-arc--br" aria-hidden="true"></div>
+
+        <div class="hologram-stage holo-layer" data-layer="city" id="hologramStage">
+          <div class="hologram-stage__backdrop" aria-hidden="true"></div>
+          <div class="hologram-stage__aura" aria-hidden="true"></div>
+          <div class="hologram-radar" aria-hidden="true"></div>
+          <div class="hologram-scanlines" aria-hidden="true"></div>
+          <div class="hologram-beam" aria-hidden="true"></div>
+
+          <div class="hologram-city" id="hologramCity">
+            <svg class="hologram-city-svg" viewBox="0 0 480 300" preserveAspectRatio="xMidYMax meet" aria-label="Smart city hologram">
+              <defs>
+                <linearGradient id="holoBldTop" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#38E8FF" stop-opacity="0.15"/>
+                  <stop offset="45%" stop-color="#06B6D4" stop-opacity="0.45"/>
+                  <stop offset="100%" stop-color="#1D4ED8" stop-opacity="0.75"/>
+                </linearGradient>
+                <linearGradient id="holoBldSide" x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0%" stop-color="#1E3A8A" stop-opacity="0.8"/>
+                  <stop offset="100%" stop-color="#2563EB" stop-opacity="0.5"/>
+                </linearGradient>
+                <linearGradient id="holoPlatform" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#00D5FF" stop-opacity="0.35"/>
+                  <stop offset="100%" stop-color="#1D4ED8" stop-opacity="0.08"/>
+                </linearGradient>
+                <filter id="holoGlow" x="-30%" y="-30%" width="160%" height="160%">
+                  <feGaussianBlur stdDeviation="2.5" result="b"/>
+                  <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+                </filter>
+                <filter id="holoGlowStrong" x="-40%" y="-40%" width="180%" height="180%">
+                  <feGaussianBlur stdDeviation="4" result="b"/>
+                  <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+                </filter>
+              </defs>
+
+              <!-- Platform -->
+              <ellipse cx="240" cy="268" rx="210" ry="38" fill="url(#holoPlatform)" stroke="#22D3EE" stroke-width="1.2" stroke-opacity="0.55" filter="url(#holoGlow)"/>
+              <ellipse cx="240" cy="268" rx="155" ry="26" fill="none" stroke="#00D5FF" stroke-width="0.8" stroke-opacity="0.35" stroke-dasharray="6 4"/>
+
+              <!-- Road network -->
+              <g class="holo-svg-roads" stroke="#22D3EE" stroke-opacity="0.65" stroke-width="1.5" fill="none" filter="url(#holoGlow)">
+                <path d="M60 255 L420 255"/>
+                <path d="M240 230 L240 268"/>
+                <path d="M120 248 L360 248" stroke-opacity="0.4"/>
+                <path d="M170 252 L310 252" stroke-opacity="0.35"/>
+                <path d="M100 255 L200 230 M280 230 L380 255" stroke-opacity="0.45"/>
+              </g>
+
+              <!-- District blocks -->
+              <g class="holo-svg-blocks" fill="none" stroke="#06B6D4" stroke-opacity="0.25" stroke-width="0.8">
+                <rect x="95" y="238" width="55" height="18" rx="1"/>
+                <rect x="165" y="238" width="45" height="18" rx="1"/>
+                <rect x="270" y="238" width="50" height="18" rx="1"/>
+                <rect x="335" y="238" width="55" height="18" rx="1"/>
+              </g>
+
+              <!-- Buildings back row -->
+              <g class="holo-svg-buildings">
+                <g class="holo-bld" transform="translate(72,118)">
+                  <polygon points="0,130 28,130 28,40 0,40" fill="url(#holoBldTop)" stroke="#38E8FF" stroke-width="0.8" stroke-opacity="0.7"/>
+                  <line x1="8" y1="50" x2="8" y2="120" stroke="#38E8FF" stroke-opacity="0.35" stroke-width="0.6"/>
+                  <line x1="18" y1="50" x2="18" y2="120" stroke="#38E8FF" stroke-opacity="0.35" stroke-width="0.6"/>
+                </g>
+                <g class="holo-bld" transform="translate(108,98)">
+                  <polygon points="0,150 34,150 34,20 0,20" fill="url(#holoBldTop)" stroke="#38E8FF" stroke-width="0.8" stroke-opacity="0.75"/>
+                  <line x1="10" y1="30" x2="10" y2="140" stroke="#38E8FF" stroke-opacity="0.4" stroke-width="0.6"/>
+                  <line x1="22" y1="30" x2="22" y2="140" stroke="#38E8FF" stroke-opacity="0.4" stroke-width="0.6"/>
+                </g>
+                <g class="holo-bld" transform="translate(148,108)">
+                  <polygon points="0,140 30,140 30,35 0,35" fill="url(#holoBldTop)" stroke="#38E8FF" stroke-width="0.8" stroke-opacity="0.7"/>
+                </g>
+                <g class="holo-bld" transform="translate(310,105)">
+                  <polygon points="0,143 32,143 32,30 0,30" fill="url(#holoBldTop)" stroke="#38E8FF" stroke-width="0.8" stroke-opacity="0.75"/>
+                  <line x1="11" y1="40" x2="11" y2="133" stroke="#38E8FF" stroke-opacity="0.4" stroke-width="0.6"/>
+                  <line x1="22" y1="40" x2="22" y2="133" stroke="#38E8FF" stroke-opacity="0.4" stroke-width="0.6"/>
+                </g>
+                <g class="holo-bld" transform="translate(352,115)">
+                  <polygon points="0,133 26,133 26,45 0,45" fill="url(#holoBldTop)" stroke="#38E8FF" stroke-width="0.8" stroke-opacity="0.7"/>
+                </g>
+                <g class="holo-bld" transform="translate(388,125)">
+                  <polygon points="0,123 22,123 22,58 0,58" fill="url(#holoBldTop)" stroke="#38E8FF" stroke-width="0.8" stroke-opacity="0.65"/>
+                </g>
+              </g>
+
+              <!-- Central smart tower -->
+              <g class="holo-svg-tower" filter="url(#holoGlowStrong)">
+                <polygon points="240,8 268,248 212,248" fill="url(#holoBldTop)" stroke="#38E8FF" stroke-width="1.2" stroke-opacity="0.85"/>
+                <line x1="240" y1="25" x2="240" y2="240" stroke="#38E8FF" stroke-opacity="0.5" stroke-width="1"/>
+                <line x1="225" y1="60" x2="255" y2="60" stroke="#38E8FF" stroke-opacity="0.35" stroke-width="0.7"/>
+                <line x1="220" y1="100" x2="260" y2="100" stroke="#38E8FF" stroke-opacity="0.35" stroke-width="0.7"/>
+                <line x1="216" y1="140" x2="264" y2="140" stroke="#38E8FF" stroke-opacity="0.35" stroke-width="0.7"/>
+                <line x1="214" y1="180" x2="266" y2="180" stroke="#38E8FF" stroke-opacity="0.35" stroke-width="0.7"/>
+                <circle cx="240" cy="12" r="5" fill="#38E8FF" opacity="0.9"/>
+              </g>
+
+              <!-- Front row buildings -->
+              <g class="holo-svg-buildings holo-svg-buildings--front">
+                <g class="holo-bld" transform="translate(178,148)">
+                  <polygon points="0,100 38,100 38,15 0,15" fill="url(#holoBldTop)" stroke="#38E8FF" stroke-width="0.9" stroke-opacity="0.8"/>
+                  <line x1="12" y1="25" x2="12" y2="92" stroke="#38E8FF" stroke-opacity="0.45" stroke-width="0.7"/>
+                  <line x1="26" y1="25" x2="26" y2="92" stroke="#38E8FF" stroke-opacity="0.45" stroke-width="0.7"/>
+                </g>
+                <g class="holo-bld" transform="translate(268,142)">
+                  <polygon points="0,106 40,106 40,10 0,10" fill="url(#holoBldTop)" stroke="#38E8FF" stroke-width="0.9" stroke-opacity="0.8"/>
+                  <line x1="13" y1="20" x2="13" y2="98" stroke="#38E8FF" stroke-opacity="0.45" stroke-width="0.7"/>
+                  <line x1="27" y1="20" x2="27" y2="98" stroke="#38E8FF" stroke-opacity="0.45" stroke-width="0.7"/>
+                </g>
+                <g class="holo-bld" transform="translate(128,158)">
+                  <polygon points="0,90 32,90 32,28 0,28" fill="url(#holoBldSide)" stroke="#38E8FF" stroke-width="0.8" stroke-opacity="0.75"/>
+                </g>
+                <g class="holo-bld" transform="translate(330,155)">
+                  <polygon points="0,93 34,93 34,25 0,25" fill="url(#holoBldSide)" stroke="#38E8FF" stroke-width="0.8" stroke-opacity="0.75"/>
+                </g>
+              </g>
+
+              <!-- Smart IoT nodes -->
+              <g class="holo-svg-nodes" filter="url(#holoGlow)">
+                <circle class="holo-svg-node" cx="108" cy="110" r="3.5" fill="#38E8FF"/>
+                <circle class="holo-svg-node" cx="352" cy="108" r="3.5" fill="#38E8FF"/>
+                <circle class="holo-svg-node" cx="198" cy="155" r="3" fill="#00E396"/>
+                <circle class="holo-svg-node" cx="290" cy="148" r="3" fill="#00E396"/>
+                <circle class="holo-svg-node" cx="240" cy="18" r="4" fill="#38E8FF"/>
+              </g>
+
+              <!-- Data connection lines -->
+              <g class="holo-svg-links" stroke="#00D5FF" stroke-opacity="0.45" stroke-width="0.8" fill="none">
+                <path d="M108 110 L198 155 L240 18" stroke-dasharray="4 3"/>
+                <path d="M352 108 L290 148 L240 18" stroke-dasharray="4 3"/>
+                <path d="M198 155 L240 248 M290 148 L240 248" stroke-opacity="0.3"/>
+              </g>
+
+              <!-- Energy / traffic indicators -->
+              <g class="holo-svg-indicators" filter="url(#holoGlow)">
+                <rect x="88" y="228" width="14" height="8" rx="2" fill="#00D5FF" opacity="0.5"/>
+                <rect x="378" y="228" width="14" height="8" rx="2" fill="#00E396" opacity="0.5"/>
+                <circle cx="240" cy="258" r="4" fill="#38E8FF" opacity="0.7"/>
+              </g>
+            </svg>
+
+            <div class="hologram-module-overlay hologram-module-overlay--traffic" aria-hidden="true"></div>
+            <div class="hologram-module-overlay hologram-module-overlay--energy" aria-hidden="true"></div>
+            <div class="hologram-module-overlay hologram-module-overlay--pollution" aria-hidden="true"></div>
+            <div class="hologram-module-overlay hologram-module-overlay--security" aria-hidden="true"></div>
+            <div class="hologram-center-label" data-holo="center-label">Traffic Flow</div>
+          </div>
+
+          <div class="hologram-particles" aria-hidden="true">
+            <span></span><span></span><span></span><span></span><span></span>
+          </div>
+          <div class="hologram-data-nodes" aria-hidden="true">
+            <span class="hologram-data-node" style="--nx:18%;--ny:28%"></span>
+            <span class="hologram-data-node" style="--nx:80%;--ny:24%"></span>
+            <span class="hologram-data-node" style="--nx:50%;--ny:10%"></span>
+          </div>
+
+          <div class="hologram-ring hologram-ring--1" aria-hidden="true"></div>
+          <div class="hologram-ring hologram-ring--2" aria-hidden="true"></div>
+        </div>
+
+        <div class="holo-emitter holo-layer" data-layer="emitter" aria-hidden="true">
+          <div class="holo-emitter__pulse"></div>
+          <div class="holo-emitter__ring holo-emitter__ring--1"></div>
+          <div class="holo-emitter__ring holo-emitter__ring--2"></div>
+          <div class="holo-emitter__ring holo-emitter__ring--3"></div>
+        </div>
+      </div>
+
+      <aside class="holo-wing holo-wing--right">
+        <div class="hologram-stat-card holo-layer" data-metric="air-quality" data-layer="stat-r1" id="holoMetricAir">
+          <span class="hologram-stat-card__connector hologram-stat-card__connector--right" aria-hidden="true"></span>
+          <span class="hologram-stat-card__icon">☁</span>
+          <span class="hologram-stat-card__body">
+            <span class="hologram-stat-card__label">Air Quality</span>
+            <span class="hologram-stat-card__val holo-value" data-holo="air-quality">—</span>
+          </span>
+        </div>
+        <div class="hologram-stat-card holo-layer" data-metric="safety" data-layer="stat-r2" id="holoMetricSafety">
+          <span class="hologram-stat-card__connector hologram-stat-card__connector--right" aria-hidden="true"></span>
+          <span class="hologram-stat-card__icon">🛡</span>
+          <span class="hologram-stat-card__body">
+            <span class="hologram-stat-card__label">Safety</span>
+            <span class="hologram-stat-card__val holo-value" data-holo="safety">—</span>
+          </span>
+        </div>
+        <div class="hologram-stat-card holo-layer" data-metric="parking" data-layer="stat-r3" id="holoMetricParking">
+          <span class="hologram-stat-card__connector hologram-stat-card__connector--right" aria-hidden="true"></span>
+          <span class="hologram-stat-card__icon">🅿</span>
+          <span class="hologram-stat-card__body">
+            <span class="hologram-stat-card__label">Parking</span>
+            <span class="hologram-stat-card__val holo-value" data-holo="parking">—</span>
+          </span>
+        </div>
+      </aside>
+    </div>
+
+    <div class="holo-info-strip holo-layer" data-layer="footer">
+      <span class="holo-info-chip">Population <strong class="holo-value" data-holo="population">2.8M</strong></span>
+      <span class="holo-info-chip">Live feed <strong class="holo-online" data-holo="feed-status">Online</strong></span>
+      <span class="holo-info-chip">Updated <strong class="holo-value" data-holo="updated">—</strong></span>
+    </div>
+
+  </div>
+
+  <div class="holo-chips-legacy" aria-hidden="true" hidden>
+    <div id="holoCardTraffic"><span class="holo-chip-sub"></span><span class="holo-chip-val"></span></div>
+    <div id="holoCardEnergy"><span class="holo-chip-sub"></span><span class="holo-chip-val"></span></div>
+    <div id="holoCardPollution"><span class="holo-chip-sub"></span><span class="holo-chip-val"></span></div>
+    <div id="holoCardSecurity"><span class="holo-chip-sub"></span><span class="holo-chip-val"></span></div>
+    <div id="holoCardParking"><span class="holo-chip-sub"></span><span class="holo-chip-val"></span></div>
+  </div>
+</div>

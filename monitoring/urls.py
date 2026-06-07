@@ -1,9 +1,11 @@
 from django.urls import path
-from django.views.generic import RedirectView
 
 from . import (
+    assistant_api,
     camera_settings_api,
     fire_camera_views,
+    mayor_mission_views,
+    platform_settings_views,
     traffic_nexus_views,
     traffic_signal_views,
     traffic_violation_views,
@@ -15,14 +17,8 @@ from . import (
 app_name = "monitoring"
 
 urlpatterns = [
-    path(
-        "",
-        RedirectView.as_view(
-            pattern_name="monitoring:ai_dashboard",
-            permanent=False,
-        ),
-        name="home",
-    ),
+    path("", views.homepage, name="home"),
+    path("home/", views.homepage, name="home_page"),
     path("surveillance/", views.surveillance_dashboard, name="surveillance_dashboard"),
     path("road-damage-test/", views.road_damage_test, name="road_damage_test"),
     path(
@@ -160,6 +156,9 @@ urlpatterns = [
         name="camera_capture_proxy",
     ),
     path("introduction/", views.introduction_page, name="introduction"),
+    path("api/ar/live-stats/", views.ar_live_stats, name="ar_live_stats"),
+    path("api/ar/live-info/", views.ar_live_info, name="ar_live_info"),
+    path("api/ar/modules/", views.ar_modules, name="ar_modules"),
     path("ai-dashboard/", views.ai_dashboard, name="ai_dashboard"),
     path(
         "ai-dashboard/api/summary/",
@@ -171,4 +170,50 @@ urlpatterns = [
         views.ai_dashboard_chatbot,
         name="ai_dashboard_chatbot",
     ),
+    path(
+        "api/assistant/groq/",
+        assistant_api.assistant_groq,
+        name="assistant_groq",
+    ),
+    path("mayor-mission/", mayor_mission_views.mayor_mission_page, name="mayor_mission"),
+    path(
+        "api/demo/mayor-mission/challenges/",
+        mayor_mission_views.mayor_mission_challenges,
+        name="mayor_mission_challenges",
+    ),
+    path(
+        "api/demo/mayor-mission/scenarios/",
+        mayor_mission_views.mayor_mission_scenarios,
+        name="mayor_mission_scenarios",
+    ),
+    path(
+        "api/demo/mayor-mission/run-classic/",
+        mayor_mission_views.mayor_mission_run_classic,
+        name="mayor_mission_run_classic",
+    ),
+    path(
+        "api/demo/mayor-mission/run-medinamind/",
+        mayor_mission_views.mayor_mission_run_medinamind,
+        name="mayor_mission_run_medinamind",
+    ),
+    path(
+        "api/demo/mayor-mission/finish/",
+        mayor_mission_views.mayor_mission_finish,
+        name="mayor_mission_finish",
+    ),
+    path(
+        "api/demo/mayor-mission/run/",
+        mayor_mission_views.mayor_mission_run,
+        name="mayor_mission_run",
+    ),
+    path(
+        "api/demo/mayor-mission/certificate/",
+        mayor_mission_views.mayor_mission_certificate,
+        name="mayor_mission_certificate",
+    ),
+    path("settings/", platform_settings_views.platform_settings_page, name="platform_settings"),
+    path("settings/test/esp32/", platform_settings_views.platform_settings_test_esp32, name="platform_settings_test_esp32"),
+    path("settings/test/email/", platform_settings_views.platform_settings_test_email, name="platform_settings_test_email"),
+    path("settings/test/twilio/", platform_settings_views.platform_settings_test_twilio, name="platform_settings_test_twilio"),
+    path("settings/test/models/", platform_settings_views.platform_settings_test_models, name="platform_settings_test_models"),
 ]

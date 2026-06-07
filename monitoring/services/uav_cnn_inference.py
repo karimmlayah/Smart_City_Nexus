@@ -63,7 +63,7 @@ def class_labels() -> tuple[str, str, str]:
     lab = getattr(settings, "UAV_CLASS_LABELS", None)
     if lab and len(lab) == 3:
         return (str(lab[0]), str(lab[1]), str(lab[2]))
-    return ("Intact", "Endommagé", "Effondré")
+    return ("Intact", "Damaged", "Collapsed")
 
 
 def preprocess_bgr_for_model(frame_bgr: np.ndarray) -> tuple[np.ndarray, np.ndarray]:

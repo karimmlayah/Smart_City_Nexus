@@ -1,138 +1,96 @@
 {% extends "base.html" %}
 {% load static %}
-{% block title %}Feux rouges &amp; violations — Smart City{% endblock %}
-{% block body_class %}cockpit fusion-hub-sc traffic-violation-sc{% endblock %}
+{% block title %}Red Light Violation Intelligence — MedinaMind{% endblock %}
+{% block body_class %}cockpit fusion-hub-sc traffic-violation-sc ai-dashboard-sc mm-dash-body{% endblock %}
+
 {% block extra_head %}
+  <link rel="stylesheet" href="{% static 'monitoring/fusion_hub_dashboard.css' %}">
   <link rel="stylesheet" href="{% static 'monitoring/fusion_hub_smartcity.css' %}">
+  <link rel="stylesheet" href="{% static 'monitoring/traffic_violation_modern.css' %}?v=2">
 {% endblock %}
+
+{% block topbar %}{% include "monitoring/partials/mm_topbar.html" %}{% endblock %}
+
 {% block content %}
-<style>
-  .ss-wrap { max-width:920px; margin:0 auto; padding:0 12px 48px; }
-  .ss-wrap h1 { margin-bottom:4px; }
-  .ss-sub { color:#666; font-size:13px; margin-bottom:20px; }
-
-  /* ── upload zone ── */
-  #dropZone {
-    display:block;
-    border:2px dashed #4a90d9; border-radius:10px; padding:38px 20px;
-    text-align:center; cursor:pointer; background:#f0f6ff;
-    transition:background .2s; user-select:none;
-  }
-  #dropZone:hover, #dropZone.over { background:#ddeeff; }
-  #dropZone .dz-icon { font-size:42px; margin-bottom:8px; }
-  #dropZone .dz-main { font-size:16px; font-weight:bold; color:#2255aa; }
-  #dropZone .dz-sub  { font-size:12px; color:#888; margin-top:4px; }
-  #fileInput { display:none; }
-
-  /* ── spinner ── */
-  #processingMsg { display:none; text-align:center; padding:32px; font-size:16px; color:#555; }
-  .spin {
-    display:inline-block; width:26px; height:26px;
-    border:4px solid #ccc; border-top-color:#4a90d9;
-    border-radius:50%; animation:spin .8s linear infinite;
-    vertical-align:middle; margin-right:10px;
-  }
-  @keyframes spin { to { transform:rotate(360deg); } }
-
-  /* ── results section ── */
-  #resultsSection { margin-top:24px; }
-  .result-video { width:100%; border-radius:8px; background:#000; display:block; }
-
-  /* ── stop-line panel (shown after video loads) ── */
-  #stopLineSection {
-    margin-top:18px;
-    border:2px solid #333;
-    border-radius:10px;
-    overflow:hidden;
-  }
-  #slHeader {
-    background:#1a1a2e; color:#fff;
-    padding:10px 16px;
-    display:flex; align-items:center; gap:12px; flex-wrap:wrap;
-  }
-  .sl-badge { background:#ff00ff; color:#fff; border-radius:20px; padding:2px 12px; font-size:12px; font-weight:bold; }
-  #slInstruct { font-size:14px; font-weight:bold; flex:1; }
-  #slHint { font-size:12px; color:#aaa; width:100%; padding-bottom:4px; }
-
-  /* ── first frame canvas for line drawing ── */
-  #firstFrameSection { margin-top:18px; border:2px solid #333; border-radius:10px; overflow:hidden; }
-  #ffHeader { background:#1a1a2e; color:#fff; padding:10px 16px; }
-  #ffTitle { font-size:15px; font-weight:bold; }
-  #ffHint { font-size:12px; color:#aaa; margin-top:4px; }
-  #canvasWrap { position:relative; background:#000; line-height:0; }
-  #drawCanvas { display:block; width:100%; cursor:crosshair; }
-  #canvasOverlay {
-    position:absolute; top:10px; left:50%; transform:translateX(-50%);
-    background:rgba(0,0,0,.7); color:#ff88ff;
-    font-size:14px; font-weight:bold; padding:6px 16px; border-radius:20px;
-    pointer-events:none;
-  }
-  #ffActions { background:#1a1a2e; padding:10px 16px; display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
-  .ff-btn { padding:8px 20px; border:none; border-radius:6px; cursor:pointer; font-size:14px; font-weight:bold; }
-  .ff-btn:disabled { opacity:.4; cursor:default; }
-  #btnProcess { background:#00ff00; color:#000; font-size:15px; padding:10px 28px; }
-  #btnResetLine { background:#555; color:#fff; }
-  #btnAISuggest { background:#ff00ff; color:#fff; }
-  #ffCoords { font-size:12px; color:#888; margin-left:auto; }
-
-  /* ── video wrapper ── */
-  #videoWrapper { position:relative; display:inline-block; width:100%; line-height:0; margin-top:18px; }
-  .result-video { width:100%; border-radius:8px; background:#000; display:block; }
-
-  /* ── violation log ── */
-  #violationLog { margin-top:16px; border:2px solid #ff4444; border-radius:8px; overflow:hidden; }
-  .vlog-hdr { background:#ff4444; color:#fff; padding:8px 16px; font-weight:bold; font-size:15px; }
-  .vlog-body { background:#1a0000; padding:12px 16px; min-height:50px; }
-  .vlog-empty { color:#888; font-size:13px; font-style:italic; }
-  .vlog-pill {
-    display:inline-flex; align-items:center; gap:6px;
-    background:#3a0000; border:1px solid #ff4444; border-radius:20px;
-    padding:4px 14px; margin:4px 6px 4px 0;
-    color:#ff9999; font-size:14px; font-weight:bold;
-  }
-  .vlog-dot { width:10px; height:10px; background:#ff4444; border-radius:50%; flex-shrink:0; }
-
-  /* ── stats card ── */
-  .stats-card { background:#f8f9fb; border-radius:8px; padding:14px 18px; margin-top:12px; font-size:14px; }
-  .stats-card p { margin:4px 0; }
-
-  /* ── camera panel ── */
-  #cameraPanel { display:none; margin-top:12px; padding:10px; background:#f8f9fb; border-radius:8px; }
-  .cam-btn { padding:7px 14px; border:none; border-radius:5px; cursor:pointer; font-size:13px; margin-right:6px; }
-
-  /* Registre SQLite (vehicles.db) */
-  .tv-registry { margin-bottom:22px; border:1px solid rgba(255,255,255,0.12); border-radius:12px; overflow:hidden; background:rgba(0,0,0,0.25); }
-  .tv-registry-hdr { padding:12px 16px; font-weight:800; font-size:0.85rem; letter-spacing:0.06em; text-transform:uppercase; color:#9ecbff; border-bottom:1px solid rgba(255,255,255,0.08); }
-  .tv-registry-grid { display:grid; grid-template-columns:1fr 1fr; gap:0; }
-  @media (max-width:900px) { .tv-registry-grid { grid-template-columns:1fr; } }
-  .tv-registry-col { padding:14px 16px 18px; max-height:280px; overflow:auto; }
-  .tv-registry-col h3 { margin:0 0 10px; font-size:0.95rem; color:#e8f1ff; }
-  .tv-registry table { width:100%; font-size:12px; border-collapse:collapse; }
-  .tv-registry th, .tv-registry td { padding:6px 8px; text-align:left; border-bottom:1px solid rgba(255,255,255,0.06); }
-  .tv-registry th { color:#8aa4c9; font-weight:600; }
-  .tv-registry-muted { color:#647896; font-size:12px; margin-top:8px; }
-</style>
 
 <div id="tv-config"
      data-suggest-url="{% url 'monitoring:traffic_violation_suggest_stop_line' %}"
      data-realtime-url="{% url 'monitoring:traffic_violation_realtime_frame' %}"
      style="display:none;"></div>
 
-<div class="ss-wrap">
+<div class="violations-page">
+  <div class="violations-page__bg" aria-hidden="true"></div>
+  <div class="violations-page__grid" aria-hidden="true"></div>
+  <div class="violations-page__particles" aria-hidden="true">
+    <span></span><span></span><span></span><span></span><span></span>
+  </div>
+
+  <header class="violations-hero">
+    <div class="violations-hero__icon" aria-hidden="true">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+        <rect x="8" y="3" width="8" height="18" rx="2" stroke="#ff4d6d" stroke-width="1.5"/>
+        <circle cx="12" cy="8" r="2" fill="#ff4d6d"/>
+        <circle cx="12" cy="13" r="2" fill="#555" opacity="0.5"/>
+        <circle cx="12" cy="18" r="2" fill="#555" opacity="0.5"/>
+      </svg>
+    </div>
+    <div class="violations-hero__copy">
+      <h2 class="violations-hero__title">Red Light Violation Intelligence</h2>
+      <p class="violations-hero__sub">AI-powered traffic light compliance monitoring, vehicle identification, and violation reporting.</p>
+      <p class="violations-hero__hint">Upload a traffic scene or open the live camera. Define the stop line once, then MedinaMind analyzes vehicle movement and highlights red-light violations automatically.</p>
+    </div>
+    <div class="violations-hero__badges">
+      <span class="violations-badge">Computer Vision</span>
+      <span class="violations-badge">Live Camera Ready</span>
+      <span class="violations-badge">SQLite Registry</span>
+      <span class="violations-badge">Violation Detection</span>
+    </div>
+  </header>
+
+  <div class="violations-kpi-row">
+    <div class="violations-stat-card">
+      <span class="violations-stat-card__label"><span class="violations-stat-card__icon">🚗</span>Registered Vehicles</span>
+      <span class="violations-stat-card__value">{% if registry_available %}{{ vehicles|length }}{% else %}—{% endif %}</span>
+    </div>
+    <div class="violations-stat-card">
+      <span class="violations-stat-card__label"><span class="violations-stat-card__icon">🚨</span>Recent Violations</span>
+      <span class="violations-stat-card__value">{% if registry_available %}{{ violations|length }}{% else %}—{% endif %}</span>
+    </div>
+    <div class="violations-stat-card">
+      <span class="violations-stat-card__label"><span class="violations-stat-card__icon">🕐</span>Last Violation</span>
+      <span class="violations-stat-card__value">{% if violations and violations.0.violation_date %}{{ violations.0.violation_date }}{% else %}Ready{% endif %}</span>
+    </div>
+    <div class="violations-stat-card">
+      <span class="violations-stat-card__label"><span class="violations-stat-card__icon">📡</span>Monitoring Status</span>
+      <span class="violations-stat-card__value">{% if registry_available %}Active{% else %}Waiting{% endif %}</span>
+    </div>
+  </div>
+
   {% if registry_error %}
-  <div style="margin-bottom:16px;padding:12px 14px;border-radius:10px;border:1px solid rgba(255,100,100,0.45);background:rgba(80,20,20,0.35);font-size:13px;color:#ffb8b8;">
-    <strong>Registre SQLite</strong> — {{ registry_error }}
+  <div class="registry-error">
+    <strong>Registry unavailable</strong> — {{ registry_error }}
   </div>
   {% endif %}
+
   {% if registry_available %}
-  <div class="tv-registry">
-    <div class="tv-registry-hdr">Registre véhicules &amp; infractions (SQLite)</div>
-    <div class="tv-registry-grid">
-      <div class="tv-registry-col">
-        <h3>Véhicules enregistrés ({{ vehicles|length }})</h3>
+  <section class="registry-card" aria-label="Vehicle and violation registry">
+    <div class="registry-card__head">
+      <div>
+        <h2 class="registry-card__title">Vehicle &amp; Violation Registry</h2>
+        <p class="registry-card__sub">Connected local registry for plate ownership and violation history.</p>
+      </div>
+      <div class="registry-card__stats">
+        <span>Registered: <strong>{{ vehicles|length }}</strong></span>
+        <span>Violations: <strong>{{ violations|length }}</strong></span>
+        <span>Mode: <strong>{% if registry_available %}Active{% else %}Ready{% endif %}</strong></span>
+      </div>
+    </div>
+    <div class="registry-card__grid">
+      <div class="registry-card__col">
+        <h3>🚗 Registered Vehicles</h3>
         {% if vehicles %}
-        <table>
-          <thead><tr><th>Plaque</th><th>Propriétaire</th><th>Contact</th></tr></thead>
+        <table class="registry-table">
+          <thead><tr><th>Plate</th><th>Owner</th><th>Contact</th></tr></thead>
           <tbody>
             {% for v in vehicles %}
             <tr>
@@ -144,14 +102,14 @@
           </tbody>
         </table>
         {% else %}
-        <p class="tv-registry-muted">Aucune entrée.</p>
+        <p class="registry-muted">No vehicles registered yet.</p>
         {% endif %}
       </div>
-      <div class="tv-registry-col">
-        <h3>Dernières infractions ({{ violations|length }})</h3>
+      <div class="registry-card__col">
+        <h3>🚨 Recent Violations</h3>
         {% if violations %}
-        <table>
-          <thead><tr><th>Plaque</th><th>Type</th><th>Date</th><th>Montant</th></tr></thead>
+        <table class="registry-table">
+          <thead><tr><th>Plate</th><th>Type</th><th>Time</th><th>Score</th></tr></thead>
           <tbody>
             {% for x in violations %}
             <tr>
@@ -164,73 +122,98 @@
           </tbody>
         </table>
         {% else %}
-        <p class="tv-registry-muted">Aucune infraction enregistrée.</p>
+        <p class="registry-muted">No violations recorded yet.</p>
         {% endif %}
       </div>
     </div>
-  </div>
+  </section>
   {% endif %}
 
-  <h1>Panneaux &amp; violations feu rouge</h1>
-  <p class="ss-sub">
-    Upload a video or image. For videos, you'll first draw a <strong>stop line</strong> on the first frame,
-    then the video will be processed with violation detection. Cars crossing the line during a red light
-    will be marked with <span style="color:#ff0000;font-weight:bold;">RED boxes</span>.
-  </p>
+  <nav class="workflow-stepper" aria-label="Detection workflow">
+    <div class="workflow-step workflow-step--active"><span class="workflow-step__num">1</span> Upload / Live Feed</div>
+    <div class="workflow-step"><span class="workflow-step__num">2</span> Define Stop Line</div>
+    <div class="workflow-step"><span class="workflow-step__num">3</span> Analyze Movement</div>
+    <div class="workflow-step"><span class="workflow-step__num">4</span> Detect Violation</div>
+    <div class="workflow-step"><span class="workflow-step__num">5</span> Generate Report</div>
+  </nav>
 
-  <label id="dropZone" for="videoFile">
-    <div class="dz-icon">📂</div>
-    <div class="dz-main">Click here (or drag &amp; drop) to choose a video or image</div>
-    <div class="dz-sub">MP4 · AVI · MOV · MKV · WEBM · JPG · PNG · WEBP</div>
-  </label>
+  <div class="violations-workflow">
+    <div class="violations-workflow__left upload-panel">
+      <h2 class="upload-panel__title">Upload Traffic Footage</h2>
+      <p class="upload-panel__sub">Add a video or image to start red-light violation analysis.</p>
 
-  <form id="analyzeForm" action="{% url 'monitoring:traffic_violation_analyze' %}"
-        method="post" enctype="multipart/form-data" style="display:none;">
-    {% csrf_token %}
-    <input type="file" name="media" id="videoFile"
-           accept="image/*,video/*,.mp4,.avi,.mov,.mkv,.webm" />
-    <input type="hidden" name="camera_image_data" id="cameraImageData" />
-    <input type="hidden" name="stop_line_data" id="stopLineData" />
-  </form>
+      <label id="dropZone" for="videoFile">
+        <div class="dz-icon">📂</div>
+        <div class="dz-main">Click or drag &amp; drop your video or image</div>
+        <div class="dz-sub">MP4 · AVI · MOV · MKV · WEBM · JPG · PNG · WEBP</div>
+      </label>
 
-  <button type="button" id="openCameraBtn" class="cam-btn"
-          style="margin-top:10px;background:#2255aa;color:#fff;">📷 Open live camera</button>
+      <form id="analyzeForm" action="{% url 'monitoring:traffic_violation_analyze' %}"
+            method="post" enctype="multipart/form-data" style="display:none;">
+        {% csrf_token %}
+        <input type="file" name="media" id="videoFile"
+               accept="image/*,video/*,.mp4,.avi,.mov,.mkv,.webm" />
+        <input type="hidden" name="camera_image_data" id="cameraImageData" />
+        <input type="hidden" name="stop_line_data" id="stopLineData" />
+      </form>
 
-  <!-- First frame drawing (shown after file selected, before processing) -->
+      <button type="button" id="openCameraBtn" class="cam-btn">
+        <span aria-hidden="true">📷</span> Open Live Camera
+      </button>
+    </div>
+
+    <aside class="violations-workflow__right hologram-card" aria-label="Detection pipeline visualization">
+      <h2 class="hologram-card__title">How MedinaMind Detects Violations</h2>
+      <div class="hologram-card__scene">
+        <div class="hologram-card__light" aria-hidden="true"><span></span><span></span><span></span></div>
+        <div class="hologram-card__scan" aria-hidden="true"></div>
+        <div class="hologram-card__road" aria-hidden="true"></div>
+        <div class="hologram-card__stop-line" aria-hidden="true"></div>
+        <span class="hologram-card__stop-label">Stop Line</span>
+        <div class="hologram-card__vehicle" aria-hidden="true"></div>
+        <div class="hologram-card__rings" aria-hidden="true"></div>
+      </div>
+      <div class="hologram-card__labels">
+        <span class="hologram-card__label">Stop Line</span>
+        <span class="hologram-card__label">Plate Recognition</span>
+        <span class="hologram-card__label">Violation Check</span>
+        <span class="hologram-card__label">Alert Generated</span>
+      </div>
+    </aside>
+  </div>
+
   <div id="firstFrameSection" style="display:none;">
     <div id="ffHeader">
-      <div id="ffTitle">📍 Draw stop line on first frame</div>
-      <div id="ffHint">Click 2 points to draw the line. Cars crossing it during red light = violation.</div>
+      <div id="ffTitle">📍 Define stop line on first frame</div>
+      <div id="ffHint">Click 2 points to draw the line. Vehicles crossing during red light trigger violation alerts.</div>
     </div>
     <div id="canvasWrap">
       <canvas id="drawCanvas"></canvas>
       <div id="canvasOverlay">🖱 Click to place Point 1</div>
     </div>
     <div id="ffActions">
-      <button class="ff-btn" id="btnAISuggest">🤖 AI Suggest Line</button>
-      <button class="ff-btn" id="btnResetLine">↺ Reset line</button>
-      <button class="ff-btn" id="btnProcess" disabled>▶ Process video with this line</button>
+      <button type="button" class="ff-btn" id="btnAISuggest">🤖 AI Suggest Line</button>
+      <button type="button" class="ff-btn" id="btnResetLine">↺ Reset line</button>
+      <button type="button" class="ff-btn" id="btnProcess" disabled>▶ Analyze with this line</button>
       <span id="ffCoords">no line yet</span>
     </div>
   </div>
 
-  <!-- spinner -->
   <div id="processingMsg"><span class="spin"></span>Processing — this may take a minute…</div>
 
-  <!-- camera panel -->
   <div id="cameraPanel">
     <video id="camVideo" autoplay playsinline style="display:none;"></video>
     <canvas id="camCanvas" style="display:none;"></canvas>
-    <canvas id="rtCanvas" style="width:100%;max-height:420px;background:#111;border-radius:8px;margin-top:8px;"></canvas>
+    <canvas id="rtCanvas"></canvas>
     <div style="margin-top:8px;">
-      <button type="button" id="startRtBtn"  class="cam-btn" style="background:#226622;color:#fff;">Start</button>
-      <button type="button" id="stopRtBtn"   class="cam-btn" style="background:#662222;color:#fff;">Stop</button>
-      <button type="button" id="voiceBtn"    class="cam-btn" style="background:#444;color:#fff;">Voice: ON</button>
-      <button type="button" id="xaiBtn"      class="cam-btn" style="background:#444;color:#fff;">Real XAI: OFF</button>
-      <button type="button" id="closeCamBtn" class="cam-btn" style="background:#333;color:#ccc;">Close camera</button>
+      <button type="button" id="startRtBtn" class="cam-btn">Start</button>
+      <button type="button" id="stopRtBtn" class="cam-btn">Stop</button>
+      <button type="button" id="voiceBtn" class="cam-btn">Voice: ON</button>
+      <button type="button" id="xaiBtn" class="cam-btn">Real XAI: OFF</button>
+      <button type="button" id="closeCamBtn" class="cam-btn">Close camera</button>
     </div>
-    <p id="rtStatus" style="font-size:12px;color:#444;margin:8px 0 0 0;">idle</p>
-    <div id="xaiPanel" style="margin-top:10px;background:#eef6ff;border-radius:8px;padding:10px;font-size:13px;">
+    <p id="rtStatus">idle</p>
+    <div id="xaiPanel">
       <strong>Live XAI</strong>
       <div id="xaiMode">Mode: detection boxes</div>
       <div id="xaiTop">Top detection: none</div>
@@ -246,63 +229,57 @@
 
   {% if result %}
   <div id="resultsSection">
-    <!-- processed video -->
     {% if output_url and result.media_type != 'image' %}
       <div id="videoWrapper">
         <video class="result-video" controls src="{{ output_url }}" id="resultVideo"></video>
       </div>
-      
-      <!-- violation log (shown if stop line was used) -->
+
       {% if result.stop_line_used %}
       <div id="violationLog" style="display:block;margin-top:16px;">
-        <div class="vlog-hdr">🚨 Infractions feu rouge — {{ result.violation_count|default:0 }} véhicule{% if result.violation_count|default:0 != 1 %}s{% endif %}</div>
+        <div class="vlog-hdr">🚨 Red-light violation alerts — {{ result.violation_count|default:0 }} vehicle{% if result.violation_count|default:0 != 1 %}s{% endif %}</div>
         <div class="vlog-body">
           {% if result.violated_ids and result.violated_ids|length > 0 %}
             {% for car_id in result.violated_ids %}
-              <span class="vlog-pill"><span class="vlog-dot"></span>Car ID {{ car_id }}</span>
+              <span class="vlog-pill"><span class="vlog-dot"></span>Vehicle ID {{ car_id }}</span>
             {% endfor %}
           {% else %}
-            <span class="vlog-empty">No violations — no car crossed the stop line during a red light.</span>
+            <span class="vlog-empty">No violation alerts — no vehicle crossed the stop line during a red light.</span>
           {% endif %}
         </div>
       </div>
-      
-      <!-- Dashboard button -->
+
       {% if result.violation_count and result.violation_count > 0 and result.dashboard_token %}
       <div style="margin-top:16px;text-align:center;">
         <a href="{% url 'monitoring:violation_dashboard' token=result.dashboard_token %}"
-           style="display:inline-block;padding:15px 30px;background:linear-gradient(135deg, #667eea 0%, #764ba2 100%);color:#fff;text-decoration:none;border-radius:10px;font-weight:bold;font-size:16px;box-shadow:0 4px 15px rgba(0,0,0,0.2);">
-          📊 Tableau de bord IA &amp; rapports
+           class="violations-results__dashboard-btn">
+          📊 AI Dashboard &amp; Reports
         </a>
       </div>
       {% endif %}
-      
-      <!-- detected plates (shown if plates were detected) -->
+
       {% if result.plate_images %}
-      <div style="margin-top:16px;border:2px solid #00aaff;border-radius:8px;overflow:hidden;">
-        <div style="background:#00aaff;color:#fff;padding:8px 16px;font-weight:bold;font-size:15px;">
-          🚗 Plaques détectées — {{ result.plate_images|length }} plaque{% if result.plate_images|length != 1 %}s{% endif %}
+      <div class="violations-plates">
+        <div class="violations-plates__hdr">
+          🚗 Detected Plates — {{ result.plate_images|length }} plate{% if result.plate_images|length != 1 %}s{% endif %}
         </div>
-        <div style="background:#f8f9fb;padding:16px;display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px;">
+        <div class="violations-plates__grid">
           {% for car_id, plate_info in result.plate_images.items %}
-          <div style="background:#fff;border:2px solid #ddd;border-radius:8px;padding:12px;text-align:center;">
-            <div style="font-weight:bold;font-size:14px;margin-bottom:8px;color:#333;">Car ID: {{ car_id }}</div>
+          <div class="violations-plates__item">
+            <div style="font-weight:bold;font-size:0.78rem;margin-bottom:6px;color:#e8faff;">Vehicle ID: {{ car_id }}</div>
             <img src="{% url 'monitoring:traffic_violation_output' filename=plate_info.path %}"
-                 alt="Plate {{ car_id }}"
-                 style="width:100%;border:1px solid #ccc;border-radius:4px;margin-bottom:8px;">
-            <div style="font-size:12px;color:#666;">Confiance : {% widthratio plate_info.confidence 1 100 %}%</div>
+                 alt="Plate {{ car_id }}">
+            <div style="font-size:0.68rem;color:#9ecbff;margin-top:6px;">Confidence: {% widthratio plate_info.confidence 1 100 %}%</div>
           </div>
           {% endfor %}
         </div>
       </div>
       {% endif %}
       {% endif %}
-      
+
     {% elif output_url %}
-      <img src="{{ output_url }}" alt="output" style="max-width:100%;border-radius:8px;margin-top:12px;" />
+      <img src="{{ output_url }}" alt="Analysis output" style="max-width:100%;border-radius:10px;margin-top:12px;border:1px solid rgba(0,213,255,0.15);" />
     {% endif %}
 
-    <!-- stats -->
     <div class="stats-card">
       <p><strong>Type:</strong> {{ result.media_type }}</p>
       {% if result.media_type != 'image' %}
@@ -313,8 +290,8 @@
         {% if result.media_type == 'image' %}{{ result.detections }}{% else %}{{ result.total_detections }}{% endif %}</p>
       {% if result.sign_counts %}
         <details style="margin-top:8px;">
-          <summary style="cursor:pointer;"><strong>Sign counts</strong></summary>
-          <pre style="white-space:pre-wrap;font-size:12px;background:#f0f0f0;padding:10px;border-radius:6px;margin-top:6px;">{% for k,v in result.sign_counts.items %}{{ k }}: {{ v }}
+          <summary style="cursor:pointer;color:#9ecbff;"><strong>Sign counts</strong></summary>
+          <pre style="white-space:pre-wrap;font-size:12px;padding:10px;border-radius:6px;margin-top:6px;">{% for k,v in result.sign_counts.items %}{{ k }}: {{ v }}
 {% endfor %}</pre>
         </details>
       {% endif %}
@@ -323,46 +300,22 @@
       {% endif %}
     </div>
 
-    <!-- OCR Debug Section -->
     {% if result.ocr_debug %}
-    <div style="margin-top:20px;border:2px solid #ff9800;border-radius:8px;overflow:hidden;">
-      <div style="background:#ff9800;color:#fff;padding:10px 16px;font-weight:bold;font-size:15px;">
-        🔍 OCR Debug Information
-      </div>
-      <div style="background:#fff3e0;padding:16px;">
-        <div style="font-family:monospace;font-size:13px;line-height:1.8;">
-          {% for debug_entry in result.ocr_debug %}
-          <div style="margin-bottom:16px;padding:12px;background:#fff;border-left:4px solid #ff9800;border-radius:4px;">
-            <div style="font-weight:bold;color:#e65100;margin-bottom:8px;">Car ID: {{ debug_entry.car_id }}</div>
-            
-            <div style="margin-bottom:6px;">
-              <span style="color:#666;">📝 Raw OCR Response:</span><br>
-              <span style="color:#d84315;font-weight:bold;">{% firstof debug_entry.ocr_raw "N/A" %}</span>
-            </div>
-            
-            <div style="margin-bottom:6px;">
-              <span style="color:#666;">🔧 Auto-Formatted:</span><br>
-              <span style="color:#f57c00;font-weight:bold;">{% firstof debug_entry.auto_formatted "N/A" %}</span>
-            </div>
-            
-            <div style="margin-bottom:6px;">
-              <span style="color:#666;">🤖 OpenAI Result:</span><br>
-              <span style="color:#2e7d32;font-weight:bold;">{% firstof debug_entry.openai_result "N/A" %}</span>
-            </div>
-            
-            <div style="margin-bottom:6px;">
-              <span style="color:#666;">✅ Final Plate:</span><br>
-              <span style="color:#1565c0;font-weight:bold;font-size:16px;">{% firstof debug_entry.final_plate "N/A" %}</span>
-            </div>
-            
-            {% if debug_entry.error %}
-            <div style="margin-top:8px;padding:8px;background:#ffebee;border-radius:4px;">
-              <span style="color:#c62828;">❌ Error: {{ debug_entry.error }}</span>
-            </div>
-            {% endif %}
-          </div>
-          {% endfor %}
+    <div class="violations-ocr-debug">
+      <div class="violations-ocr-debug__hdr">🔍 OCR Debug Information</div>
+      <div class="violations-ocr-debug__body">
+        {% for debug_entry in result.ocr_debug %}
+        <div style="margin-bottom:12px;padding:10px;background:rgba(0,0,0,0.25);border-left:3px solid rgba(255,152,0,0.6);border-radius:4px;">
+          <div style="font-weight:bold;color:#ffb74d;margin-bottom:6px;">Vehicle ID: {{ debug_entry.car_id }}</div>
+          <div style="margin-bottom:4px;"><span style="color:#9ecbff;">Raw OCR:</span> {{ debug_entry.ocr_raw|default:"N/A" }}</div>
+          <div style="margin-bottom:4px;"><span style="color:#9ecbff;">Auto-Formatted:</span> {{ debug_entry.auto_formatted|default:"N/A" }}</div>
+          <div style="margin-bottom:4px;"><span style="color:#9ecbff;">OpenAI Result:</span> {{ debug_entry.openai_result|default:"N/A" }}</div>
+          <div style="margin-bottom:4px;"><span style="color:#9ecbff;">Final Plate:</span> <strong>{{ debug_entry.final_plate|default:"N/A" }}</strong></div>
+          {% if debug_entry.error %}
+          <div style="margin-top:6px;color:#ffcdd2;">Error: {{ debug_entry.error }}</div>
+          {% endif %}
         </div>
+        {% endfor %}
       </div>
     </div>
     {% endif %}
@@ -394,33 +347,23 @@
   let points = [];
   let mousePos = null;
 
-  console.log("Upload elements loaded:", {dropZone, videoFile, analyzeForm, processingMsg});
-
   dropZone.addEventListener("click", () => {
-    console.log("Drop zone clicked, opening file picker");
     videoFile.click();
   });
 
   videoFile.addEventListener("change", () => {
-    console.log("File selected:", videoFile.files);
     if (videoFile.files && videoFile.files[0]) {
       selectedFile = videoFile.files[0];
       const ext = selectedFile.name.split('.').pop().toLowerCase();
       isVideo = ['mp4','avi','mov','mkv','webm'].includes(ext);
-      
-      console.log("File type:", isVideo ? "video" : "image");
-      
+
       if (isVideo) {
-        // Show first frame for line drawing
         extractFirstFrame(selectedFile);
       } else {
-        // Images process immediately
         dropZone.style.display = "none";
         processingMsg.style.display = "block";
         analyzeForm.submit();
       }
-    } else {
-      console.log("No file selected");
     }
   });
 
@@ -429,40 +372,33 @@
     video.preload = "metadata";
     video.muted = true;
     video.playsInline = true;
-    
+
     video.addEventListener("loadeddata", () => {
-      video.currentTime = 0.1; // Seek to first frame
+      video.currentTime = 0.1;
     });
-    
+
     video.addEventListener("seeked", () => {
-      // Draw to canvas
       drawCanvas.width = video.videoWidth || 640;
       drawCanvas.height = video.videoHeight || 360;
       const ctx = drawCanvas.getContext("2d");
       ctx.drawImage(video, 0, 0, drawCanvas.width, drawCanvas.height);
-      
-      // Show the drawing interface
       dropZone.style.display = "none";
       firstFrameSection.style.display = "block";
-      
-      // Clean up
       URL.revokeObjectURL(video.src);
     });
-    
+
     video.src = URL.createObjectURL(file);
   }
 
-  // Drawing on canvas
   const ctx = drawCanvas.getContext("2d");
   let frameImage = null;
 
   function redraw(preview) {
     if (!frameImage) {
-      // Save the current canvas as the base image
       frameImage = ctx.getImageData(0, 0, drawCanvas.width, drawCanvas.height);
     }
     ctx.putImageData(frameImage, 0, 0);
-    
+
     if (points.length >= 1) {
       drawDot(points[0]);
     }
@@ -529,13 +465,13 @@
     if (points.length >= 2) return;
     const p = getCanvasXY(e);
     points.push(p);
-    
+
     if (points.length === 1) {
       canvasOverlay.textContent = "🖱 Click to place Point 2";
       ffCoords.textContent = `Point 1: (${p.x}, ${p.y})`;
       redraw(null);
     } else if (points.length === 2) {
-      canvasOverlay.textContent = "✅ Line set — click Process";
+      canvasOverlay.textContent = "✅ Line set — click Analyze";
       ffCoords.textContent = `(${points[0].x},${points[0].y}) → (${points[1].x},${points[1].y})`;
       btnProcess.disabled = false;
       redraw(null);
@@ -549,7 +485,6 @@
     btnProcess.disabled = true;
     ffCoords.textContent = "no line yet";
     canvasOverlay.textContent = "🖱 Click to place Point 1";
-    // Reload the frame
     if (selectedFile) extractFirstFrame(selectedFile);
   });
 
@@ -558,11 +493,9 @@
     btnAISuggest.disabled = true;
     btnAISuggest.textContent = "🤖 AI thinking...";
     canvasOverlay.textContent = "⏳ AI analyzing scene...";
-    
+
     try {
-      // Get current canvas as base64
       const frameData = drawCanvas.toDataURL("image/jpeg", 0.9);
-      
       const cfg = document.getElementById("tv-config");
       const csrfInput = document.querySelector("[name=csrfmiddlewaretoken]");
       const res = await fetch(cfg.dataset.suggestUrl, {
@@ -573,15 +506,14 @@
         },
         body: JSON.stringify({ frame_data: frameData }),
       });
-      
+
       const data = await res.json();
-      
+
       if (!data.ok) {
         alert("AI suggestion failed: " + (data.error || "unknown"));
         return;
       }
-      
-      // Apply suggested points
+
       if (data.stop_line_points && data.stop_line_points.length === 2) {
         points = [
           { x: data.stop_line_points[0][0], y: data.stop_line_points[0][1] },
@@ -589,15 +521,14 @@
         ];
         redraw(null);
         btnProcess.disabled = false;
-        
-        // Show detailed info
+
         const conf = Math.round(data.confidence * 100);
         const lightType = data.traffic_light_type || "unknown";
         const laneType = data.lane_type || "unknown";
-        
+
         canvasOverlay.textContent = `✅ AI: ${conf}% conf | ${lightType} light | ${laneType} lane`;
         ffCoords.textContent = `(${points[0].x},${points[0].y}) → (${points[1].x},${points[1].y})`;
-        
+
         if (data.explanation) {
           setTimeout(() => {
             canvasOverlay.textContent = data.explanation;
@@ -614,7 +545,6 @@
 
   btnProcess.addEventListener("click", () => {
     if (points.length < 2) return;
-    // Store line data as JSON
     stopLineData.value = JSON.stringify(points);
     firstFrameSection.style.display = "none";
     processingMsg.style.display = "block";
@@ -626,7 +556,6 @@
   dropZone.addEventListener("drop", e => {
     e.preventDefault();
     dropZone.classList.remove("over");
-    console.log("File dropped:", e.dataTransfer.files);
     if (e.dataTransfer.files[0]) {
       videoFile.files = e.dataTransfer.files;
       videoFile.dispatchEvent(new Event("change", { bubbles: true }));
@@ -679,21 +608,21 @@
 
   function openCam() {
     navigator.mediaDevices.getUserMedia({video:{width:640,height:480},audio:false})
-      .then(s => { 
-        stream=s; 
-        camVideo.srcObject=s; 
-        camPanel.style.display="block"; 
+      .then(s => {
+        stream=s;
+        camVideo.srcObject=s;
+        camPanel.style.display="block";
         openCamBtn.style.display="none";
-        startRt(); 
+        startRt();
       })
       .catch(err => alert("Camera failed: " + err.message));
   }
   function closeCam() {
     stopRt();
     if(stream){stream.getTracks().forEach(t=>t.stop());stream=null;}
-    camVideo.srcObject=null; 
+    camVideo.srcObject=null;
     camPanel.style.display="none";
-    openCamBtn.style.display="block";
+    openCamBtn.style.display="inline-flex";
   }
   function drawRt() {
     if(!camVideo.videoWidth) return;

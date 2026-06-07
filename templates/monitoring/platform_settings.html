@@ -1,0 +1,252 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Smart City · Platform Settings{% endblock %}
+{% block body_class %}cockpit platform-settings-sc ai-dashboard-sc mm-dash-body fusion-hub-sc{% endblock %}
+
+{% block extra_head %}
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'monitoring/fusion_hub_dashboard.css' %}">
+  <link rel="stylesheet" href="{% static 'monitoring/platform-settings.css' %}?v=1">
+{% endblock %}
+
+{% block topbar %}{% include "monitoring/partials/mm_topbar.html" %}{% endblock %}
+
+{% block content %}
+<div class="fh-root ps-root">
+  <div class="ps-page__bg" aria-hidden="true"></div>
+  <div class="ps-page__grid" aria-hidden="true"></div>
+
+  <section class="ps-hero fh-glass" aria-label="Platform Settings">
+    <div class="ps-hero__sweep" aria-hidden="true"></div>
+    <div>
+      <h1 class="ps-hero__title">Platform Settings</h1>
+      <p class="ps-hero__sub">Configure AI modules, cameras, alerts, reports, maps, and dashboard behavior from one place.</p>
+    </div>
+    <div class="ps-hero-holo" aria-hidden="true">
+      <svg width="200" height="90" viewBox="0 0 200 90" xmlns="http://www.w3.org/2000/svg">
+        <circle class="ps-holo-node" cx="30" cy="45" r="10" fill="rgba(0,213,255,0.15)" stroke="#00d5ff" stroke-width="1"/>
+        <text x="30" y="48" text-anchor="middle" fill="#00d5ff" font-size="6" font-weight="700">AI</text>
+        <circle class="ps-holo-node" cx="70" cy="25" r="8" fill="rgba(0,213,255,0.12)" stroke="#00d5ff" stroke-width="1"/>
+        <text x="70" y="28" text-anchor="middle" fill="#00d5ff" font-size="5">CAM</text>
+        <circle class="ps-holo-node" cx="100" cy="45" r="12" fill="rgba(124,58,237,0.2)" stroke="#7c3aed" stroke-width="1.2"/>
+        <text x="100" y="48" text-anchor="middle" fill="#c4b5fd" font-size="6" font-weight="700">CORE</text>
+        <circle class="ps-holo-node" cx="130" cy="25" r="8" fill="rgba(0,213,255,0.12)" stroke="#00d5ff" stroke-width="1"/>
+        <text x="130" y="28" text-anchor="middle" fill="#00d5ff" font-size="5">ALERT</text>
+        <circle class="ps-holo-node" cx="170" cy="45" r="10" fill="rgba(0,213,255,0.15)" stroke="#00d5ff" stroke-width="1"/>
+        <text x="170" y="48" text-anchor="middle" fill="#00d5ff" font-size="5">MAP</text>
+        <polyline class="ps-holo-line" points="40,45 62,25 88,45 118,25 148,45 160,45" fill="none" stroke="rgba(0,213,255,0.35)" stroke-width="1"/>
+      </svg>
+      <span class="ps-hero-holo__label">Configuration Core</span>
+    </div>
+  </section>
+
+  {% if messages %}
+    {% for message in messages %}
+      <div class="ps-messages{% if message.tags %} ps-messages--{{ message.tags }}{% endif %}" role="status">{{ message }}</div>
+    {% endfor %}
+  {% endif %}
+
+  <form method="post" enctype="multipart/form-data" class="ps-layout">
+    {% csrf_token %}
+    <input type="hidden" name="active_section" id="psActiveSection" value="{{ active_section }}">
+
+    <nav class="ps-nav" aria-label="Settings categories">
+      {% for sec in sections %}
+        <a href="?section={{ sec.id }}" class="ps-nav__item{% if active_section == sec.id %} is-active{% endif %}" data-section="{{ sec.id }}">
+          <span aria-hidden="true">{{ sec.icon }}</span>
+          <span>{{ sec.label }}</span>
+        </a>
+      {% endfor %}
+    </nav>
+
+    <div class="ps-panels">
+      <section class="ps-panel{% if active_section == 'general' %} is-active{% endif %}" data-section="general">
+        <h2 class="ps-panel__title">General Platform</h2>
+        <p class="ps-panel__desc">Branding, language, and visual identity for the MedinaMind dashboard.</p>
+        <div class="ps-grid">
+          {% include "monitoring/partials/ps_field.html" with field=form.platform_name %}
+          {% include "monitoring/partials/ps_field.html" with field=form.organization_name %}
+          {% include "monitoring/partials/ps_field.html" with field=form.default_language %}
+          {% include "monitoring/partials/ps_field.html" with field=form.theme_mode %}
+          {% include "monitoring/partials/ps_field.html" with field=form.primary_accent_color %}
+          {% include "monitoring/partials/ps_field.html" with field=form.logo %}
+          {% include "monitoring/partials/ps_field.html" with field=form.favicon %}
+        </div>
+      </section>
+
+      <section class="ps-panel{% if active_section == 'ai' %} is-active{% endif %}" data-section="ai">
+        <h2 class="ps-panel__title">AI Modules</h2>
+        <p class="ps-panel__desc">Model paths, thresholds, and module availability across the smart city stack.</p>
+        <div class="ps-model-status" aria-label="Model status">
+          {% for name, status in model_status.items %}
+            <span class="ps-model-chip ps-model-chip--{% if status == 'ready' %}ready{% elif status == 'missing' %}missing{% endif %}">{{ name }} · {{ status }}</span>
+          {% endfor %}
+        </div>
+        <div class="ps-grid">
+          {% include "monitoring/partials/ps_field.html" with field=form.traffic_model_path full=1 %}
+          {% include "monitoring/partials/ps_field.html" with field=form.road_damage_model_path full=1 %}
+          {% include "monitoring/partials/ps_field.html" with field=form.waste_model_path full=1 %}
+          {% include "monitoring/partials/ps_field.html" with field=form.fire_smoke_model_path full=1 %}
+          {% include "monitoring/partials/ps_field.html" with field=form.surveillance_model_path full=1 %}
+          {% include "monitoring/partials/ps_field.html" with field=form.uav_model_path full=1 %}
+          {% include "monitoring/partials/ps_field.html" with field=form.traffic_signal_model_path full=1 %}
+          {% include "monitoring/partials/ps_field.html" with field=form.default_confidence_threshold %}
+          {% include "monitoring/partials/ps_field.html" with field=form.default_iou_threshold %}
+        </div>
+        <div class="ps-grid ps-grid--3" style="margin-top:12px">
+          {% include "monitoring/partials/ps_check_field.html" with field=form.module_traffic_enabled %}
+          {% include "monitoring/partials/ps_check_field.html" with field=form.module_road_damage_enabled %}
+          {% include "monitoring/partials/ps_check_field.html" with field=form.module_waste_enabled %}
+          {% include "monitoring/partials/ps_check_field.html" with field=form.module_fire_enabled %}
+          {% include "monitoring/partials/ps_check_field.html" with field=form.module_surveillance_enabled %}
+          {% include "monitoring/partials/ps_check_field.html" with field=form.module_uav_enabled %}
+          {% include "monitoring/partials/ps_check_field.html" with field=form.module_traffic_signal_enabled %}
+        </div>
+        <div class="ps-test-row">
+          <button type="button" class="ps-btn ps-btn--test" data-test data-test-url="{% url 'monitoring:platform_settings_test_models' %}" data-test-out="psTestModelsOut">Check AI Models</button>
+        </div>
+        <p class="ps-test-result" id="psTestModelsOut"></p>
+      </section>
+
+      <section class="ps-panel{% if active_section == 'camera' %} is-active{% endif %}" data-section="camera">
+        <h2 class="ps-panel__title">Camera &amp; ESP32</h2>
+        <p class="ps-panel__desc">Edge camera endpoints and traffic light ESP32 synchronization.</p>
+        <div class="ps-grid">
+          {% include "monitoring/partials/ps_field.html" with field=form.esp32_cam_ip %}
+          {% include "monitoring/partials/ps_field.html" with field=form.stream_port %}
+          {% include "monitoring/partials/ps_field.html" with field=form.control_port %}
+          {% include "monitoring/partials/ps_field.html" with field=form.traffic_light_esp32_url full=1 %}
+          {% include "monitoring/partials/ps_field.html" with field=form.camera_refresh_interval %}
+          {% include "monitoring/partials/ps_field.html" with field=form.default_image_quality %}
+          {% include "monitoring/partials/ps_check_field.html" with field=form.live_camera_enabled %}
+          {% include "monitoring/partials/ps_check_field.html" with field=form.auto_reconnect %}
+        </div>
+        <div class="ps-test-row">
+          <button type="button" class="ps-btn ps-btn--test" data-test data-test-url="{% url 'monitoring:platform_settings_test_esp32' %}" data-test-out="psTestEspOut">Test ESP32 Connection</button>
+        </div>
+        <p class="ps-test-result" id="psTestEspOut"></p>
+      </section>
+
+      <section class="ps-panel{% if active_section == 'alerts' %} is-active{% endif %}" data-section="alerts">
+        <h2 class="ps-panel__title">Alerts &amp; Notifications</h2>
+        <p class="ps-panel__desc">Email and Twilio channels for municipal alerts and critical incidents.</p>
+        <div class="ps-grid">
+          {% include "monitoring/partials/ps_check_field.html" with field=form.enable_email_alerts %}
+          {% include "monitoring/partials/ps_check_field.html" with field=form.enable_twilio_alerts %}
+          {% include "monitoring/partials/ps_field.html" with field=form.municipality_email %}
+          {% include "monitoring/partials/ps_field.html" with field=form.admin_alert_email %}
+          {% include "monitoring/partials/ps_field.html" with field=form.smtp_host %}
+          {% include "monitoring/partials/ps_field.html" with field=form.smtp_port %}
+          {% include "monitoring/partials/ps_field.html" with field=form.smtp_username %}
+          {% include "monitoring/partials/ps_field.html" with field=form.smtp_password %}
+          {% include "monitoring/partials/ps_field.html" with field=form.twilio_sid %}
+          {% include "monitoring/partials/ps_field.html" with field=form.twilio_auth_token %}
+          {% include "monitoring/partials/ps_field.html" with field=form.twilio_phone_number %}
+          {% include "monitoring/partials/ps_field.html" with field=form.alert_delay_seconds %}
+          {% include "monitoring/partials/ps_field.html" with field=form.criticality_threshold %}
+        </div>
+        <div class="ps-test-row">
+          <button type="button" class="ps-btn ps-btn--test" data-test data-test-url="{% url 'monitoring:platform_settings_test_email' %}" data-test-out="psTestEmailOut">Test Email</button>
+          <button type="button" class="ps-btn ps-btn--test" data-test data-test-url="{% url 'monitoring:platform_settings_test_twilio' %}" data-test-out="psTestTwilioOut">Test Twilio</button>
+        </div>
+        <p class="ps-test-result" id="psTestEmailOut"></p>
+        <p class="ps-test-result" id="psTestTwilioOut"></p>
+      </section>
+
+      <section class="ps-panel{% if active_section == 'reports' %} is-active{% endif %}" data-section="reports">
+        <h2 class="ps-panel__title">Reports</h2>
+        <p class="ps-panel__desc">PDF/CSV export defaults and report presentation options.</p>
+        <div class="ps-grid">
+          {% include "monitoring/partials/ps_check_field.html" with field=form.enable_pdf_reports %}
+          {% include "monitoring/partials/ps_check_field.html" with field=form.enable_csv_export %}
+          {% include "monitoring/partials/ps_field.html" with field=form.report_logo %}
+          {% include "monitoring/partials/ps_field.html" with field=form.report_footer_text full=1 %}
+          {% include "monitoring/partials/ps_field.html" with field=form.default_report_language %}
+          {% include "monitoring/partials/ps_check_field.html" with field=form.include_ai_explanation %}
+          {% include "monitoring/partials/ps_check_field.html" with field=form.include_map %}
+          {% include "monitoring/partials/ps_check_field.html" with field=form.include_recommendations %}
+        </div>
+      </section>
+
+      <section class="ps-panel{% if active_section == 'maps' %} is-active{% endif %}" data-section="maps">
+        <h2 class="ps-panel__title">Maps &amp; Location</h2>
+        <p class="ps-panel__desc">Default map center and visualization layers for city operations.</p>
+        <div class="ps-grid">
+          {% include "monitoring/partials/ps_field.html" with field=form.default_city %}
+          {% include "monitoring/partials/ps_field.html" with field=form.default_latitude %}
+          {% include "monitoring/partials/ps_field.html" with field=form.default_longitude %}
+          {% include "monitoring/partials/ps_field.html" with field=form.default_zoom %}
+          {% include "monitoring/partials/ps_check_field.html" with field=form.enable_heatmap %}
+          {% include "monitoring/partials/ps_check_field.html" with field=form.enable_live_markers %}
+        </div>
+      </section>
+
+      <section class="ps-panel{% if active_section == 'dashboard' %} is-active{% endif %}" data-section="dashboard">
+        <h2 class="ps-panel__title">Dashboard Display</h2>
+        <p class="ps-panel__desc">Top bar widgets, motion, and visual effects for the command center UI.</p>
+        <div class="ps-grid ps-grid--3">
+          {% include "monitoring/partials/ps_check_field.html" with field=form.show_system_status %}
+          {% include "monitoring/partials/ps_check_field.html" with field=form.show_live_clock %}
+          {% include "monitoring/partials/ps_check_field.html" with field=form.show_refresh_button %}
+          {% include "monitoring/partials/ps_check_field.html" with field=form.show_fullscreen_button %}
+          {% include "monitoring/partials/ps_check_field.html" with field=form.enable_animations %}
+          {% include "monitoring/partials/ps_check_field.html" with field=form.enable_holograms %}
+          {% include "monitoring/partials/ps_check_field.html" with field=form.enable_particles %}
+          {% include "monitoring/partials/ps_check_field.html" with field=form.reduced_motion %}
+        </div>
+      </section>
+
+      <section class="ps-panel{% if active_section == 'access' %} is-active{% endif %}" data-section="access">
+        <h2 class="ps-panel__title">Users &amp; Access</h2>
+        <p class="ps-panel__desc">Default permissions and access policy for platform operators.</p>
+        <div class="ps-grid">
+          {% include "monitoring/partials/ps_field.html" with field=form.default_role %}
+          {% include "monitoring/partials/ps_check_field.html" with field=form.require_login %}
+          {% include "monitoring/partials/ps_check_field.html" with field=form.allow_report_download %}
+          {% include "monitoring/partials/ps_check_field.html" with field=form.allow_delete_reports %}
+          {% include "monitoring/partials/ps_check_field.html" with field=form.allow_modify_settings %}
+          {% include "monitoring/partials/ps_field.html" with field=form.role_permissions_summary full=1 %}
+        </div>
+      </section>
+
+      <section class="ps-panel{% if active_section == 'retention' %} is-active{% endif %}" data-section="retention">
+        <h2 class="ps-panel__title">Data Retention</h2>
+        <p class="ps-panel__desc">Storage lifecycle and backup preferences for reports and uploaded media.</p>
+        <div class="ps-grid">
+          {% include "monitoring/partials/ps_field.html" with field=form.keep_reports_days %}
+          {% include "monitoring/partials/ps_field.html" with field=form.keep_media_days %}
+          {% include "monitoring/partials/ps_check_field.html" with field=form.auto_delete_temp_files %}
+          {% include "monitoring/partials/ps_check_field.html" with field=form.backup_database_enabled %}
+        </div>
+      </section>
+
+      <section class="ps-panel{% if active_section == 'health' %} is-active{% endif %}" data-section="health">
+        <h2 class="ps-panel__title">System Health</h2>
+        <p class="ps-panel__desc">Live status of core platform services and integrations.</p>
+        <div class="ps-health-grid">
+          {% for label, item in health_items %}
+            <article class="ps-health-card ps-health-card--{% if item.ok %}ok{% else %}err{% endif %}">
+              <div class="ps-health-card__label">{{ label }}</div>
+              <div class="ps-health-card__status">{{ item.label }}</div>
+              <div class="ps-health-card__detail">{{ item.detail }}</div>
+            </article>
+          {% endfor %}
+        </div>
+        <p class="ps-panel__desc" style="margin-top:14px">Use test buttons in Camera, Alerts, and AI sections to verify connections after saving settings.</p>
+      </section>
+
+      <div class="ps-actions">
+        <button type="submit" name="action" value="save" class="ps-btn ps-btn--primary">Save Settings</button>
+        <button type="submit" name="action" value="reset" class="ps-btn ps-btn--ghost" onclick="return confirm('Restore all settings to platform defaults?');">Reset to Defaults</button>
+      </div>
+    </div>
+  </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+  <script src="{% static 'monitoring/platform-settings.js' %}?v=2"></script>
+{% endblock %}

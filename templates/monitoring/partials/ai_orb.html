@@ -1,0 +1,216 @@
+{% load static %}
+
+<div class="mm-ai-orb-layer" id="mmAiOrbLayer" aria-hidden="true" data-state="sleep">
+
+  <input type="hidden" id="mmAiOrbCsrf" value="{{ csrf_token }}">
+
+
+
+  <!-- Visible until mic permission granted -->
+
+  <button type="button" class="mm-ai-orb-arm" id="mmAiOrbArm" aria-label="Enable voice assistant">
+
+    <span class="mm-ai-orb-arm__pulse" aria-hidden="true"></span>
+
+    <span class="mm-ai-orb-arm__text">Voice assistant · any language · double clap or "Hello MedinaMind"</span>
+
+  </button>
+
+
+
+  <div class="mm-ai-orb-backdrop" id="mmAiOrbBackdrop" hidden></div>
+
+
+
+  <div class="mm-ai-orb-dock" id="mmAiOrbDock">
+
+    <div class="mm-ai-orb-panel" id="mmAiOrbPanel" role="dialog" aria-modal="true" aria-labelledby="mmAiOrbTitle" hidden>
+
+      <header class="mm-ai-orb-panel__head">
+
+        <div>
+
+          <p class="mm-ai-orb-panel__eyebrow">MedinaMind Neural Core</p>
+
+          <h2 class="mm-ai-orb-panel__title" id="mmAiOrbTitle">AI Orb</h2>
+
+        </div>
+
+        <div class="mm-ai-orb-panel__tools">
+
+          <button type="button" class="mm-ai-orb-btn mm-ai-orb-btn--icon" id="mmAiOrbTtsToggle" aria-pressed="true" title="Toggle voice output" aria-label="Toggle voice output">
+
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M11 5L6 9H3v6h3l5 4V5z" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round"/><path d="M15.5 8.5a5 5 0 010 7M18 5a9 9 0 010 14" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/></svg>
+
+          </button>
+
+          <button type="button" class="mm-ai-orb-btn mm-ai-orb-btn--icon" id="mmAiOrbMinimize" title="Minimize orb" aria-label="Minimize orb">
+
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+
+          </button>
+
+          <button type="button" class="mm-ai-orb-btn mm-ai-orb-btn--icon" id="mmAiOrbClose" title="Close orb (Esc)" aria-label="Close orb">
+
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+
+          </button>
+
+        </div>
+
+      </header>
+
+
+
+      <div class="mm-ai-orb-stage">
+
+        <div class="mm-ai-orb-shadow" aria-hidden="true"></div>
+
+
+
+        <div class="mm-ai-orb-visual" id="mmAiOrbVisual" data-orb-state="idle">
+
+          <div class="mm-ai-orb-particles" aria-hidden="true">
+
+            <span></span><span></span><span></span><span></span><span></span><span></span>
+
+          </div>
+
+          <div class="mm-ai-orb-ring mm-ai-orb-ring--1" aria-hidden="true"></div>
+
+          <div class="mm-ai-orb-ring mm-ai-orb-ring--2" aria-hidden="true"></div>
+
+          <div class="mm-ai-orb-ring mm-ai-orb-ring--3" aria-hidden="true"></div>
+
+          <div class="mm-ai-orb-waveform" id="mmAiOrbWaveform" aria-hidden="true">
+
+            <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+
+          </div>
+
+          <div class="mm-ai-orb-core">
+
+            <div class="mm-ai-orb-core__glass"></div>
+
+            <div class="mm-ai-orb-core__light"></div>
+
+            <div class="mm-ai-orb-core__icon" aria-hidden="true">
+
+              <svg viewBox="0 0 64 64" fill="none"><circle cx="32" cy="32" r="14" stroke="currentColor" stroke-width="1.5" opacity=".85"/><path d="M32 12v6M32 46v6M12 32h6M46 32h6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity=".55"/><circle cx="32" cy="32" r="4" fill="currentColor" opacity=".9"/></svg>
+
+            </div>
+
+          </div>
+
+        </div>
+
+
+
+        <p class="mm-ai-orb-status" id="mmAiOrbStatus" aria-live="polite">Double clap or say "Hello MedinaMind" — any language</p>
+
+      </div>
+
+
+
+      <div class="mm-ai-orb-feed">
+
+        <div class="mm-ai-orb-feed__block">
+
+          <span class="mm-ai-orb-feed__label">You said</span>
+
+          <p class="mm-ai-orb-feed__text" id="mmAiOrbTranscript">—</p>
+
+        </div>
+
+        <div class="mm-ai-orb-feed__block mm-ai-orb-feed__block--reply">
+
+          <span class="mm-ai-orb-feed__label">MedinaMind</span>
+
+          <p class="mm-ai-orb-feed__text" id="mmAiOrbReply">Awaiting your command…</p>
+
+        </div>
+
+      </div>
+
+
+
+      <div class="mm-ai-orb-chips" role="toolbar" aria-label="Quick actions">
+
+        <button type="button" class="mm-ai-orb-chip" data-intent="traffic_control">Traffic Control</button>
+
+        <button type="button" class="mm-ai-orb-chip" data-intent="road_analysis">Road Analysis</button>
+
+        <button type="button" class="mm-ai-orb-chip" data-intent="generate_report">Generate Report</button>
+
+        <button type="button" class="mm-ai-orb-chip" data-intent="summarize_incident">Summarize Incident</button>
+
+      </div>
+
+
+
+      <footer class="mm-ai-orb-panel__foot">
+
+        <button type="button" class="mm-ai-orb-btn mm-ai-orb-btn--mic" id="mmAiOrbMicBtn" aria-label="Start listening">
+
+          <span class="mm-ai-orb-btn__dot" aria-hidden="true"></span>
+
+          <span id="mmAiOrbMicLabel">Tap to speak</span>
+
+        </button>
+
+        <button type="button" class="mm-ai-orb-btn mm-ai-orb-btn--enable" id="mmAiOrbEnableClap" hidden>
+
+          Allow microphone
+
+        </button>
+
+      </footer>
+
+    </div>
+
+  </div>
+
+</div>
+
+
+
+<script>
+
+  window.MedinaMindOrbConfig = {
+    apiUrl: "{% url 'monitoring:assistant_groq' %}",
+    recognitionLangs: ["en-US", "fr-FR", "ar-SA", "ar-TN", "es-ES", "de-DE", "it-IT", "pt-BR", "tr-TR"],
+    modules: {
+
+      home: "{% url 'monitoring:home' %}",
+
+      ai_dashboard: "{% url 'monitoring:ai_dashboard' %}",
+
+      city_monitoring: "{% url 'monitoring:surveillance_dashboard' %}",
+
+      road_analysis: "{% url 'monitoring:road_damage_test' %}",
+
+      fire_smoke: "{% url 'monitoring:fire_camera_detect' %}",
+
+      street_waste: "{% url 'monitoring:waste_street_detection' %}",
+
+      drone_monitoring: "{% url 'monitoring:uav_dashboard' %}",
+
+      traffic_control: "{% url 'monitoring:traffic_nexus_dashboard' %}",
+
+      traffic_signal: "{% url 'monitoring:traffic_signal_control' %}",
+
+      traffic_violation: "{% url 'monitoring:traffic_violation' %}",
+
+      camera_settings: "{% url 'monitoring:camera_settings' %}",
+
+      platform_settings: "{% url 'monitoring:platform_settings' %}",
+
+      generate_report: "{% url 'monitoring:ai_dashboard' %}?focus=reports"
+
+    }
+
+  };
+
+</script>
+
+

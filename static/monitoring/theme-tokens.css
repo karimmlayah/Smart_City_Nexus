@@ -1,0 +1,286 @@
+/**
+ * MedinaMind — Global design tokens
+ * Applied via <html data-theme="blue-dark|light|dark">
+ */
+
+html {
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+/* ── Blue Dark (default MedinaMind) ─────────────────────────────────────── */
+html[data-theme="blue-dark"],
+html:not([data-theme]) {
+  --bg-main: #081a2f;
+  --bg-secondary: #0b2545;
+  --bg-page: #081a2f;
+  --bg-page-gradient: radial-gradient(ellipse 85% 58% at 8% -8%, rgba(0, 213, 255, 0.14), transparent 52%),
+    radial-gradient(ellipse 60% 48% at 95% 5%, rgba(47, 128, 237, 0.12), transparent 48%),
+    linear-gradient(var(--grid-color) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-color) 1px, transparent 1px),
+    #081a2f;
+  --bg-surface: rgba(15, 42, 74, 0.78);
+  --bg-card: rgba(15, 42, 74, 0.78);
+  --bg-card-hover: rgba(22, 52, 88, 0.9);
+  --bg-panel: rgba(15, 42, 74, 0.78);
+  --bg-panel-solid: #0f2a4a;
+  --bg-panel-hover: rgba(22, 52, 88, 0.9);
+  --bg-sidebar: rgba(7, 22, 40, 0.88);
+  --bg-navbar: rgba(8, 26, 47, 0.82);
+  --bg-input: rgba(0, 0, 0, 0.25);
+  --text-primary: #f4faff;
+  --text-secondary: #a9c7dd;
+  --text-muted: #7fa4bd;
+  --text-soft: #6b8fad;
+  --text-inverse: #081a2f;
+  --accent-cyan: #00d5ff;
+  --accent-cyan-soft: #38e8ff;
+  --accent-cyan-bright: #00d5ff;
+  --accent-blue: #2f80ed;
+  --accent-blue-soft: rgba(47, 128, 237, 0.15);
+  --accent-green: #00e396;
+  --accent-red: #ff4d6d;
+  --accent-orange: #fb923c;
+  --accent-violet: #8b5cf6;
+  --accent-purple: #8b5cf6;
+  --accent-success: #00e396;
+  --accent-warning: #facc15;
+  --accent-danger: #ff4d6d;
+  --success: #00e396;
+  --warning: #facc15;
+  --danger: #ff4d6d;
+  --border-soft: rgba(0, 213, 255, 0.22);
+  --border-strong: rgba(0, 213, 255, 0.35);
+  --border-glow: rgba(0, 213, 255, 0.42);
+  --border-faint: rgba(255, 255, 255, 0.08);
+  --shadow-card: 0 12px 40px rgba(0, 20, 50, 0.35);
+  --shadow-navbar: 0 8px 28px rgba(0, 20, 50, 0.28);
+  --shadow-panel: var(--shadow-card);
+  --shadow-soft: var(--shadow-card);
+  --shadow-glow: 0 0 28px rgba(0, 213, 255, 0.22);
+  --glass-bg: rgba(15, 42, 74, 0.72);
+  --glow-cyan: rgba(0, 213, 255, 0.28);
+  --grid-color: rgba(0, 213, 255, 0.045);
+  --grid-line: var(--grid-color);
+  --particle-color: rgba(0, 213, 255, 0.35);
+  --btn-grad: linear-gradient(135deg, #00d5ff, #2f80ed);
+  --hero-title-grad: linear-gradient(135deg, #f4faff 10%, #38e8ff 50%, #00d5ff 100%);
+  --hero-bg: rgba(15, 42, 74, 0.55);
+  --input-bg: var(--bg-input);
+  --holo-line: rgba(0, 213, 255, 0.65);
+  --holo-line-soft: rgba(47, 128, 237, 0.35);
+  --holo-bg: rgba(0, 213, 255, 0.06);
+  --holo-glow: 0 0 24px rgba(0, 213, 255, 0.22);
+  --holo-fill: rgba(3, 12, 28, 0.55);
+  --holo-text: #00d5ff;
+  --preview-bg: rgba(2, 8, 16, 0.9);
+  --overlay-dark: rgba(0, 0, 0, 0.35);
+  --focus-ring: 0 0 0 3px rgba(0, 213, 255, 0.22);
+}
+
+/* ── Classic Dark ───────────────────────────────────────────────────────── */
+html[data-theme="dark"] {
+  --bg-main: #050816;
+  --bg-secondary: #070b14;
+  --bg-page: #050816;
+  --bg-page-gradient: radial-gradient(ellipse 120% 80% at 50% -20%, rgba(0, 212, 255, 0.06), transparent 50%),
+    linear-gradient(var(--grid-color) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-color) 1px, transparent 1px),
+    #050816;
+  --bg-surface: rgba(15, 23, 42, 0.78);
+  --bg-card: rgba(15, 23, 42, 0.78);
+  --bg-card-hover: rgba(20, 30, 55, 0.88);
+  --bg-panel: rgba(15, 23, 42, 0.78);
+  --bg-panel-solid: #0f172a;
+  --bg-panel-hover: rgba(20, 30, 55, 0.88);
+  --bg-sidebar: rgba(5, 8, 18, 0.92);
+  --bg-navbar: rgba(5, 8, 22, 0.86);
+  --bg-input: rgba(0, 0, 0, 0.25);
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --text-soft: #64748b;
+  --text-inverse: #050816;
+  --accent-cyan: #00d5ff;
+  --accent-cyan-soft: #22d3ee;
+  --accent-cyan-bright: #00d5ff;
+  --accent-blue: #2563eb;
+  --accent-blue-soft: rgba(37, 99, 235, 0.15);
+  --accent-green: #00e396;
+  --accent-red: #ff4d6d;
+  --accent-orange: #fb923c;
+  --accent-violet: #8b5cf6;
+  --accent-purple: #8b5cf6;
+  --accent-success: #00e396;
+  --accent-warning: #facc15;
+  --accent-danger: #ff4d6d;
+  --success: #00e396;
+  --warning: #facc15;
+  --danger: #ff4d6d;
+  --border-soft: rgba(0, 213, 255, 0.18);
+  --border-strong: rgba(0, 213, 255, 0.28);
+  --border-glow: rgba(0, 213, 255, 0.38);
+  --border-faint: rgba(255, 255, 255, 0.06);
+  --shadow-card: 0 12px 40px rgba(0, 0, 0, 0.4);
+  --shadow-navbar: 0 8px 28px rgba(0, 0, 0, 0.35);
+  --shadow-panel: var(--shadow-card);
+  --shadow-soft: var(--shadow-card);
+  --shadow-glow: 0 0 28px rgba(0, 213, 255, 0.18);
+  --glass-bg: rgba(15, 23, 42, 0.72);
+  --glow-cyan: rgba(0, 213, 255, 0.22);
+  --grid-color: rgba(99, 179, 237, 0.04);
+  --grid-line: var(--grid-color);
+  --particle-color: rgba(0, 213, 255, 0.3);
+  --btn-grad: linear-gradient(135deg, #00d5ff, #2563eb);
+  --hero-title-grad: linear-gradient(135deg, #fff 0%, #00d5ff 55%, #2563eb 100%);
+  --hero-bg: rgba(15, 23, 42, 0.55);
+  --input-bg: var(--bg-input);
+  --holo-line: rgba(0, 213, 255, 0.65);
+  --holo-line-soft: rgba(37, 99, 235, 0.35);
+  --holo-bg: rgba(0, 213, 255, 0.06);
+  --holo-glow: 0 0 24px rgba(0, 213, 255, 0.18);
+  --holo-fill: rgba(3, 10, 22, 0.55);
+  --holo-text: #00d5ff;
+  --preview-bg: rgba(2, 8, 16, 0.9);
+  --overlay-dark: rgba(0, 0, 0, 0.35);
+  --focus-ring: 0 0 0 3px rgba(0, 213, 255, 0.2);
+}
+
+/* ── Crystal Light ──────────────────────────────────────────────────────── */
+html[data-theme="light"] {
+  --bg-main: #f4f9fc;
+  --bg-secondary: #eaf4fb;
+  --bg-page: #f4f9fc;
+  --bg-page-gradient: radial-gradient(ellipse 75% 50% at 10% -6%, rgba(0, 174, 218, 0.1), transparent 52%),
+    radial-gradient(ellipse 50% 42% at 92% 4%, rgba(37, 99, 235, 0.08), transparent 48%),
+    linear-gradient(var(--grid-color) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-color) 1px, transparent 1px),
+    linear-gradient(135deg, #f7fbff 0%, #eaf6ff 45%, #f5fbff 100%);
+  --bg-surface: rgba(255, 255, 255, 0.78);
+  --bg-card: rgba(255, 255, 255, 0.88);
+  --bg-card-hover: rgba(245, 252, 255, 0.96);
+  --bg-panel: rgba(255, 255, 255, 0.88);
+  --bg-panel-solid: #ffffff;
+  --bg-panel-hover: rgba(245, 252, 255, 0.96);
+  --bg-sidebar: linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(226, 244, 255, 0.9));
+  --bg-navbar: rgba(255, 255, 255, 0.84);
+  --bg-input: rgba(255, 255, 255, 0.96);
+  --text-primary: #102033;
+  --text-secondary: #52677f;
+  --text-muted: #7b8fa6;
+  --text-soft: #8aa0b5;
+  --text-inverse: #ffffff;
+  --accent-cyan: #00aeda;
+  --accent-cyan-soft: #06b6d4;
+  --accent-cyan-bright: #0891b2;
+  --accent-blue: #2563eb;
+  --accent-blue-soft: rgba(37, 99, 235, 0.12);
+  --accent-green: #00a676;
+  --accent-red: #e5484d;
+  --accent-orange: #f59e0b;
+  --accent-violet: #7c3aed;
+  --accent-purple: #7c3aed;
+  --accent-success: #00a676;
+  --accent-warning: #d97706;
+  --accent-danger: #e5484d;
+  --success: #00a676;
+  --warning: #d97706;
+  --danger: #e5484d;
+  --border-soft: rgba(0, 130, 190, 0.18);
+  --border-strong: rgba(0, 145, 210, 0.34);
+  --border-glow: rgba(0, 174, 218, 0.42);
+  --border-faint: rgba(16, 32, 51, 0.08);
+  --shadow-card: 0 18px 45px rgba(30, 80, 120, 0.12);
+  --shadow-navbar: 0 12px 30px rgba(20, 80, 120, 0.1);
+  --shadow-panel: var(--shadow-card);
+  --shadow-soft: var(--shadow-card);
+  --shadow-glow: 0 0 24px rgba(0, 174, 218, 0.24);
+  --glass-bg: rgba(255, 255, 255, 0.72);
+  --glow-cyan: rgba(0, 174, 218, 0.24);
+  --grid-color: rgba(20, 120, 180, 0.08);
+  --grid-line: var(--grid-color);
+  --particle-color: rgba(0, 174, 218, 0.28);
+  --btn-grad: linear-gradient(135deg, #00aeda, #2563eb);
+  --hero-title-grad: linear-gradient(90deg, #102033, #00aeda, #2563eb);
+  --hero-bg: linear-gradient(135deg, rgba(255, 255, 255, 0.92), rgba(235, 248, 255, 0.88));
+  --input-bg: rgba(255, 255, 255, 0.96);
+  --holo-line: rgba(0, 174, 218, 0.78);
+  --holo-line-soft: rgba(37, 99, 235, 0.42);
+  --holo-bg: rgba(235, 248, 255, 0.72);
+  --holo-glow: 0 0 24px rgba(0, 174, 218, 0.26);
+  --holo-fill: rgba(235, 248, 255, 0.85);
+  --holo-text: #0891b2;
+  --preview-bg: rgba(245, 252, 255, 0.95);
+  --overlay-dark: rgba(16, 32, 51, 0.06);
+  --focus-ring: 0 0 0 3px rgba(0, 174, 218, 0.2);
+}
+
+/* Body theme classes (mirror html data-theme) */
+html[data-theme="light"] body {
+  color-scheme: light;
+}
+
+html[data-theme="blue-dark"] body,
+html[data-theme="dark"] body,
+html:not([data-theme]) body {
+  color-scheme: dark;
+}
+
+/* Global transitions */
+body,
+.mm-sidebar,
+.mm-topbar,
+.fh-glass,
+.fh-root,
+[class*="__card"],
+[class*="-card"],
+[class*="__panel"],
+[class*="-hero"] {
+  transition: background-color 0.25s ease, color 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+/* Theme toggle icons */
+.mm-theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  border: 1px solid var(--border-soft);
+  background: var(--overlay-dark);
+  color: var(--accent-cyan);
+  cursor: pointer;
+  transition: background 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease, transform 0.22s ease;
+}
+
+.mm-theme-toggle:hover {
+  background: color-mix(in srgb, var(--accent-cyan) 12%, transparent);
+  border-color: var(--accent-cyan);
+  box-shadow: var(--shadow-glow);
+  transform: translateY(-1px);
+}
+
+.mm-topbar-btn.mm-theme-toggle {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+}
+
+.mm-theme-toggle__icon {
+  display: none;
+  width: 18px;
+  height: 18px;
+}
+
+html[data-theme="blue-dark"] .mm-theme-toggle__icon--blue,
+html:not([data-theme]) .mm-theme-toggle__icon--blue {
+  display: block;
+}
+
+html[data-theme="light"] .mm-theme-toggle__icon--sun {
+  display: block;
+}
+
+html[data-theme="dark"] .mm-theme-toggle__icon--moon {
+  display: block;
+}

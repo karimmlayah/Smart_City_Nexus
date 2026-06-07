@@ -506,3 +506,140 @@ class UavStructuralAnalysis(models.Model):
 
     def __str__(self) -> str:
         return f"UAV #{self.pk} · {self.prediction_label} ({self.created_at:%Y-%m-%d %H:%M})"
+
+
+class SiteConfiguration(models.Model):
+    """Singleton platform settings for MedinaMind dashboard (pk=1)."""
+
+    class Language(models.TextChoices):
+        EN = "en", "English"
+        FR = "fr", "French"
+        AR = "ar", "Arabic"
+
+    class ThemeMode(models.TextChoices):
+        BLUE_DARK = "blue-dark", "Blue Dark"
+        LIGHT = "light", "Light"
+        SYSTEM = "system", "System"
+
+    class DefaultRole(models.TextChoices):
+        VIEWER = "viewer", "Viewer"
+        OPERATOR = "operator", "Operator"
+        ADMIN = "admin", "Administrator"
+
+    # —— General ——
+    platform_name = models.CharField(max_length=120, default="MedinaMind")
+    organization_name = models.CharField(max_length=160, blank=True, default="Smart City Operations")
+    default_language = models.CharField(max_length=8, choices=Language.choices, default=Language.EN)
+    theme_mode = models.CharField(max_length=16, choices=ThemeMode.choices, default=ThemeMode.BLUE_DARK)
+    primary_accent_color = models.CharField(max_length=16, default="#00d5ff")
+    logo = models.ImageField(upload_to="platform_settings/", blank=True, null=True)
+    favicon = models.ImageField(upload_to="platform_settings/", blank=True, null=True)
+
+    # —— AI modules ——
+    traffic_model_path = models.CharField(max_length=512, blank=True, default="")
+    road_damage_model_path = models.CharField(max_length=512, blank=True, default="")
+    waste_model_path = models.CharField(max_length=512, blank=True, default="")
+    fire_smoke_model_path = models.CharField(max_length=512, blank=True, default="")
+    surveillance_model_path = models.CharField(max_length=512, blank=True, default="")
+    uav_model_path = models.CharField(max_length=512, blank=True, default="")
+    traffic_signal_model_path = models.CharField(max_length=512, blank=True, default="")
+    default_confidence_threshold = models.FloatField(default=0.25)
+    default_iou_threshold = models.FloatField(default=0.45)
+    module_traffic_enabled = models.BooleanField(default=True)
+    module_road_damage_enabled = models.BooleanField(default=True)
+    module_waste_enabled = models.BooleanField(default=True)
+    module_fire_enabled = models.BooleanField(default=True)
+    module_surveillance_enabled = models.BooleanField(default=True)
+    module_uav_enabled = models.BooleanField(default=True)
+    module_traffic_signal_enabled = models.BooleanField(default=True)
+
+    # —— Camera & ESP32 ——
+    esp32_cam_ip = models.CharField(max_length=128, blank=True, default="")
+    stream_port = models.PositiveIntegerField(default=81)
+    control_port = models.PositiveIntegerField(default=80)
+    traffic_light_esp32_url = models.URLField(max_length=500, blank=True, default="")
+    camera_refresh_interval = models.PositiveIntegerField(default=5, help_text="Seconds")
+    default_image_quality = models.PositiveSmallIntegerField(default=12)
+    live_camera_enabled = models.BooleanField(default=True)
+    auto_reconnect = models.BooleanField(default=True)
+
+    # —— Alerts ——
+    enable_email_alerts = models.BooleanField(default=True)
+    enable_twilio_alerts = models.BooleanField(default=False)
+    municipality_email = models.EmailField(blank=True, default="")
+    admin_alert_email = models.EmailField(blank=True, default="")
+    smtp_host = models.CharField(max_length=255, blank=True, default="")
+    smtp_port = models.PositiveIntegerField(default=587)
+    smtp_username = models.CharField(max_length=255, blank=True, default="")
+    smtp_password = models.CharField(max_length=255, blank=True, default="")
+    twilio_sid = models.CharField(max_length=64, blank=True, default="")
+    twilio_auth_token = models.CharField(max_length=128, blank=True, default="")
+    twilio_phone_number = models.CharField(max_length=32, blank=True, default="")
+    alert_delay_seconds = models.PositiveIntegerField(default=2)
+    criticality_threshold = models.FloatField(default=0.75)
+
+    # —— Reports ——
+    enable_pdf_reports = models.BooleanField(default=True)
+    enable_csv_export = models.BooleanField(default=True)
+    report_logo = models.ImageField(upload_to="platform_settings/reports/", blank=True, null=True)
+    report_footer_text = models.CharField(max_length=500, blank=True, default="MedinaMind Smart City Platform")
+    default_report_language = models.CharField(max_length=8, choices=Language.choices, default=Language.EN)
+    include_ai_explanation = models.BooleanField(default=True)
+    include_map = models.BooleanField(default=True)
+    include_recommendations = models.BooleanField(default=True)
+
+    # —— Maps ——
+    default_city = models.CharField(max_length=120, blank=True, default="Medina")
+    default_latitude = models.FloatField(default=36.8065)
+    default_longitude = models.FloatField(default=10.1815)
+    default_zoom = models.PositiveSmallIntegerField(default=13)
+    enable_heatmap = models.BooleanField(default=True)
+    enable_live_markers = models.BooleanField(default=True)
+
+    # —— Dashboard display ——
+    show_system_status = models.BooleanField(default=True)
+    show_live_clock = models.BooleanField(default=True)
+    show_refresh_button = models.BooleanField(default=True)
+    show_fullscreen_button = models.BooleanField(default=True)
+    enable_animations = models.BooleanField(default=True)
+    enable_holograms = models.BooleanField(default=True)
+    enable_particles = models.BooleanField(default=True)
+    reduced_motion = models.BooleanField(default=False)
+
+    # —— Users & access ——
+    default_role = models.CharField(max_length=16, choices=DefaultRole.choices, default=DefaultRole.OPERATOR)
+    require_login = models.BooleanField(default=False)
+    allow_report_download = models.BooleanField(default=True)
+    allow_delete_reports = models.BooleanField(default=False)
+    allow_modify_settings = models.BooleanField(default=True)
+    role_permissions_summary = models.TextField(
+        blank=True,
+        default="Viewer: read dashboards · Operator: run analysis & export · Admin: full configuration",
+    )
+
+    # —— Data retention ——
+    keep_reports_days = models.PositiveIntegerField(default=365)
+    keep_media_days = models.PositiveIntegerField(default=90)
+    auto_delete_temp_files = models.BooleanField(default=True)
+    backup_database_enabled = models.BooleanField(default=False)
+
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Platform configuration"
+        verbose_name_plural = "Platform configuration"
+
+    def __str__(self) -> str:
+        return self.platform_name or "MedinaMind Platform"
+
+    @classmethod
+    def get_singleton(cls):
+        from monitoring.services.site_configuration_service import ensure_site_configuration
+
+        return ensure_site_configuration()
+
+    def reset_to_defaults(self):
+        from monitoring.services.site_configuration_service import apply_django_defaults
+
+        apply_django_defaults(self)
+        self.save()

@@ -1,4 +1,4 @@
-"""Score de risque, niveau opérationnel, CO₂ indicatif et recommandations contextuelles (UAV)."""
+"""Risk score, operational level, indicative CO₂ and contextual recommendations (UAV)."""
 from __future__ import annotations
 
 from typing import Any
@@ -14,14 +14,14 @@ def zone_criticality(zone: str) -> float:
 
 
 def operational_level_from_score(score: float) -> tuple[str, str]:
-    """Retourne (libellé FR, clé CSS)."""
+    """Return (display label, CSS key)."""
     if score >= 8.0:
-        return "Critique", "critical"
+        return "Critical", "critical"
     if score >= 6.0:
         return "Urgent", "urgent"
     if score >= 4.0:
-        return "Modéré", "moderate"
-    return "Faible", "low"
+        return "Moderate", "moderate"
+    return "Low", "low"
 
 
 def compute_risk_score(
@@ -30,7 +30,7 @@ def compute_risk_score(
     probabilities: list[float],
     zone: str,
 ) -> float:
-    """Score sur 10 — pondère classe + confiance + criticité zone."""
+    """Score out of 10 — weights class + confidence + zone criticality."""
     base = {0: 2.2, 1: 5.5, 2: 8.4}.get(pred_idx, 5.0)
     margin = 0.0
     if probabilities and len(probabilities) >= 3:
@@ -43,7 +43,7 @@ def compute_risk_score(
 
 
 def estimate_co2_kg(pred_idx: int, surface_m2: float, confidence: float) -> float:
-    """Ordre de grandeur indicatif (réparation / reconstruction)."""
+    """Indicative order of magnitude (repair / reconstruction)."""
     s = max(0.0, float(surface_m2 or 0.0))
     factors = {0: 8.0, 1: 42.0, 2: 95.0}
     base = factors.get(pred_idx, 35.0)
@@ -57,7 +57,7 @@ def build_recommendations(
     risk_score: float,
     operational: str,
 ) -> dict[str, Any]:
-    """Plan d’action P1–P4 + limites IA."""
+    """Action plan P1–P4 + AI limitations."""
     z = (zone or "B").strip().upper()
 
     if risk_score >= 8 or pred_idx == 2:
@@ -73,44 +73,44 @@ def build_recommendations(
     short_term: list[str] = []
     watch: list[str] = []
     ai_limits: list[str] = [
-        "L’interprétation repose sur une image UAV unique ; une inspection terrain reste obligatoire.",
-        "Les cartes d’attention et de mise en évidence reflètent ce que l’IA observe sur l’image ; elles ne remplacent pas une mesure géotechnique.",
-        "Les estimations CO₂ sont des ordres de grandeur à usage décisionnel préliminaire.",
+        "Interpretation is based on a single UAV image; on-site inspection remains mandatory.",
+        "Attention and saliency maps reflect what the AI observes in the image; they do not replace geotechnical measurement.",
+        "CO₂ estimates are order-of-magnitude values for preliminary decision support.",
     ]
 
     if pred_idx == 2:
         immediate = [
-            "Baliser un périmètre de sécurité et suspendre tout accès piéton / véhicule.",
-            "Notifier les services de secours et la direction des infrastructures.",
-            "Documenter la scène (vols complémentaires à basse altitude si sécurité OK).",
+            "Mark a safety perimeter and suspend all pedestrian / vehicle access.",
+            "Notify emergency services and infrastructure management.",
+            "Document the scene (supplementary low-altitude flights if safe).",
         ]
         short_term = [
-            "Inspection structurale par ingénieur habilité sous 24–48 h.",
-            "Évaluation dommages assurances et consolidation provisoire.",
+            "Structural inspection by a qualified engineer within 24–48 hours.",
+            "Insurance damage assessment and provisional stabilization.",
         ]
-        watch = ["Surveillance des vibrations / mouvements jusqu’à contre-expertise."]
+        watch = ["Monitor vibrations / movement until independent review."]
     elif pred_idx == 1:
         immediate = [
-            "Limiter l’accès aux zones sous travées suspectes.",
-            "Marquage au sol et communication aux résidents / exploitants.",
+            "Restrict access to areas under suspect structural spans.",
+            "Ground marking and communication to residents / operators.",
         ]
         short_term = [
-            "Inspection détaillée (fissuration, appuis, toiture) par structure.",
-            "Planifier une nouvelle acquisition UAV après intervention.",
+            "Detailed inspection (cracking, supports, roofing) by structure.",
+            "Schedule a new UAV acquisition after intervention.",
         ]
-        watch = ["Comparer avec une image historique si disponible.", "Suivi après intempéries."]
+        watch = ["Compare with a historical image if available.", "Follow up after severe weather."]
     else:
-        immediate = ["Maintenir la veille ; aucune mesure d’urgence structurelle imposée par l’IA seule."]
-        short_term = ["Enregistrer la mission dans le registre et planifier le prochain survol programmé."]
-        watch = ["Réévaluer si la zone est sensible (zone " + z + ")."]
+        immediate = ["Maintain watch; no emergency structural measure required by AI alone."]
+        short_term = ["Log the mission in the registry and plan the next scheduled overflight."]
+        watch = ["Reassess if the zone is sensitive (zone " + z + ")."]
 
     if z == "A" and confidence >= 0.55:
-        immediate.insert(0, "Zone A — renforcer la coordination avec la maîtrise d’ouvrage urbaine.")
+        immediate.insert(0, "Zone A — strengthen coordination with urban project management.")
 
     if confidence < 0.5:
         ai_limits.insert(
             0,
-            "Confiance modérée : privilégier une analyse humaine avant toute décision de fermeture.",
+            "Moderate confidence: prioritize human review before any closure decision.",
         )
 
     return {

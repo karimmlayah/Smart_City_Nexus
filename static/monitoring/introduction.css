@@ -17,22 +17,260 @@
   --mm-panel-shadow: 0 0 20px rgba(6, 182, 212, 0.15), inset 0 0 15px rgba(6, 182, 212, 0.1);
 }
 
+html,
 body {
+  min-height: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+body.ar-page {
   margin: 0;
   padding: 0;
-  background-color: #000;
-  overflow: hidden;
+  background: var(--bg-main, #010c1a);
+  min-height: 100vh;
+  height: auto;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  display: block;
+}
+
+body.ar-page .app-shell {
+  display: block !important;
+  padding: 0.65rem 0.65rem 0 !important;
+  margin: 0 !important;
+  max-width: none !important;
+  min-height: 100vh;
+  overflow: visible;
+}
+
+body.ar-page .app-shell > .mm-topbar {
+  margin-bottom: 0.75rem;
 }
 
 .ar-hud-root {
-  position: fixed;
-  inset: 0;
-  width: 100vw;
-  height: 100vh;
-  z-index: 1000;
+  position: relative !important;
+  inset: auto !important;
+  width: 100% !important;
+  min-height: 100vh;
+  height: auto !important;
+  z-index: 1;
   font-family: 'Inter', sans-serif;
   color: var(--mm-text);
+  overflow: visible;
+  padding: 24px;
+  box-sizing: border-box;
+}
+
+.ar-layout {
+  width: 100%;
+  min-height: calc(100vh - 48px);
+  height: auto;
+  display: flex !important;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  gap: 24px;
+}
+
+.ar-left-panel,
+.ar-right-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  flex-shrink: 0;
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 213, 255, 0.35) transparent;
+  position: relative !important;
+  z-index: 5;
+  min-width: 0;
+}
+
+.ar-left-panel {
+  flex: 0 0 320px;
+  width: 320px;
+  max-width: 320px;
+}
+
+.ar-camera-stage {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 680px;
+  height: calc(100vh - 48px);
+  position: relative;
   overflow: hidden;
+  border-radius: 18px;
+  border: 1px solid var(--mm-border);
+  box-shadow: var(--mm-panel-shadow);
+  background: rgba(1, 8, 16, 0.6);
+  isolation: isolate;
+}
+
+.ar-camera-stage .hud-video,
+.ar-camera-stage .hud-canvas,
+.ar-camera-stage .hud-overlay-dark,
+.ar-camera-stage .holo-city-wrap {
+  pointer-events: none;
+}
+
+.ar-camera-stage .hud-control-bar,
+.ar-camera-stage .hud-ctrl-btn,
+.ar-camera-stage #retryBtn {
+  pointer-events: auto;
+}
+
+.ar-right-panel {
+  flex: 0 0 340px;
+  width: 340px;
+  max-width: 340px;
+}
+
+.ar-left-panel::-webkit-scrollbar,
+.ar-right-panel::-webkit-scrollbar,
+.ar-modules-list::-webkit-scrollbar,
+.ar-stats-list::-webkit-scrollbar,
+.ar-gestures-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.ar-left-panel::-webkit-scrollbar-thumb,
+.ar-right-panel::-webkit-scrollbar-thumb,
+.ar-modules-list::-webkit-scrollbar-thumb,
+.ar-stats-list::-webkit-scrollbar-thumb,
+.ar-gestures-list::-webkit-scrollbar-thumb {
+  background: rgba(0, 213, 255, 0.35);
+  border-radius: 999px;
+}
+
+.ar-modules-list,
+.ar-stats-list,
+.ar-gestures-list {
+  overflow-y: auto;
+  overflow-x: hidden;
+  flex-shrink: 1;
+  min-height: 0;
+}
+
+.ar-live-info {
+  flex-shrink: 0;
+}
+
+.mm-ar-card,
+.ar-panel-card {
+  position: relative !important;
+  top: auto !important;
+  left: auto !important;
+  right: auto !important;
+  bottom: auto !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  flex-shrink: 0;
+  margin: 0;
+  padding: 1.25rem;
+  border-radius: 18px;
+  clip-path: none !important;
+  box-sizing: border-box;
+  background: var(--mm-glass-bg);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--mm-border);
+  box-shadow: var(--mm-panel-shadow);
+  display: flex;
+  flex-direction: column;
+}
+
+.ar-bottom-controls {
+  position: absolute;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
+  z-index: 100;
+  pointer-events: auto;
+}
+
+@media (max-height: 780px) {
+  .ar-left-panel,
+  .ar-right-panel {
+    max-height: none;
+  }
+
+  .ar-camera-stage {
+    min-height: 560px;
+    height: 70vh;
+  }
+
+  .ar-bottom-controls {
+    position: sticky;
+    bottom: 16px;
+    margin: 16px auto 0;
+    transform: none;
+    left: auto;
+  }
+}
+
+@media (max-width: 1200px) {
+  .ar-layout {
+    flex-wrap: wrap;
+  }
+
+  .ar-left-panel {
+    flex: 0 0 300px;
+    width: 300px;
+    max-width: 300px;
+  }
+
+  .ar-camera-stage {
+    flex: 1 1 420px;
+    min-width: 320px;
+  }
+
+  .ar-right-panel {
+    flex: 1 1 100%;
+    width: 100%;
+    max-width: none;
+    max-height: 520px;
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .ar-right-panel .mm-ar-card,
+  .ar-right-panel .ar-panel-card {
+    flex: 1 1 280px;
+  }
+}
+
+@media (max-width: 900px) {
+  .ar-hud-root {
+    padding: 16px;
+  }
+
+  .ar-layout {
+    flex-direction: column;
+    flex-wrap: nowrap;
+    gap: 16px;
+  }
+
+  .ar-left-panel,
+  .ar-right-panel {
+    flex: 0 0 auto;
+    width: 100%;
+    max-width: none;
+    max-height: none;
+  }
+
+  .ar-camera-stage {
+    flex: 0 0 auto;
+    width: 100%;
+    height: 70vh;
+    min-height: 520px;
+  }
+
+  .ar-right-panel {
+    flex-direction: column;
+    flex-wrap: nowrap;
+  }
 }
 
 /* ============================================================
@@ -45,6 +283,7 @@ body {
   height: 100%;
   object-fit: cover;
   transform: scaleX(-1);
+  transform-origin: center center;
   z-index: 1;
 }
 
@@ -55,7 +294,8 @@ body {
   height: 100%;
   object-fit: cover;
   transform: scaleX(-1);
-  z-index: 2;
+  transform-origin: center center;
+  z-index: 4;
   pointer-events: none;
 }
 
@@ -72,7 +312,7 @@ body {
    ============================================================ */
 .hud-top-banner {
   position: absolute;
-  top: 2rem;
+  top: 1rem;
   left: 50%;
   transform: translateX(-50%);
   z-index: 50;
@@ -102,59 +342,37 @@ body {
 }
 
 /* ============================================================
-   Glassmorphism Panels Base
+   Glassmorphism Panels — always in document flow (never absolute)
    ============================================================ */
-.hud-panel {
-  position: absolute;
-  background: var(--mm-glass-bg);
-  backdrop-filter: blur(12px);
-  border: 1px solid var(--mm-border);
-  z-index: 10;
-  box-shadow: var(--mm-panel-shadow);
-  display: flex;
-  flex-direction: column;
+body.ar-page .ar-layout .mm-ar-card,
+body.ar-page .ar-layout .hud-panel,
+body.ar-page .ar-layout .ar-panel-card {
+  position: relative !important;
+  top: auto !important;
+  left: auto !important;
+  right: auto !important;
+  bottom: auto !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  flex-shrink: 0;
+  z-index: auto !important;
+  clip-path: none !important;
 }
 
-/* Clipped corners (Tech border style) */
-.hud-panel-left-top {
-  top: 2rem;
-  left: 2rem;
-  width: 260px;
-  padding: 1.5rem;
-  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 20px), calc(100% - 20px) 100%, 0 100%);
-  border-bottom-right-radius: 20px;
-}
-.hud-panel-left-bottom {
-  bottom: 2rem;
-  left: 2rem;
-  width: 260px;
-  padding: 1.5rem;
-  clip-path: polygon(0 0, calc(100% - 20px) 0, 100% 20px, 100% 100%, 0 100%);
-}
-
-.hud-panel-right-top {
-  top: 2rem;
-  right: 2rem;
-  width: 260px;
-  padding: 1.5rem;
-  clip-path: polygon(0 0, 100% 0, 100% 100%, 20px 100%, 0 calc(100% - 20px));
-}
-.hud-panel-right-middle {
-  top: calc(2rem + 260px);
-  right: 2rem;
-  width: 260px;
-  padding: 1.5rem;
-  clip-path: polygon(20px 0, 100% 0, 100% 100%, 0 100%, 0 20px);
-}
-.hud-panel-right-bottom {
-  bottom: 2rem;
-  right: 2rem;
-  width: 260px;
-  padding: 1.5rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-  clip-path: polygon(0 0, 100% 0, 100% 100%, 20px 100%, 0 calc(100% - 20px));
+/* Legacy class names — neutralize cached absolute HUD rules */
+body.ar-page .hud-panel-left-top,
+body.ar-page .hud-panel-left-bottom,
+body.ar-page .hud-panel-right-top,
+body.ar-page .hud-panel-right-middle,
+body.ar-page .hud-panel-right-bottom,
+body.ar-page .hud-panel {
+  position: relative !important;
+  top: auto !important;
+  left: auto !important;
+  right: auto !important;
+  bottom: auto !important;
+  width: 100% !important;
+  clip-path: none !important;
 }
 
 .hud-panel-title {
@@ -174,7 +392,7 @@ body {
 .hud-logo {
   display: flex;
   flex-direction: column;
-  margin-bottom: 2rem;
+  margin-bottom: 1rem;
 }
 .hud-brand {
   font-size: 1.6rem;
@@ -192,6 +410,9 @@ body {
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
+  max-height: 220px;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 .hud-module {
   padding: 0.8rem 1rem;
@@ -268,6 +489,8 @@ body {
   display: flex;
   flex-direction: column;
   gap: 1rem;
+  max-height: 280px;
+  overflow-y: auto;
 }
 .hud-gesture-item {
   display: flex;
@@ -285,6 +508,26 @@ body {
 /* ============================================================
    Right Panel Bottom — Weather & Time
    ============================================================ */
+.hud-city-block {
+  text-align: center;
+  margin-bottom: 0.85rem;
+  padding-bottom: 0.85rem;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+.hud-city-name {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--mm-cyan-bt);
+  letter-spacing: 0.03em;
+}
+
+.hud-city-meta {
+  margin-top: 0.25rem;
+  font-size: 0.72rem;
+  color: var(--mm-muted);
+}
+
 .hud-time-block {
   text-align: center;
   border-bottom: 1px solid rgba(255,255,255,0.1);
@@ -303,12 +546,19 @@ body {
 .hud-temp { font-size: 1.2rem; font-weight: 700; }
 .hud-cond { font-size: 0.8rem; color: var(--mm-muted); }
 
+.hud-weather-extra {
+  margin-top: 0.35rem;
+  font-size: 0.68rem;
+  color: var(--mm-muted);
+  line-height: 1.4;
+}
+
 /* ============================================================
    Bottom Center Control Bar
    ============================================================ */
 .hud-control-bar {
   position: absolute;
-  bottom: 2rem;
+  bottom: 1rem;
   left: 50%;
   transform: translateX(-50%);
   display: flex;
@@ -320,7 +570,8 @@ body {
   border-radius: 999px;
   padding: 0.5rem 1rem;
   box-shadow: var(--mm-panel-shadow);
-  z-index: 50;
+  z-index: 100;
+  pointer-events: auto;
 }
 .hud-ctrl-btn {
   background: transparent;
@@ -334,10 +585,15 @@ body {
   align-items: center;
   justify-content: center;
   transition: all 0.2s;
+  pointer-events: auto;
+  touch-action: manipulation;
 }
 .hud-ctrl-btn:hover {
   color: var(--mm-cyan-bt);
   background: rgba(34, 211, 238, 0.1);
+}
+a.hud-ctrl-btn {
+  text-decoration: none;
 }
 .hud-ctrl-home {
   padding: 0.6rem;
@@ -357,86 +613,306 @@ body {
 }
 .hud-zoom-display span { color: #fff; font-weight: 700; }
 
+#demoBtn {
+  white-space: nowrap;
+  font-size: 0.78rem;
+  border-radius: 999px;
+  padding: 0.45rem 0.65rem;
+}
+
 #demoBtn.demo-active {
   color: #10B981;
   text-shadow: 0 0 8px rgba(16, 185, 129, 0.5);
 }
 
 /* ============================================================
-   Hologram City Container
+   Hologram — Smart City Command Panel
    ============================================================ */
 .holo-city-wrap {
+  --holo-pos-x: 0px;
+  --holo-pos-y: 16px;
+  --holo-scale: 0.9;
   position: absolute;
-  bottom: 10%;
+  bottom: 11%;
   left: 50%;
-  width: 1200px;
-  height: 800px;
-  transform: translateX(-50%) translateY(50px) scale(0.85);
+  width: min(920px, 90vw);
+  transform: translateX(calc(-50% + var(--holo-pos-x))) translateY(var(--holo-pos-y)) scale(var(--holo-scale));
   transform-origin: center bottom;
   z-index: 5;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.6s ease, transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: opacity 0.4s ease;
 }
+
 .holo-city-wrap.visible {
   opacity: 1;
-  transform: translateX(-50%) translateY(0) scale(1);
-}
-.holo-base-svg {
-  width: 100%;
-  height: 100%;
 }
 
-/* ============================================================
-   Floating Stat Chips
-   ============================================================ */
-.holo-chip {
-  position: absolute;
+.holo-command {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  opacity: 0;
-  transition: opacity 0.5s ease, transform 0.4s ease;
-}
-.holo-city-wrap.visible .holo-chip { opacity: 1; }
-
-/* The line pointing down to the city */
-.holo-chip-line {
-  width: 2px;
-  height: 60px;
-  background: linear-gradient(to bottom, rgba(34, 211, 238, 0.8), transparent);
-  margin-left: 20px;
+  border-radius: 22px;
+  overflow: hidden;
+  background: linear-gradient(165deg, rgba(6, 18, 42, 0.94) 0%, rgba(2, 10, 26, 0.97) 100%);
+  border: 1px solid rgba(0, 213, 255, 0.32);
+  box-shadow:
+    0 0 0 1px rgba(0, 213, 255, 0.08) inset,
+    0 24px 64px rgba(0, 0, 0, 0.45),
+    0 0 48px rgba(0, 213, 255, 0.12);
+  backdrop-filter: blur(18px);
 }
 
-/* The box itself */
-.holo-chip-content {
+.holo-command__head {
   display: flex;
   align-items: center;
-  gap: 0.8rem;
-  background: rgba(1, 8, 16, 0.8);
-  border: 1px solid var(--mm-cyan-bt);
-  border-radius: 6px;
-  padding: 0.6rem 1rem;
-  box-shadow: 0 0 15px rgba(34, 211, 238, 0.2);
-  backdrop-filter: blur(8px);
-}
-.holo-chip.active-module .holo-chip-content {
-  border-color: #10B981;
-  box-shadow: 0 0 20px rgba(16, 185, 129, 0.4);
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  padding: 0.75rem 1.1rem;
+  border-bottom: 1px solid rgba(0, 213, 255, 0.14);
+  background: rgba(0, 213, 255, 0.04);
 }
 
-.holo-chip-icon { font-size: 1.5rem; }
-.holo-chip-text { display: flex; flex-direction: column; }
-.holo-chip-title { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.05em; color: #fff; }
-.holo-chip-sub { font-size: 0.6rem; color: var(--mm-muted); margin-bottom: 0.2rem; }
-.holo-chip-val { font-size: 0.9rem; font-weight: 800; color: var(--mm-cyan-bt); }
+.holo-command__brand {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  flex-wrap: wrap;
+}
 
-/* Positioning the chips roughly matching the isometric projection */
-.holo-chip-traffic   { top: 15%; left: 25%; }
-.holo-chip-energy    { top: 5%;  left: 55%; }
-.holo-chip-pollution { top: 35%; right: 15%; }
-.holo-chip-security  { top: 45%; left: 15%; }
-.holo-chip-parking   { top: 60%; right: 25%; }
+.holo-command__live {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #00e396;
+  box-shadow: 0 0 12px rgba(0, 227, 150, 0.8);
+  animation: ar-pulse 2s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+.holo-command__title {
+  font-size: 0.95rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #fff;
+}
+
+.holo-command__module {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #00e396;
+  padding: 0.22rem 0.6rem;
+  border-radius: 999px;
+  background: rgba(0, 227, 150, 0.12);
+  border: 1px solid rgba(0, 227, 150, 0.38);
+}
+
+.holo-command__meta {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.72rem;
+  color: var(--mm-muted);
+}
+
+.holo-command__meta [data-holo="city"],
+.holo-command__meta [data-holo="time"] {
+  color: var(--mm-cyan-bt);
+  font-weight: 600;
+}
+
+.holo-command__dot {
+  opacity: 0.4;
+}
+
+.holo-command__body {
+  display: grid;
+  grid-template-columns: 130px minmax(0, 1fr) 130px;
+  gap: 0.65rem;
+  padding: 0.75rem;
+  min-height: 300px;
+}
+
+.holo-command__stats {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  justify-content: center;
+}
+
+.holo-stat-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding: 0.55rem 0.6rem;
+  border-radius: 12px;
+  background: rgba(0, 213, 255, 0.04);
+  border: 1px solid rgba(0, 213, 255, 0.14);
+  border-left: 3px solid rgba(0, 213, 255, 0.45);
+  transition: border-color 0.25s ease, background 0.25s ease, box-shadow 0.25s ease;
+}
+
+.holo-stat-card.active-module {
+  background: rgba(0, 227, 150, 0.1);
+  border-color: rgba(0, 227, 150, 0.4);
+  border-left-color: #00e396;
+  box-shadow: 0 0 18px rgba(0, 227, 150, 0.18);
+}
+
+.holo-stat-card.val-updated {
+  animation: holoStatPulse 0.55s ease;
+}
+
+.holo-stat-card__icon {
+  font-size: 1.05rem;
+  line-height: 1;
+}
+
+.holo-stat-card__label {
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--mm-muted);
+}
+
+.holo-stat-card__val {
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1.3;
+  word-break: break-word;
+}
+
+.holo-command__city {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 280px;
+  border-radius: 16px;
+  background: radial-gradient(ellipse at 50% 80%, rgba(0, 213, 255, 0.1) 0%, rgba(1, 8, 22, 0.5) 55%, transparent 80%);
+  border: 1px solid rgba(0, 213, 255, 0.18);
+  overflow: hidden;
+}
+
+.holo-city-ring {
+  position: absolute;
+  width: 78%;
+  height: 78%;
+  border-radius: 50%;
+  border: 1px dashed rgba(0, 213, 255, 0.22);
+  animation: holoRingSpin 24s linear infinite;
+  pointer-events: none;
+}
+
+.holo-visual {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 260px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 1.5rem;
+}
+
+.holo-aura {
+  position: absolute;
+  inset: 5% 10% 15%;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at center, rgba(0, 213, 255, 0.2) 0%, transparent 70%);
+  pointer-events: none;
+  animation: holoAuraPulse 5s ease-in-out infinite;
+}
+
+.holo-scanlines {
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 4px,
+    rgba(0, 213, 255, 0.022) 4px,
+    rgba(0, 213, 255, 0.022) 5px
+  );
+  pointer-events: none;
+  opacity: 0.3;
+}
+
+.holo-base-svg {
+  width: 100%;
+  height: 92%;
+  max-height: 280px;
+  position: relative;
+  z-index: 1;
+}
+
+.holo-city-label {
+  position: absolute;
+  bottom: 0.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 3;
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.22em;
+  color: rgba(0, 213, 255, 0.75);
+  text-shadow: 0 0 12px rgba(0, 213, 255, 0.4);
+}
+
+.holo-bld-group {
+  animation: holoBldFlicker 6s ease-in-out infinite;
+}
+
+.holo-command__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  padding: 0.55rem 1.1rem 0.7rem;
+  border-top: 1px solid rgba(0, 213, 255, 0.12);
+  background: rgba(0, 0, 0, 0.2);
+  font-size: 0.68rem;
+  color: var(--mm-muted);
+}
+
+.holo-command__foot strong {
+  color: #fff;
+  font-weight: 700;
+}
+
+.holo-command__live-text {
+  color: #00e396 !important;
+}
+
+.holo-chips-legacy {
+  display: none !important;
+}
+
+@keyframes holoAuraPulse {
+  0%, 100% { opacity: 0.65; }
+  50% { opacity: 1; }
+}
+
+@keyframes holoBldFlicker {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.88; }
+}
+
+@keyframes holoStatPulse {
+  0% { box-shadow: 0 0 0 rgba(0, 213, 255, 0); }
+  50% { box-shadow: 0 0 16px rgba(0, 213, 255, 0.35); }
+  100% { box-shadow: none; }
+}
+
+@keyframes holoRingSpin {
+  100% { transform: rotate(360deg); }
+}
 
 /* ============================================================
    Animations
@@ -472,8 +948,190 @@ body {
 .cam-no-cam-txt { font-size: 1.5rem; font-weight: 700; }
 .cam-no-cam-sub { color: var(--mm-muted); margin-top: 0.5rem; }
 
-/* Responsive adjustments */
+/* Hide module float card when hologram is active */
+.ar-camera-stage:has(.holo-city-wrap.visible) .module-float-card {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(-50%) translateY(8px);
+}
+
+@media (max-width: 900px) {
+  .holo-command__body {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto;
+  }
+
+  .holo-command__stats--left,
+  .holo-command__stats--right {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .holo-stat-card {
+    flex: 1 1 calc(33% - 0.5rem);
+    min-width: 100px;
+  }
+
+  .holo-command__city {
+    order: -1;
+    min-height: 220px;
+  }
+}
+
 @media (max-width: 1300px) {
-  .holo-city-wrap { transform: translateX(-50%) translateY(100px) scale(0.7); }
-  .holo-city-wrap.visible { transform: translateX(-50%) translateY(50px) scale(0.85); }
+  .holo-city-wrap {
+    width: min(820px, 92vw);
+    --holo-scale: 0.82;
+  }
+}
+
+/* ============================================================
+   Live data, toast, animations
+   ============================================================ */
+.ar-live-data-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-bottom: 1rem;
+  padding: 0.65rem 0.85rem;
+  border-radius: 10px;
+  background: rgba(0, 227, 150, 0.06);
+  border: 1px solid rgba(0, 227, 150, 0.18);
+}
+
+.ar-live-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--success, #00e396);
+}
+
+.ar-live-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--success, #00e396);
+  box-shadow: 0 0 8px rgba(0, 227, 150, 0.6);
+  animation: ar-pulse 2s ease-in-out infinite;
+}
+
+@keyframes ar-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(0.85); }
+}
+
+.ar-api-status.loading { color: var(--accent-cyan, #00d5ff); }
+.ar-api-status.online { color: var(--success, #00e396); }
+.ar-api-status.offline { color: var(--warning, #facc15); }
+
+.ar-live-data-bar__label {
+  font-size: 0.72rem;
+  color: var(--mm-muted);
+}
+
+.value-updated {
+  animation: valuePulse 0.45s ease;
+}
+
+@keyframes valuePulse {
+  0% {
+    color: var(--accent-cyan, #00d5ff);
+    text-shadow: 0 0 12px rgba(0, 213, 255, 0.55);
+  }
+  100% {
+    color: inherit;
+    text-shadow: none;
+  }
+}
+
+.gesture-toast,
+.ar-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 120px;
+  transform: translateX(-50%) translateY(8px);
+  z-index: 9999;
+  padding: 12px 18px;
+  border-radius: 999px;
+  background: rgba(8, 26, 47, 0.88);
+  border: 1px solid rgba(0, 213, 255, 0.35);
+  color: #fff;
+  box-shadow: 0 0 28px rgba(0, 213, 255, 0.25);
+  font-size: 0.85rem;
+  font-weight: 600;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+.ar-toast.visible,
+.gesture-toast.visible {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+.module-float-card {
+  position: absolute;
+  left: 50%;
+  bottom: 28%;
+  transform: translateX(-50%);
+  z-index: 12;
+  min-width: 220px;
+  max-width: 320px;
+  padding: 0.75rem 1rem;
+  border-radius: 14px;
+  background: rgba(1, 8, 16, 0.88);
+  border: 1px solid rgba(0, 213, 255, 0.3);
+  box-shadow: 0 0 24px rgba(0, 213, 255, 0.2);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.35s ease;
+}
+
+.module-float-card.visible { opacity: 1; }
+.module-float-card strong {
+  display: block;
+  font-size: 0.88rem;
+  color: var(--mm-cyan-bt);
+  margin-bottom: 0.25rem;
+}
+.module-float-card span {
+  font-size: 0.78rem;
+  color: var(--mm-muted);
+  line-height: 1.45;
+}
+
+.hud-pulse {
+  animation: hudPulseGlow 0.7s ease;
+}
+
+@keyframes hudPulseGlow {
+  0%, 100% { box-shadow: 0 0 0 rgba(0, 213, 255, 0); }
+  50% { box-shadow: 0 0 24px rgba(0, 213, 255, 0.35); }
+}
+
+#demoBtn.demo-active {
+  color: #10B981;
+  text-shadow: 0 0 8px rgba(16, 185, 129, 0.5);
+}
+
+/* ============================================================
+   Layout lock — prevents legacy fullscreen HUD stacking
+   ============================================================ */
+body.ar-page .ar-hud-root > .hud-video,
+body.ar-page .ar-hud-root > .hud-canvas,
+body.ar-page .ar-hud-root > .hud-overlay-dark,
+body.ar-page .ar-hud-root > .hud-top-banner,
+body.ar-page .ar-hud-root > .hud-control-bar,
+body.ar-page .ar-hud-root > .holo-city-wrap {
+  display: none !important;
+}
+
+body.ar-page .ar-left-panel > .mm-ar-card + .mm-ar-card,
+body.ar-page .ar-right-panel > .mm-ar-card + .mm-ar-card {
+  margin-top: 0;
 }

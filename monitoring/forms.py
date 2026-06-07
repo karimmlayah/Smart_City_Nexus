@@ -18,19 +18,19 @@ class FightAnalyzeForm(forms.Form):
     """URL YouTube ou fichier vidéo local pour analyse combat / non-combat."""
 
     fight_weights = forms.ChoiceField(
-        label="Combat — classifier (.pt classify)",
+        label="Conflict detection profile",
         required=True,
         choices=[],
         widget=forms.Select(attrs={"class": "fight-model-select fight-model-select--combat"}),
     )
     weapon_weights = forms.ChoiceField(
-        label="Armes & guns — détection YOLO (.pt detect)",
+        label="Weapon detection profile",
         required=True,
         choices=[],
         widget=forms.Select(attrs={"class": "fight-model-select fight-model-select--weapon"}),
     )
     youtube_url = forms.CharField(
-        label="URL YouTube",
+        label="YouTube Source",
         max_length=500,
         required=False,
         widget=forms.TextInput(
@@ -43,7 +43,7 @@ class FightAnalyzeForm(forms.Form):
         ),
     )
     video_file = forms.FileField(
-        label="Ou vidéo depuis votre PC",
+        label="Video Upload",
         required=False,
         validators=[_video_extensions],
         widget=forms.FileInput(
@@ -117,25 +117,25 @@ class FusionHubForm(FightAnalyzeForm):
         )
 
     use_fight = forms.BooleanField(
-        label="Activer l’analyse combat",
+        label="Enable conflict detection",
         required=False,
         initial=True,
         widget=forms.CheckboxInput(attrs={"class": "fusion-model-check"}),
     )
     use_weapon = forms.BooleanField(
-        label="Activer la détection d’armes",
+        label="Enable weapon detection",
         required=False,
         initial=True,
         widget=forms.CheckboxInput(attrs={"class": "fusion-model-check"}),
     )
     use_openai_threat = forms.BooleanField(
-        label="Activer API Chat Threat",
+        label="Enable vision intelligence API",
         required=False,
         initial=False,
         widget=forms.CheckboxInput(attrs={"class": "fusion-model-check"}),
     )
     fusion_image_file = forms.FileField(
-        label="Ou image (JPEG / PNG / WebP)",
+        label="Image Upload (JPEG / PNG / WebP)",
         required=False,
         validators=[_image_extensions],
         widget=forms.FileInput(

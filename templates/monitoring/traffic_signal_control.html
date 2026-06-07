@@ -1,236 +1,225 @@
 {% extends "base.html" %}
+{% load static %}
 
-{% block title %}Smart City — Feux IA ESP32{% endblock %}
-{% block body_class %}cockpit traffic-signal-sc{% endblock %}
+{% block title %}Smart City · Smart Traffic Light Intelligence{% endblock %}
+{% block body_class %}cockpit traffic-signal-sc fusion-hub-sc ai-dashboard-sc mm-dash-body{% endblock %}
 
 {% block extra_head %}
-<style>
-  .ts-page {
-    min-height: calc(100vh - 32px);
-    padding: 24px;
-    color: #e5f0ff;
-  }
-  .ts-hero {
-    display: grid;
-    grid-template-columns: minmax(280px, 420px) 1fr;
-    gap: 18px;
-    align-items: start;
-  }
-  .ts-card {
-    background: linear-gradient(160deg, rgba(15, 23, 42, 0.96), rgba(2, 6, 23, 0.98));
-    border: 1px solid rgba(34, 211, 238, 0.2);
-    border-radius: 18px;
-    box-shadow: 0 18px 48px rgba(0, 0, 0, 0.32);
-    padding: 18px;
-  }
-  .ts-title {
-    margin: 0 0 6px;
-    font-size: clamp(1.35rem, 2vw, 2rem);
-    font-weight: 900;
-    letter-spacing: -0.03em;
-  }
-  .ts-muted {
-    color: #94a3b8;
-    line-height: 1.55;
-  }
-  .ts-field {
-    display: grid;
-    gap: 7px;
-    margin-top: 14px;
-  }
-  .ts-field label {
-    color: #a8c7ff;
-    font-size: 0.78rem;
-    font-weight: 800;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-  }
-  .ts-field input[type="file"],
-  .ts-field input[type="url"] {
-    width: 100%;
-    box-sizing: border-box;
-    border: 1px solid rgba(148, 163, 184, 0.25);
-    border-radius: 12px;
-    background: rgba(2, 6, 23, 0.74);
-    color: #e5f0ff;
-    padding: 11px 12px;
-  }
-  .ts-check {
-    display: flex;
-    gap: 10px;
-    align-items: center;
-    margin: 14px 0 0;
-    color: #cbd5e1;
-  }
-  .ts-btn {
-    width: 100%;
-    margin-top: 16px;
-    border: 0;
-    border-radius: 13px;
-    padding: 12px 16px;
-    color: #fff;
-    background: linear-gradient(135deg, #22d3ee, #2563eb);
-    font-weight: 900;
-    cursor: pointer;
-  }
-  .ts-alert {
-    margin-top: 14px;
-    padding: 12px 14px;
-    border-radius: 12px;
-    background: rgba(239, 68, 68, 0.14);
-    border: 1px solid rgba(239, 68, 68, 0.32);
-    color: #fecaca;
-  }
-  .ts-result-head {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 12px;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 14px;
-  }
-  .ts-pill {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 12px;
-    border-radius: 999px;
-    font-weight: 900;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-  }
-  .ts-pill.red { background: rgba(239, 68, 68, 0.18); color: #fecaca; border: 1px solid rgba(239, 68, 68, 0.45); }
-  .ts-pill.green { background: rgba(34, 197, 94, 0.18); color: #bbf7d0; border: 1px solid rgba(34, 197, 94, 0.45); }
-  .ts-pill.unknown { background: rgba(148, 163, 184, 0.15); color: #cbd5e1; border: 1px solid rgba(148, 163, 184, 0.35); }
-  .ts-preview {
-    background: #000;
-    border: 1px solid rgba(148, 163, 184, 0.16);
-    border-radius: 14px;
-    overflow: hidden;
-    min-height: 320px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  .ts-preview img,
-  .ts-preview video {
-    max-width: 100%;
-    max-height: 70vh;
-    display: block;
-  }
-  .ts-metrics {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(120px, 1fr));
-    gap: 10px;
-    margin-top: 14px;
-  }
-  .ts-metric {
-    border-radius: 13px;
-    background: rgba(15, 23, 42, 0.82);
-    border: 1px solid rgba(148, 163, 184, 0.16);
-    padding: 12px;
-  }
-  .ts-metric span {
-    display: block;
-    color: #94a3b8;
-    font-size: 0.72rem;
-    text-transform: uppercase;
-    font-weight: 800;
-    margin-bottom: 5px;
-  }
-  .ts-metric strong {
-    font-size: 1.1rem;
-  }
-  .ts-esp {
-    margin-top: 14px;
-    border-radius: 13px;
-    padding: 12px 14px;
-    border: 1px solid rgba(148, 163, 184, 0.18);
-    background: rgba(2, 6, 23, 0.55);
-  }
-  .ts-esp.ok { border-color: rgba(34, 197, 94, 0.45); color: #bbf7d0; }
-  .ts-esp.err { border-color: rgba(239, 68, 68, 0.45); color: #fecaca; }
-  .ts-code {
-    white-space: pre-wrap;
-    word-break: break-word;
-    color: #cbd5e1;
-    font-size: 0.78rem;
-  }
-  @media (max-width: 980px) {
-    .ts-hero { grid-template-columns: 1fr; }
-    .ts-metrics { grid-template-columns: 1fr 1fr; }
-  }
-</style>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'monitoring/fusion_hub_dashboard.css' %}">
+  <link rel="stylesheet" href="{% static 'monitoring/fusion_hub_smartcity.css' %}">
+  <link rel="stylesheet" href="{% static 'monitoring/traffic-signal-modern.css' %}?v=1">
 {% endblock %}
 
+{% block topbar %}{% include "monitoring/partials/mm_topbar.html" %}{% endblock %}
+
 {% block content %}
-<main class="ts-page">
-  <div class="ts-hero">
-    <section class="ts-card">
-      <h1 class="ts-title">Détection feu rouge / vert</h1>
-      <p class="ts-muted">
-        Charge une image ou une vidéo, l’IA détecte l’état du feu, puis envoie automatiquement le résultat à la carte ESP32.
-      </p>
+<div class="fh-root ts-root">
+  <div class="ts-page__bg" aria-hidden="true"></div>
+  <div class="ts-page__grid" aria-hidden="true"></div>
+  <div class="ts-page__particles" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+
+  <section class="ts-hero fh-glass" aria-label="Smart Traffic Light Intelligence">
+    <div class="ts-hero__sweep" aria-hidden="true"></div>
+    <div class="ts-hero__copy">
+      <h1 class="ts-hero__title">Smart Traffic Light Intelligence</h1>
+      <p class="ts-hero__sub">Detect traffic signal states and synchronize decisions with ESP32 in real time.</p>
+      <div class="ts-hero__badges">
+        <span class="ts-hero-badge">Signal Vision</span>
+        <span class="ts-hero-badge">ESP32 Sync</span>
+        <span class="ts-hero-badge ts-hero-badge--green">Adaptive Mobility</span>
+        <span class="ts-hero-badge">Real-Time Decision</span>
+      </div>
+    </div>
+    <div class="ts-hero-holo" aria-hidden="true">
+      <div class="ts-hero-holo__scan"></div>
+      <svg class="ts-hero-holo__svg" viewBox="0 0 280 130" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="tsRoadGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#00d5ff" stop-opacity="0.3"/>
+            <stop offset="100%" stop-color="#7c3aed" stop-opacity="0.1"/>
+          </linearGradient>
+        </defs>
+        <rect width="280" height="130" fill="rgba(3,10,22,0.5)"/>
+        <g stroke="url(#tsRoadGrad)" stroke-width="0.6" fill="none" opacity="0.45">
+          <path d="M0 65 H280 M70 0 V130 M210 0 V130"/>
+        </g>
+        <rect x="118" y="18" width="44" height="88" rx="6" fill="rgba(0,0,0,0.55)" stroke="rgba(0,213,255,0.35)" stroke-width="1.2"/>
+        <circle class="ts-holo-bulb--red" cx="140" cy="36" r="10" fill="rgba(255,77,109,0.55)" stroke="#ff4d6d" stroke-width="1"/>
+        <circle class="ts-holo-bulb--amber" cx="140" cy="62" r="10" fill="rgba(251,146,60,0.2)" stroke="rgba(251,146,60,0.4)" stroke-width="1"/>
+        <circle class="ts-holo-bulb--green" cx="140" cy="88" r="10" fill="rgba(52,211,153,0.45)" stroke="#34d399" stroke-width="1"/>
+        <rect x="136" y="106" width="8" height="14" fill="rgba(0,213,255,0.2)"/>
+        <circle cx="48" cy="65" r="14" fill="rgba(0,213,255,0.06)" stroke="rgba(0,213,255,0.25)" stroke-width="1"/>
+        <text x="48" y="69" text-anchor="middle" fill="#00d5ff" font-size="7" font-weight="700">CAM</text>
+        <circle cx="232" cy="65" r="14" fill="rgba(0,213,255,0.06)" stroke="rgba(0,213,255,0.25)" stroke-width="1"/>
+        <text x="232" y="69" text-anchor="middle" fill="#00d5ff" font-size="6" font-weight="700">ESP32</text>
+        <line x1="62" y1="65" x2="118" y2="62" stroke="rgba(0,213,255,0.25)" stroke-width="1" stroke-dasharray="3 2"/>
+        <line x1="162" y1="62" x2="218" y2="65" stroke="rgba(0,213,255,0.25)" stroke-width="1" stroke-dasharray="3 2"/>
+        <circle class="ts-holo-dot" cx="90" cy="64" r="2.5" fill="#00d5ff"/>
+        <circle class="ts-holo-dot ts-holo-dot--2" cx="190" cy="64" r="2.5" fill="#00d5ff"/>
+      </svg>
+      <div class="ts-hero-holo__tags">
+        <span>Signal State Scan</span>
+        <span>ESP32 Sync Ready</span>
+      </div>
+    </div>
+  </section>
+
+  <div class="ts-command-grid">
+    <section class="ts-card ts-input-card">
+      <p class="ts-card__kicker">Input</p>
+      <h2 class="ts-card__title">Signal Input</h2>
+      <p class="ts-card__sub">Upload a traffic scene and let MedinaMind detect the signal state before sending the decision to ESP32.</p>
+
+      <div class="ts-workflow" aria-label="Signal workflow">
+        <div class="ts-workflow__step">
+          <span class="ts-workflow__ico">📤</span>
+          <strong>Upload</strong>
+          Scene
+        </div>
+        <div class="ts-workflow__step">
+          <span class="ts-workflow__ico">👁</span>
+          <strong>Detect</strong>
+          Signal
+        </div>
+        <div class="ts-workflow__step">
+          <span class="ts-workflow__ico">📡</span>
+          <strong>Send</strong>
+          Decision
+        </div>
+        <div class="ts-workflow__step">
+          <span class="ts-workflow__ico">⚡</span>
+          <strong>ESP32</strong>
+          Update
+        </div>
+      </div>
 
       <form method="post" enctype="multipart/form-data">
         {% csrf_token %}
         <div class="ts-field">
-          <label for="ts-media">Image ou vidéo</label>
+          <label for="ts-media">Traffic Scene</label>
           <input id="ts-media" name="media" type="file" accept="image/*,video/*" required>
         </div>
 
         <div class="ts-field">
-          <label for="ts-esp32">URL ESP32</label>
+          <label for="ts-esp32">ESP32 Endpoint</label>
           <input id="ts-esp32" name="esp32_url" type="url" value="{{ default_esp32_url }}" placeholder="http://192.168.1.50/signal">
         </div>
 
-        <button class="ts-btn" type="submit">Analyser et envoyer à l’ESP32</button>
+        <button class="ts-btn" type="submit">Analyze Signal &amp; Sync ESP32</button>
       </form>
 
       {% if error %}
-        <div class="ts-alert">{{ error }}</div>
+        <div class="ts-alert" role="alert">{{ error }}</div>
       {% endif %}
     </section>
 
-    <section class="ts-card">
-      {% if result and result.success %}
-        <div class="ts-result-head">
-          <div>
-            <h2 class="ts-title" style="font-size:1.25rem;">Résultat IA</h2>
-            <p class="ts-muted" style="margin:0;">Modèle : traffic_sign_detector.pt</p>
-          </div>
-          <span class="ts-pill {{ result.state }}">{{ result.label }}</span>
+    <section class="ts-card ts-result-card">
+      <div class="ts-result-head">
+        <div>
+          <p class="ts-card__kicker">Output</p>
+          <h2 class="ts-card__title">AI Signal Result</h2>
         </div>
+        {% if result and result.success %}
+          <span class="ts-pill {{ result.state }}">
+            {% if result.state == "red" %}RED{% elif result.state == "green" %}GREEN{% else %}UNKNOWN{% endif %}
+          </span>
+        {% endif %}
+      </div>
 
-        <div class="ts-preview">
+      <div class="ts-preview{% if not result or not result.success %} ts-preview--empty{% endif %}">
+        <span class="ts-preview__scan" aria-hidden="true"></span>
+        {% if result and result.success %}
           {% if result.media_type == "video" %}
             <video src="{{ result.annotated_url }}" controls playsinline></video>
           {% else %}
-            <img src="{{ result.annotated_url }}" alt="Résultat annoté">
+            <img src="{{ result.annotated_url }}" alt="Annotated traffic signal result">
           {% endif %}
-        </div>
-
-        <div class="ts-metrics">
-          <div class="ts-metric"><span>Confiance</span><strong>{{ result.confidence }}</strong></div>
-          <div class="ts-metric"><span>Rouge</span><strong>{{ result.red_count }}</strong></div>
-          <div class="ts-metric"><span>Vert</span><strong>{{ result.green_count }}</strong></div>
-          <div class="ts-metric"><span>Détections</span><strong>{{ result.detection_count }}</strong></div>
-        </div>
-
-        {% if esp32_result %}
-          <div class="ts-esp {% if esp32_result.ok %}ok{% else %}err{% endif %}">
-            <strong>ESP32 :</strong>
-            {% if esp32_result.status_code %}status {{ esp32_result.status_code }} · {% endif %}{{ esp32_result.message }}
-            <div class="ts-code">URL: {{ esp32_result.url }}
-Payload JSON: {{ esp32_result.payload_json }}</div>
+        {% else %}
+          <div class="ts-empty">
+            <div class="ts-empty__holo" aria-hidden="true">
+              <span class="ts-empty__grid"></span>
+              <div class="ts-empty__light">
+                <span class="ts-empty__bulb ts-empty__bulb--r"></span>
+                <span class="ts-empty__bulb ts-empty__bulb--y"></span>
+                <span class="ts-empty__bulb ts-empty__bulb--g"></span>
+              </div>
+            </div>
+            <p class="ts-empty__title">No signal analyzed yet</p>
+            <p class="ts-empty__hint">Upload a traffic scene to detect the signal state.</p>
           </div>
         {% endif %}
-      {% else %}
-        <div class="ts-preview">
-          <p class="ts-muted">Le résultat annoté apparaîtra ici après analyse.</p>
+      </div>
+
+      <div class="ts-status-grid" role="status">
+        <div class="ts-status-card {% if result and result.success %}{% if result.state == 'red' %}ts-status-card--red{% elif result.state == 'green' %}ts-status-card--green{% else %}ts-status-card--amber{% endif %}{% else %}ts-status-card--cyan{% endif %}">
+          <span class="ts-status-card__label">Detected Signal</span>
+          <span class="ts-status-card__value">
+            {% if result and result.success %}
+              {% if result.state == "red" %}Red{% elif result.state == "green" %}Green{% else %}Unknown{% endif %}
+            {% else %}Waiting{% endif %}
+          </span>
         </div>
+        <div class="ts-status-card ts-status-card--cyan">
+          <span class="ts-status-card__label">Confidence</span>
+          <span class="ts-status-card__value">
+            {% if result and result.success and result.confidence %}{{ result.confidence }}{% else %}Waiting{% endif %}
+          </span>
+        </div>
+        <div class="ts-status-card {% if esp32_result %}{% if esp32_result.ok %}ts-status-card--ok{% else %}ts-status-card--err{% endif %}{% else %}ts-status-card--cyan{% endif %}">
+          <span class="ts-status-card__label">ESP32 Sync</span>
+          <span class="ts-status-card__value">
+            {% if esp32_result %}
+              {% if esp32_result.ok %}Sent{% else %}Failed{% endif %}
+            {% else %}Ready{% endif %}
+          </span>
+        </div>
+        <div class="ts-status-card {% if result and result.success %}{% if result.state == 'red' %}ts-status-card--red{% elif result.state == 'green' %}ts-status-card--green{% else %}ts-status-card--cyan{% endif %}{% else %}ts-status-card--cyan{% endif %}">
+          <span class="ts-status-card__label">Decision</span>
+          <span class="ts-status-card__value">
+            {% if result and result.success %}
+              {% if result.state == "red" %}Stop{% elif result.state == "green" %}Go{% else %}Waiting{% endif %}
+            {% else %}Waiting{% endif %}
+          </span>
+        </div>
+      </div>
+
+      <div class="ts-sync-bar{% if esp32_result %}{% if esp32_result.ok %} ok{% else %} err{% endif %}{% endif %}" aria-label="AI to ESP32 sync path">
+        <span class="ts-sync-bar__node">AI</span>
+        <span class="ts-sync-bar__line"><span class="ts-sync-bar__dot"></span></span>
+        <span class="ts-sync-bar__node">ESP32</span>
+        <span class="ts-sync-bar__label">
+          <strong>Real-Time Decision Path</strong>
+          {% if esp32_result %}
+            {% if esp32_result.ok %}Decision delivered to endpoint{% else %}Sync issue — check endpoint{% endif %}
+          {% else %}
+            Ready to send after signal analysis
+          {% endif %}
+        </span>
+      </div>
+
+      {% if result and result.success %}
+        <details class="ts-advanced">
+          <summary>Advanced Sync Details</summary>
+          <div class="ts-advanced__body">
+            <div class="ts-metrics-mini">
+              <span>Red detections: <strong>{{ result.red_count }}</strong></span>
+              <span>Green detections: <strong>{{ result.green_count }}</strong></span>
+              <span>Total: <strong>{{ result.detection_count }}</strong></span>
+            </div>
+            {% if esp32_result %}
+              <p style="margin:8px 0 0"><strong>ESP32 response:</strong>
+                {% if esp32_result.status_code %}status {{ esp32_result.status_code }} · {% endif %}{{ esp32_result.message }}
+              </p>
+              <div class="ts-code">URL: {{ esp32_result.url }}
+Payload JSON: {{ esp32_result.payload_json }}</div>
+            {% endif %}
+          </div>
+        </details>
       {% endif %}
     </section>
   </div>
-</main>
+</div>
 {% endblock %}

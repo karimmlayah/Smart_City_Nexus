@@ -62,6 +62,7 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "monitoring.context_processors.platform_theme",
             ],
         },
     },
@@ -356,7 +357,7 @@ UAV_MODEL_PATH = str(_UAV_KERAS) if _UAV_KERAS.is_file() else os.environ.get("UA
 # Réservé si vous réintroduisez un vrai Grad-CAM conv ; l’UI utilise un proxy gradient-entrée lissé.
 UAV_GRADCAM_LAYER = os.environ.get("UAV_GRADCAM_LAYER", "conv2d_3")
 # Libellés FR pour les 3 sorties du modèle [indice 0, 1, 2] — alignez avec votre entraînement.
-UAV_CLASS_LABELS: tuple[str, str, str] = ("Intact", "Endommagé", "Effondré")
+UAV_CLASS_LABELS: tuple[str, str, str] = ("Intact", "Damaged", "Collapsed")
 # Badge affiché dans l’en-tête (précision validation — valeur indicative).
 UAV_DISPLAY_MODEL_ACCURACY = os.environ.get("UAV_DISPLAY_MODEL_ACCURACY", "96.06%")
 

@@ -271,6 +271,7 @@ def traffic_analyze(request):
     display_state_in = body.get("display_state")
     if not isinstance(display_state_in, dict):
         display_state_in = {}
+    overlay_on_client = bool(body.get("overlay_on_client", False))
 
     paths = getattr(settings, "TRAFFIC_NEXUS_MODEL_PATHS", {})
     if model_key not in paths and model_key != "yolov8n":
@@ -308,6 +309,7 @@ def traffic_analyze(request):
             esp32_sim_zone=esp32_sim_zone,
             esp32_confirm_state=esp32_confirm_in if isinstance(esp32_confirm_in, dict) else None,
             now_s=time.time(),
+            overlay_on_client=overlay_on_client,
         )
     except Exception as exc:
         logger.exception("traffic analyze failed")
@@ -523,6 +525,7 @@ def traffic_live_tick(request):
     _confirm_kw = {
         "esp32_confirm_state": esp32_confirm_in if isinstance(esp32_confirm_in, dict) else None,
         "now_s": time.time(),
+        "overlay_on_client": bool(body.get("overlay_on_client", False)),
     }
 
     sess = get_session(session_id)
