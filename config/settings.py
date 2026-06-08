@@ -129,6 +129,14 @@ if DATABASE_URL:
             ssl_require=not DEBUG,
         )
     }
+elif VERCEL:
+    # Serverless filesystem is read-only — use /tmp when Postgres is not configured.
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": "/tmp/medinamind_db.sqlite3",
+        }
+    }
 else:
     DATABASES = {
         "default": {
@@ -160,11 +168,11 @@ _has_static_manifest = _static_manifest.is_file()
 
 _USE_WHITENOISE_STORAGE = VERCEL or not DEBUG
 if _USE_WHITENOISE_STORAGE:
-    if _has_static_manifest:
-        _staticfiles_backend = "whitenoise.storage.CompressedManifestStaticFilesStorage"
-    elif VERCEL:
-        # Fallback when collectstatic has not run yet (avoids 500 on {% static %}).
+    if VERCEL:
+        # Vercel: serve from static/ via finders (no runtime collectstatic on read-only FS).
         _staticfiles_backend = "whitenoise.storage.CompressedStaticFilesStorage"
+    elif _has_static_manifest:
+        _staticfiles_backend = "whitenoise.storage.CompressedManifestStaticFilesStorage"
     else:
         _staticfiles_backend = "whitenoise.storage.CompressedManifestStaticFilesStorage"
     STORAGES = {
@@ -180,9 +188,13 @@ if _USE_WHITENOISE_STORAGE:
     }
     WHITENOISE_MANIFEST_STRICT = False
     WHITENOISE_MAX_AGE = 31536000
-    if VERCEL and not _has_static_manifest and _static_dir.is_dir():
+    if VERCEL and _static_dir.is_dir():
         WHITENOISE_USE_FINDERS = True
-    STATIC_ROOT.mkdir(parents=True, exist_ok=True)
+    if not VERCEL:
+        try:
+            STATIC_ROOT.mkdir(parents=True, exist_ok=True)
+        except OSError:
+            pass
 else:
     STORAGES = {
         "default": {

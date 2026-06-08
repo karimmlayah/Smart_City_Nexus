@@ -68,7 +68,24 @@ except Exception:
         exc_info=True,
     )
 
-urlpatterns.append(path("", include("monitoring.urls")))
+try:
+    urlpatterns.append(path("", include("monitoring.urls")))
+except Exception:
+    import logging
+
+    logging.getLogger(__name__).exception(
+        "monitoring.urls failed to load — homepage routes unavailable.",
+    )
+    from django.http import HttpResponse
+
+    def _startup_fallback_home(_request):
+        return HttpResponse(
+            "MedinaMind backend is online but page routes failed to load. Check Vercel runtime logs.",
+            status=503,
+            content_type="text/plain",
+        )
+
+    urlpatterns.append(path("", _startup_fallback_home, name="home_fallback"))
 
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
