@@ -2,6 +2,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
+from django.views.generic import RedirectView
 
 from monitoring.api_views import (
     ReclamationCreateView,
@@ -13,6 +14,16 @@ from monitoring.face_registry_api import face_registry_enroll
 
 # Mobile + core API routes first (must load even if optional modules fail).
 urlpatterns = [
+    path(
+        "favicon.ico",
+        RedirectView.as_view(url=f"{settings.STATIC_URL}images/medinamind-logo.png", permanent=False),
+        name="favicon_ico",
+    ),
+    path(
+        "favicon.png",
+        RedirectView.as_view(url=f"{settings.STATIC_URL}images/medinamind-logo.png", permanent=False),
+        name="favicon_png",
+    ),
     path("admin/", admin.site.urls),
     path("api/health/", api_health, name="api_health"),
     path("api/reclamations/", ReclamationCreateView.as_view(), name="api_reclamations"),

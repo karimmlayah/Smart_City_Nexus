@@ -155,8 +155,18 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 _static_dir = BASE_DIR / "static"
 STATICFILES_DIRS = [_static_dir] if _static_dir.is_dir() else []
 
+_static_manifest = STATIC_ROOT / "staticfiles.json"
+_has_static_manifest = _static_manifest.is_file()
+
 _USE_WHITENOISE_STORAGE = VERCEL or not DEBUG
 if _USE_WHITENOISE_STORAGE:
+    if _has_static_manifest:
+        _staticfiles_backend = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+    elif VERCEL:
+        # Fallback when collectstatic has not run yet (avoids 500 on {% static %}).
+        _staticfiles_backend = "whitenoise.storage.CompressedStaticFilesStorage"
+    else:
+        _staticfiles_backend = "whitenoise.storage.CompressedManifestStaticFilesStorage"
     STORAGES = {
         "default": {
             "BACKEND": os.environ.get(
@@ -165,11 +175,14 @@ if _USE_WHITENOISE_STORAGE:
             ),
         },
         "staticfiles": {
-            "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+            "BACKEND": _staticfiles_backend,
         },
     }
     WHITENOISE_MANIFEST_STRICT = False
     WHITENOISE_MAX_AGE = 31536000
+    if VERCEL and not _has_static_manifest and _static_dir.is_dir():
+        WHITENOISE_USE_FINDERS = True
+    STATIC_ROOT.mkdir(parents=True, exist_ok=True)
 else:
     STORAGES = {
         "default": {
@@ -637,5 +650,22 @@ LOGGING = {
             "level": "INFO",
             "propagate": False,
         },
+        "medinamind.startup": {
+            "handlers": ["console"],
+            "level": "INFO",
+            "propagate": False,
+        },
     },
 }
+
+import logging as _logging
+
+_startup_log = _logging.getLogger("medinamind.startup")
+_startup_log.info(
+    "Running on Vercel: %s | DEBUG: %s | DATABASE_URL configured: %s | OPENAI configured: %s | static manifest: %s",
+    IS_VERCEL,
+    DEBUG,
+    bool(DATABASE_URL),
+    bool((os.environ.get("OPENAI_API_KEY") or "").strip()),
+    _static_manifest.is_file(),
+)
