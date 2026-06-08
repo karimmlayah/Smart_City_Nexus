@@ -1,14 +1,16 @@
 {
   "version": 2,
-  "installCommand": "pip install -r requirements.txt",
-  "buildCommand": "bash build_files.sh",
-  "functions": {
-    "config/wsgi.py": {
-      "runtime": "python3.11",
-      "maxDuration": 30
+  "builds": [
+    {
+      "src": "config/wsgi.py",
+      "use": "@vercel/python@latest"
     }
-  },
+  ],
   "routes": [
+    {
+      "src": "/static/(.*)",
+      "dest": "/static/$1"
+    },
     {
       "src": "/(.*)",
       "dest": "config/wsgi.py"
