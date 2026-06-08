@@ -7,7 +7,7 @@ export DEBUG="${DEBUG:-False}"
 mkdir -p staticfiles
 
 echo "Collecting static files (VERCEL=${VERCEL}, DEBUG=${DEBUG})..."
-python manage.py collectstatic --noinput --verbosity 1
+python manage.py collectstatic --noinput
 
 if [ -f staticfiles/staticfiles.json ]; then
   echo "staticfiles.json created ($(wc -c < staticfiles/staticfiles.json) bytes)"

@@ -160,19 +160,19 @@ USE_TZ = True
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
-_static_dir = BASE_DIR / "static"
-STATICFILES_DIRS = [_static_dir] if _static_dir.is_dir() else []
+static_dir = BASE_DIR / "static"
+STATICFILES_DIRS = [static_dir] if static_dir.exists() else []
 
 _static_manifest = STATIC_ROOT / "staticfiles.json"
 _has_static_manifest = _static_manifest.is_file()
 
 _USE_WHITENOISE_STORAGE = VERCEL or not DEBUG
 if _USE_WHITENOISE_STORAGE:
-    if VERCEL:
-        # Vercel: serve from static/ via finders (no runtime collectstatic on read-only FS).
-        _staticfiles_backend = "whitenoise.storage.CompressedStaticFilesStorage"
-    elif _has_static_manifest:
+    if _has_static_manifest:
         _staticfiles_backend = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+    elif VERCEL:
+        # Build-time collectstatic may be skipped; serve source files via finders.
+        _staticfiles_backend = "whitenoise.storage.CompressedStaticFilesStorage"
     else:
         _staticfiles_backend = "whitenoise.storage.CompressedManifestStaticFilesStorage"
     STORAGES = {
@@ -188,7 +188,7 @@ if _USE_WHITENOISE_STORAGE:
     }
     WHITENOISE_MANIFEST_STRICT = False
     WHITENOISE_MAX_AGE = 31536000
-    if VERCEL and _static_dir.is_dir():
+    if VERCEL and not _has_static_manifest and static_dir.exists():
         WHITENOISE_USE_FINDERS = True
     if not VERCEL:
         try:

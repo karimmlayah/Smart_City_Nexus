@@ -1,16 +1,16 @@
 {
   "version": 2,
+  "installCommand": "pip install -r requirements.txt && bash build_files.sh",
   "builds": [
     {
       "src": "config/wsgi.py",
-      "use": "@vercel/python@latest"
+      "use": "@vercel/python@latest",
+      "config": {
+        "maxLambdaSize": "50mb"
+      }
     }
   ],
   "routes": [
-    {
-      "src": "/static/(.*)",
-      "dest": "/static/$1"
-    },
     {
       "src": "/(.*)",
       "dest": "config/wsgi.py"
