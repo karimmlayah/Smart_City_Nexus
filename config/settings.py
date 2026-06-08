@@ -81,7 +81,6 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
-    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -91,9 +90,12 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
-if not DEBUG:
-    _sec_idx = MIDDLEWARE.index("django.middleware.security.SecurityMiddleware")
+# WhiteNoise must sit directly after SecurityMiddleware (production + Vercel).
+_sec_idx = MIDDLEWARE.index("django.middleware.security.SecurityMiddleware")
+if VERCEL or not DEBUG:
     MIDDLEWARE.insert(_sec_idx + 1, "whitenoise.middleware.WhiteNoiseMiddleware")
+# CORS before Security is fine; keep it first in the stack.
+MIDDLEWARE.insert(0, "corsheaders.middleware.CorsMiddleware")
 
 ROOT_URLCONF = "config.urls"
 
@@ -148,11 +150,38 @@ USE_I18N = True
 USE_TZ = True
 
 STATIC_URL = "/static/"
-STATICFILES_DIRS = [BASE_DIR / "static"]
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
-if not DEBUG:
-    STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+_static_dir = BASE_DIR / "static"
+STATICFILES_DIRS = [_static_dir] if _static_dir.is_dir() else []
+
+_USE_WHITENOISE_STORAGE = VERCEL or not DEBUG
+if _USE_WHITENOISE_STORAGE:
+    STORAGES = {
+        "default": {
+            "BACKEND": os.environ.get(
+                "DEFAULT_FILE_STORAGE",
+                "django.core.files.storage.FileSystemStorage",
+            ),
+        },
+        "staticfiles": {
+            "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+        },
+    }
+    WHITENOISE_MANIFEST_STRICT = False
+    WHITENOISE_MAX_AGE = 31536000
+else:
+    STORAGES = {
+        "default": {
+            "BACKEND": os.environ.get(
+                "DEFAULT_FILE_STORAGE",
+                "django.core.files.storage.FileSystemStorage",
+            ),
+        },
+        "staticfiles": {
+            "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+        },
+    }
 
 # Slash initial : évite les URLs résolues sous /reclamations/.../ au lieu de la racine site.
 MEDIA_URL = "/media/"
@@ -160,10 +189,7 @@ MEDIA_ROOT = BASE_DIR / "media"
 
 # Optional external media for production (Vercel has no persistent disk).
 # Example later: django-cloudinary-storage + CLOUDINARY_URL in env.
-DEFAULT_FILE_STORAGE = os.environ.get(
-    "DEFAULT_FILE_STORAGE",
-    "django.core.files.storage.FileSystemStorage",
-)
+# File uploads use STORAGES["default"] (see above).
 
 if VERCEL:
     FILE_UPLOAD_TEMP_DIR = "/tmp/medinamind_uploads"
