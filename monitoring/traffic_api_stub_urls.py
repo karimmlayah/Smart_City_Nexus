@@ -1,16 +1,9 @@
+"""Fallback URLconf so traffic_api namespace always exists on Vercel."""
 from django.urls import path
 
-from monitoring.runtime import ml_deps_available
+from monitoring import traffic_api_stub as _api
 
 app_name = "traffic_api"
-
-if ml_deps_available():
-    try:
-        from monitoring import traffic_nexus_api as _api
-    except ImportError:
-        from monitoring import traffic_api_stub as _api
-else:
-    from monitoring import traffic_api_stub as _api
 
 urlpatterns = [
     path("first-frame/", _api.traffic_first_frame, name="traffic_first_frame"),

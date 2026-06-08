@@ -17,6 +17,47 @@ def api_health(request):
     return Response({"status": "ok", "message": "MedinaMind backend online"})
 
 
+@api_view(["GET"])
+@permission_classes([permissions.AllowAny])
+def platform_diagnostics(request):
+    """GET /api/diagnostics/ — safe deployment checks (no secrets)."""
+    import os
+
+    from django.urls import NoReverseMatch, reverse
+
+    from monitoring.openai_client import get_openai_api_key
+    from monitoring.runtime import IS_VERCEL, ml_deps_available
+
+    def _route_ok(name: str) -> bool:
+        try:
+            reverse(name)
+            return True
+        except NoReverseMatch:
+            return False
+
+    return Response(
+        {
+            "vercel": IS_VERCEL,
+            "ml_deps_available": ml_deps_available(),
+            "openai_configured": bool(get_openai_api_key()),
+            "openai_chat_model": (
+                os.environ.get("OPENAI_CHAT_MODEL")
+                or "gpt-4o-mini"
+            ).strip(),
+            "groq_configured": bool((os.environ.get("GROQ_API_KEY") or "").strip()),
+            "database_url_configured": bool((os.environ.get("DATABASE_URL") or "").strip()),
+            "routes": {
+                "home": _route_ok("monitoring:home"),
+                "surveillance": _route_ok("monitoring:surveillance_dashboard"),
+                "road_damage_test": _route_ok("monitoring:road_damage_test"),
+                "traffic_nexus": _route_ok("monitoring:traffic_nexus_dashboard"),
+                "ai_dashboard_chatbot": _route_ok("monitoring:ai_dashboard_chatbot"),
+                "traffic_api_first_frame": _route_ok("traffic_api:traffic_first_frame"),
+            },
+        }
+    )
+
+
 @method_decorator(csrf_exempt, name="dispatch")
 class ReclamationCreateView(generics.CreateAPIView):
     """

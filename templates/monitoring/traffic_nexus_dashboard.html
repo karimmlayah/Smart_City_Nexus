@@ -40,6 +40,11 @@
   </div>
 
   <div class="ai-dash tn-page">
+    {% if traffic_api_unavailable %}
+    <div class="tn-ml-notice" role="status">
+      {{ traffic_api_message|default:"Traffic detection is not available on this host. The dashboard UI is shown for reference; analysis APIs return 503." }}
+    </div>
+    {% endif %}
     <div class="tn-workspace">
       <aside class="tn-control tn-glass-card" aria-label="Control center">
         <div class="tn-control__head">

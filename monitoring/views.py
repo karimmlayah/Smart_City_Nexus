@@ -711,11 +711,69 @@ def fusion_analyze_frame(request):
     return JsonResponse(out)
 
 
+def _fusion_hub_ml_stub(request):
+    """Render fusion/surveillance UI without loading OpenCV/YOLO (Vercel-safe)."""
+    from django.urls import reverse
+
+    from monitoring.runtime import ML_UNAVAILABLE_MESSAGE
+
+    from .forms import FusionHubForm
+
+    form = FusionHubForm(
+        fight_choices=[("n/a", "ML unavailable on this host")],
+        weapon_choices=[("n/a", "ML unavailable on this host")],
+    )
+    return render(
+        request,
+        "monitoring/fusion_hub.html",
+        {
+            "form": form,
+            "result": None,
+            "run_error": ML_UNAVAILABLE_MESSAGE,
+            "fight_model_name": "unavailable",
+            "weapon_model_name": "unavailable",
+            "youtube_video_id": None,
+            "local_video_url": None,
+            "annotated_video_url": None,
+            "annotated_image_url": None,
+            "fusion_source_is_image": False,
+            "fusion_threat_cards": [],
+            "timeline": None,
+            "fight_upload_max_mb": int(getattr(django_settings, "FIGHT_UPLOAD_MAX_MB", 200)),
+            "fight_alert_pct": 99,
+            "weapon_alert_pct": 82,
+            "fusion_live_frame_url": reverse("monitoring:fusion_live_frame"),
+            "fusion_report_payload": {},
+            "fusion_face_cards": [],
+            "fusion_match_disabled": True,
+            "fusion_gallery_empty": True,
+            "face_recognition_enabled": False,
+            "face_registry_admin_url": reverse("admin:monitoring_faceidentity_changelist"),
+            "face_registry_enroll_url": reverse("api_face_registry_enroll"),
+            "face_registry_seed_command": "",
+            "fusion_progressive_mode": False,
+            "fusion_progressive_pv": None,
+            "fusion_analysis_interval_seconds": 1.0,
+            "fusion_analyze_frame_url": reverse("monitoring:fusion_analyze_frame"),
+            "fusion_live_fight_display_min_p": float(
+                getattr(django_settings, "FUSION_LIVE_FIGHT_DISPLAY_MIN_P", 0.52) or 0.52
+            ),
+        },
+    )
+
+
 def _fusion_hub_page(request, *, list_url_name: str):
     """Studio unifié : YouTube / fichier / caméra PC, modèles combat + armes activables.
 
     ``list_url_name`` : nom d'URL Django pour la redirection progressive (upload vidéo).
     """
+    from monitoring.runtime import ML_UNAVAILABLE_MESSAGE, ml_deps_available
+
+    if not ml_deps_available():
+        if request.method == "POST":
+            return JsonResponse({"ok": False, "error": ML_UNAVAILABLE_MESSAGE}, status=503)
+        return _fusion_hub_ml_stub(request)
+
     from uuid import uuid4
 
     from django.core.cache import cache
@@ -1201,6 +1259,11 @@ def surveillance_dashboard(request):
 @require_POST
 def fusion_live_frame(request):
     """Inference sur une image JPEG (caméra navigateur)."""
+    from monitoring.runtime import ml_deps_available, ml_unavailable_json
+
+    if not ml_deps_available():
+        return ml_unavailable_json("Surveillance live frame analysis")
+
     import cv2
     import numpy as np
     from uuid import uuid4
@@ -1883,25 +1946,46 @@ def road_damage_test(request):
 
     from django.urls import reverse
 
-    from . import ai_agents as citizen_ai
-    from . import vision_analysis as citizen_vision
+    from monitoring.runtime import ML_UNAVAILABLE_MESSAGE, ml_deps_available
 
-    _citizen_recs = list(CitizenReclamation.objects.all().order_by("-created_at"))
+    from . import ai_agents as citizen_ai
+
+    _citizen_recs: list = []
+    try:
+        _citizen_recs = list(CitizenReclamation.objects.all().order_by("-created_at")[:80])
+    except Exception as exc:
+        logger.warning("road_damage_test: could not load citizen reports: %s", exc)
+
     citizen_enriched = []
-    for r in _citizen_recs:
-        try:
-            vis = citizen_vision.analyze_reclamation_media(r)
-        except Exception:
-            vis = {"stub": True, "ok": False}
-        citizen_enriched.append(
-            {
-                "rec": r,
-                "pipeline": citizen_ai.compute_ai_pipeline(
-                    r, _citizen_recs, vision=vis
-                ),
-                "vision": vis,
-            }
-        )
+    ml_ready = ml_deps_available()
+    if ml_ready:
+        from . import vision_analysis as citizen_vision
+
+        for r in _citizen_recs:
+            try:
+                vis = citizen_vision.analyze_reclamation_media(r)
+            except Exception:
+                vis = {"stub": True, "ok": False}
+            citizen_enriched.append(
+                {
+                    "rec": r,
+                    "pipeline": citizen_ai.compute_ai_pipeline(
+                        r, _citizen_recs, vision=vis
+                    ),
+                    "vision": vis,
+                }
+            )
+    else:
+        for r in _citizen_recs:
+            citizen_enriched.append(
+                {
+                    "rec": r,
+                    "pipeline": citizen_ai.compute_ai_pipeline(
+                        r, _citizen_recs, vision={"stub": True, "ok": False}
+                    ),
+                    "vision": {"stub": True, "ok": False, "message": ML_UNAVAILABLE_MESSAGE},
+                }
+            )
     citizen_enriched = citizen_ai.sort_enriched_by_priority(citizen_enriched)
     citizen_kpis = citizen_ai.compute_kpis(citizen_enriched)
     citizen_map_payload = citizen_ai.build_map_payload(citizen_enriched)
@@ -1911,15 +1995,8 @@ def road_damage_test(request):
         if row["pipeline"]["final_priority"] in ("Critical", "High")
     ][:16]
 
-    from .services.road_damage_tester import (
-        analyze_image_path,
-        analyze_image_url,
-        analyze_local_video_path,
-        analyze_video_url,
-    )
-
     result = None
-    run_error = None
+    run_error = None if ml_ready else ML_UNAVAILABLE_MESSAGE
     local_image_url = None
     local_video_url = None
     annotated_video_url = None
@@ -1945,7 +2022,16 @@ def road_damage_test(request):
 
     if request.method == "POST":
         form = RoadDamageAnalyzeForm(request.POST, request.FILES)
-        if form.is_valid():
+        if not ml_ready:
+            run_error = ML_UNAVAILABLE_MESSAGE
+        elif form.is_valid():
+            from .services.road_damage_tester import (
+                analyze_image_path,
+                analyze_image_url,
+                analyze_local_video_path,
+                analyze_video_url,
+            )
+
             imgf = form.cleaned_data.get("image_file")
             image_url = (form.cleaned_data.get("image_url") or "").strip()
             vf = form.cleaned_data.get("video_file")
@@ -3067,11 +3153,18 @@ def _ai_assistant_client_error(status_code: int, provider_message: str = "") -> 
 
 
 @never_cache
+@csrf_exempt
 @require_POST
 def ai_dashboard_chatbot(request):
     """Proxy chat OpenAI — OPENAI_API_KEY from environment only (never sent to the client)."""
     log_openai_key_status("AI dashboard chat")
     api_key = get_openai_api_key()
+    model = (os.environ.get("OPENAI_CHAT_MODEL") or getattr(django_settings, "OPENAI_CHAT_MODEL", "") or "gpt-4o-mini").strip()
+    logger.info(
+        "AI dashboard chat: OPENAI_API_KEY configured=%s OPENAI_CHAT_MODEL=%s",
+        bool(api_key),
+        model,
+    )
     if not api_key:
         logger.warning("AI dashboard chat: OPENAI_API_KEY is missing after env load")
         return JsonResponse(
@@ -3101,7 +3194,6 @@ def ai_dashboard_chatbot(request):
     if not cleaned:
         return JsonResponse({"error": "No valid user or assistant message."}, status=400)
 
-    model = (os.environ.get("OPENAI_CHAT_MODEL") or "gpt-4o-mini").strip()
     api_messages = [{"role": "system", "content": _AI_DASH_CHAT_SYSTEM}] + cleaned
 
     client = create_openai_client()

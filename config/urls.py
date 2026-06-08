@@ -7,6 +7,7 @@ from django.views.generic import RedirectView
 from monitoring.api_views import (
     ReclamationCreateView,
     api_health,
+    platform_diagnostics,
     reclamation_geocode,
     reclamation_reverse_geocode,
 )
@@ -26,6 +27,7 @@ urlpatterns = [
     ),
     path("admin/", admin.site.urls),
     path("api/health/", api_health, name="api_health"),
+    path("api/diagnostics/", platform_diagnostics, name="platform_diagnostics"),
     path("api/reclamations/", ReclamationCreateView.as_view(), name="api_reclamations"),
     path("api/reclamations/geocode/", reclamation_geocode, name="api_reclamations_geocode"),
     path("api/reclamations/reverse-geocode/", reclamation_reverse_geocode, name="api_reclamations_reverse_geocode"),
@@ -56,17 +58,9 @@ except Exception:
         exc_info=True,
     )
 
-try:
-    urlpatterns.append(
-        path("api/traffic/", include(("monitoring.traffic_urls", "traffic_api"), namespace="traffic_api")),
-    )
-except Exception:
-    import logging
-
-    logging.getLogger(__name__).warning(
-        "Traffic API routes disabled (optional dependency missing). Mobile API remains available.",
-        exc_info=True,
-    )
+urlpatterns.append(
+    path("api/traffic/", include(("monitoring.traffic_urls", "traffic_api"), namespace="traffic_api")),
+)
 
 try:
     urlpatterns.append(path("", include("monitoring.urls")))

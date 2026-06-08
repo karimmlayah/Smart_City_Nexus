@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import re
 from typing import Any
 
@@ -11,6 +12,7 @@ from django.conf import settings
 from django.http import JsonResponse
 from django.urls import reverse
 from django.views.decorators.cache import never_cache
+from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 
 logger = logging.getLogger(__name__)
@@ -190,6 +192,60 @@ def _groq_chat(messages: list[dict[str, str]]) -> tuple[str | None, str | None]:
     return content.strip(), None
 
 
+def _openai_chat(messages: list[dict[str, str]]) -> tuple[str | None, str | None]:
+    from monitoring.openai_client import create_openai_client, get_openai_api_key
+
+    if not get_openai_api_key():
+        return None, "AI assistant is not configured. Missing OPENAI_API_KEY on the server."
+
+    client = create_openai_client()
+    if client is None:
+        return None, "AI assistant is not configured. Missing OPENAI_API_KEY on the server."
+
+    model = (
+        os.environ.get("OPENAI_CHAT_MODEL")
+        or getattr(settings, "OPENAI_CHAT_MODEL", "")
+        or "gpt-4o-mini"
+    ).strip()
+    try:
+        from openai import APIConnectionError, AuthenticationError, OpenAIError, RateLimitError
+
+        completion = client.chat.completions.create(
+            model=model,
+            messages=messages,
+            temperature=0.55,
+            max_tokens=800,
+        )
+    except AuthenticationError as exc:
+        logger.warning("OpenAI orb authentication failed: %s", exc)
+        return None, "The AI assistant is temporarily unavailable. Please try again later."
+    except (APIConnectionError, RateLimitError, OpenAIError) as exc:
+        logger.warning("OpenAI orb request failed: %s", exc)
+        return None, "The AI assistant is temporarily unavailable. Please try again later."
+
+    reply = ""
+    if completion.choices:
+        reply = (completion.choices[0].message.content or "").strip()
+    if not reply:
+        return None, "Empty response from OpenAI."
+    return reply, None
+
+
+def _assistant_chat(messages: list[dict[str, str]]) -> tuple[str | None, str | None, str]:
+    groq_key = (getattr(settings, "GROQ_API_KEY", None) or "").strip()
+    if groq_key:
+        reply, err = _groq_chat(messages)
+        if reply:
+            return reply, None, "groq"
+        if err and "missing" not in err.lower():
+            return None, err, "groq"
+    reply, err = _openai_chat(messages)
+    if reply:
+        return reply, None, "openai"
+    return None, err or "The AI assistant is temporarily unavailable. Please try again later.", "none"
+
+
+@csrf_exempt
 @never_cache
 @require_POST
 def assistant_groq(request):
@@ -231,9 +287,10 @@ def assistant_groq(request):
     api_messages = [{"role": "system", "content": _ORB_SYSTEM}] + history
     api_messages.append({"role": "user", "content": message})
 
-    reply, err = _groq_chat(api_messages)
+    reply, err, source = _assistant_chat(api_messages)
     if err:
-        return JsonResponse({"error": err}, status=503 if "missing" in err.lower() else 502)
+        code = 503 if "not configured" in err.lower() or "missing" in err.lower() else 502
+        return JsonResponse({"error": err}, status=code)
 
     if intent_hit and not intent_hit.get("spoken"):
         return JsonResponse(
@@ -242,12 +299,12 @@ def assistant_groq(request):
                 "intent": intent_hit["intent"],
                 "action": intent_hit["action"],
                 "url": intent_hit["url"],
-                "source": "groq+intent",
+                "source": f"{source}+intent",
             }
         )
 
     post_intent = match_intent(reply or "")
-    payload: dict[str, Any] = {"reply": reply, "source": "groq"}
+    payload: dict[str, Any] = {"reply": reply, "source": source}
     if post_intent:
         payload.update(
             {
