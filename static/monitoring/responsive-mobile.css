@@ -1,0 +1,809 @@
+/**
+ * MedinaMind — Mobile & tablet responsive layer
+ * Loaded last. Desktop layout unchanged above breakpoints.
+ * Breakpoints: 1200px | 992px | 768px | 480px
+ */
+
+/* ── Foundation (all viewports) ─────────────────────────────────────────── */
+img,
+video,
+canvas,
+svg,
+iframe,
+.leaflet-container,
+#map,
+.map-wrap,
+[class*="map-"],
+[class*="preview"],
+[class*="stage"],
+[class*="holo"],
+[class*="globe"] {
+  max-width: 100%;
+}
+
+.mm-table-scroll,
+.table-scroll,
+.table-wrap,
+[class*="table-wrap"],
+[class*="log-table"],
+.fh-threat-list,
+.case-list,
+.ai-event-feed,
+.tn-log-body {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ── 1200px — large tablets ─────────────────────────────────────────────── */
+@media (max-width: 1200px) {
+  body.ai-dashboard-sc.mm-dash-body .app-shell {
+    padding: 0.55rem 0.7rem 0.75rem 0.3rem;
+  }
+
+  body.cockpit:has(.mm-sidebar) .app-shell {
+    margin-left: 0 !important;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .mm-sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    z-index: 450;
+    height: 100vh;
+    max-height: 100vh;
+    box-shadow: 8px 0 40px rgba(0, 0, 0, 0.45);
+    transition:
+      transform 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+      width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  html:not(.mm-sidebar-collapsed) .mm-sidebar,
+  body:not(.mm-sidebar-collapsed) .mm-sidebar {
+    width: min(280px, 86vw) !important;
+    min-width: min(280px, 86vw) !important;
+    max-width: min(280px, 86vw) !important;
+  }
+
+  html:not(.mm-sidebar-collapsed) body.cockpit:has(.mm-sidebar)::before,
+  body:not(.mm-sidebar-collapsed).cockpit:has(.mm-sidebar)::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: 440;
+    background: rgba(2, 8, 20, 0.55);
+    pointer-events: none;
+  }
+
+  html.mm-sidebar-collapsed .mm-sidebar,
+  body.mm-sidebar-collapsed .mm-sidebar {
+    transform: translateX(calc(-100% + 40px));
+  }
+
+  html.mm-sidebar-collapsed .mm-sidebar__toggle,
+  body.mm-sidebar-collapsed .mm-sidebar__toggle {
+    right: -18px;
+    width: 40px;
+    height: 40px;
+    min-width: 44px;
+    min-height: 44px;
+    top: 14px;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.35);
+  }
+
+  .weapon-test-body {
+    grid-template-columns: 1fr !important;
+  }
+
+  .mm-kpi-grid,
+  .ai-kpi-grid,
+  .stat-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .ai-dash-layout,
+  .ai-charts-grid,
+  .mm-charts-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .surv-hero {
+    grid-template-columns: 1fr !important;
+    grid-template-areas: none !important;
+  }
+
+  .surv-hero__copy,
+  .surv-hero__workflow,
+  .surv-city-holo {
+    grid-area: auto !important;
+  }
+
+  .traffic-nexus-sc .tn-workspace {
+    grid-template-columns: minmax(0, 1fr) minmax(260px, 32%);
+  }
+
+  .rd-hero {
+    grid-template-columns: 1fr 42%;
+  }
+
+  .holo-command__body {
+    grid-template-columns: minmax(100px, 120px) minmax(0, 1fr) minmax(100px, 120px);
+  }
+
+  .mm-home-features,
+  .mm-home-modules {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .mm-home-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .fd-hero {
+    grid-template-columns: 1fr;
+  }
+
+  .fc-main-grid,
+  .fc-settings-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .uav-tri,
+  .uav-diag-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── 992px — tablets ────────────────────────────────────────────────────── */
+@media (max-width: 992px) {
+  html,
+  body.cockpit {
+    overflow-x: hidden;
+  }
+
+  body.cockpit:has(.mm-sidebar) .app-shell {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+  }
+
+  .mm-topbar {
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+  }
+
+  .mm-topbar__title {
+    font-size: 1.2rem;
+  }
+
+  .mm-topbar__right {
+    flex-wrap: wrap;
+  }
+
+  .rail {
+    width: 100%;
+    min-width: 0;
+    flex-direction: row;
+    flex-wrap: wrap;
+    border-right: none;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    padding: 0.5rem;
+    gap: 0.25rem;
+  }
+
+  .rail-link {
+    flex: 1 1 auto;
+    min-width: 0;
+    justify-content: center;
+    font-size: 0.85rem;
+  }
+
+  .cockpit-grid,
+  .fusion-hub-layout,
+  .fight-rt-body,
+  .live-rt-body,
+  .fh-main-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .people-recognition-column,
+  .fusion-intel-panel.people-recognition-column,
+  .incident-overview-column,
+  .fh-col-center {
+    grid-column: 1 !important;
+    order: unset !important;
+    max-width: none;
+  }
+
+  .traffic-nexus-sc .tn-workspace,
+  .traffic-nexus-sc .tn-analysis-grid,
+  .traffic-nexus-sc .tn-side-stack {
+    grid-template-columns: 1fr !important;
+  }
+
+  .traffic-nexus-sc .tn-control {
+    position: static;
+    max-height: none;
+  }
+
+  .traffic-nexus-sc .tn-kpi-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .ws-main-grid,
+  .ws-hero {
+    grid-template-columns: 1fr !important;
+  }
+
+  .ws-kpi-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .ts-hero,
+  .ts-main-grid,
+  .ts-signal-grid,
+  .ts-kpi-row {
+    grid-template-columns: 1fr !important;
+  }
+
+  .rd-hero,
+  .rd-ops-row,
+  .rd-intel-grid,
+  .rd-cases-hub__grid,
+  .rd-main-grid,
+  .rd-detail-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .rd-kpi-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .ar-layout {
+    flex-direction: column !important;
+    flex-wrap: nowrap !important;
+    gap: 16px;
+  }
+
+  .ar-left-panel,
+  .ar-right-panel {
+    flex: 0 0 auto !important;
+    width: 100% !important;
+    max-width: none !important;
+  }
+
+  .ar-camera-stage {
+    flex: 1 1 auto !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: 280px;
+    height: auto;
+  }
+
+  .holo-command__body {
+    grid-template-columns: 1fr !important;
+    grid-template-rows: auto auto auto;
+  }
+
+  .holo-command__stats--left,
+  .holo-command__stats--right {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .holo-stat-card {
+    flex: 1 1 calc(50% - 0.5rem);
+    min-width: 100px;
+  }
+
+  .uav-workspace {
+    flex-direction: column !important;
+  }
+
+  .uav-sidebar {
+    width: 100% !important;
+    padding: 0 0 14px;
+  }
+
+  .uav-hero,
+  .uav-reco-row {
+    grid-template-columns: 1fr !important;
+  }
+
+  .fd-main-grid,
+  .fd-summary-row {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .ts-hero,
+  .ts-main-grid,
+  .ts-signal-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .mm-home-hero__grid {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+
+  .mm-home-nav__links,
+  .mm-home-nav__actions .mm-home-btn--ghost {
+    display: none;
+  }
+
+  .mm-home-nav__burger {
+    display: flex;
+  }
+
+  .mm-home-nav.is-open .mm-home-nav__links {
+    display: flex;
+    flex-direction: column;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    padding: 1rem 1.25rem;
+    background: var(--bg-navbar, rgba(8, 22, 48, 0.98));
+    border-bottom: 1px solid var(--border-soft, rgba(255, 255, 255, 0.08));
+    z-index: 200;
+  }
+
+  .identity-main,
+  .fh-did-main,
+  .identity-card-main,
+  .identity-fields,
+  .fh-did-fields {
+    grid-template-columns: 1fr !important;
+  }
+
+  .ps-layout,
+  .ps-hero,
+  .ps-grid,
+  .ps-grid--3 {
+    grid-template-columns: 1fr !important;
+  }
+
+  .mm-mayor-game {
+    grid-template-columns: 1fr !important;
+  }
+
+  .violations-hero,
+  .violations-workspace,
+  .violations-main-grid,
+  .violations-result-grid,
+  .violations-kpi-row,
+  .registry-card__grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .holo-city-wrap {
+    width: min(100%, 92vw) !important;
+    --holo-scale: 0.72;
+  }
+
+  .fh-root,
+  .ai-dash,
+  .tn-page,
+  .rd-page,
+  .fd-page,
+  .ws-page,
+  .uav-page {
+    min-width: 0;
+    overflow-x: hidden;
+  }
+
+  .weapon-test-visual {
+    flex-direction: column;
+  }
+
+  .weapon-crops-panel {
+    max-width: 100%;
+    max-height: none;
+  }
+
+  .mm-modal__dialog,
+  .mm-modal-content,
+  [class*="modal-dialog"],
+  [class*="modal-panel"] {
+    width: min(96vw, 560px) !important;
+    max-width: 96vw !important;
+    margin: 1rem auto;
+  }
+}
+
+/* ── 768px — mobile ─────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  body.ai-dashboard-sc.mm-dash-body .app-shell {
+    padding: 0.5rem 0.65rem 0.7rem;
+  }
+
+  .mm-topbar {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .mm-topbar__right {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .mm-topbar__subtitle {
+    max-width: none;
+    font-size: 0.78rem;
+  }
+
+  .mm-topbar-btn,
+  .mm-topbar-badge,
+  .btn-neon,
+  .btn-neon-sm,
+  .btn-primary,
+  .btn-secondary,
+  .fh-btn,
+  .tn-btn,
+  .rd-btn,
+  .uav-btn,
+  .fd-btn,
+  .mm-home-btn,
+  button[type="submit"]:not(.mm-sidebar__toggle) {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  input:not([type="checkbox"]):not([type="radio"]),
+  select,
+  textarea,
+  .form-control,
+  .mm-input,
+  .tn-input,
+  .rd-input {
+    min-height: 44px;
+    font-size: 16px;
+  }
+
+  .mm-kpi-grid,
+  .ai-kpi-grid,
+  .stat-strip,
+  .traffic-nexus-sc .tn-kpi-row,
+  .traffic-nexus-sc .tn-agent-grid-3,
+  .rd-kpi-strip,
+  .fd-summary-row {
+    grid-template-columns: 1fr !important;
+  }
+
+  .ai-globe-hero__inner {
+    flex-direction: column !important;
+  }
+
+  .ai-chart-wrap,
+  .ai-chart-card,
+  .chart-card,
+  [class*="chart-wrap"] {
+    min-width: 0;
+    overflow-x: auto;
+  }
+
+  .fusion-source-seg,
+  .fh-source-tabs,
+  .segmented-control,
+  [class*="seg-control"],
+  [class*="tab-row"] {
+    flex-wrap: wrap;
+    gap: 0.35rem;
+  }
+
+  .fusion-video-wrap,
+  .fh-video-frame,
+  .fight-canvas-wrap,
+  .weapon-preview-wrap,
+  .tn-vision-stage,
+  .tn-gesture-preview-wrap,
+  .fc-live-frame,
+  .fd-cam-wrap,
+  .uav-feed-wrap,
+  .rd-preview-frame {
+    width: 100%;
+    min-width: 0;
+    aspect-ratio: 16 / 9;
+    max-height: min(56vh, 420px);
+  }
+
+  .fusion-video-wrap video,
+  .fh-video-frame video,
+  .fight-canvas-wrap canvas,
+  .tn-gesture-preview,
+  .fc-live-frame img,
+  .fc-live-frame video,
+  .fd-cam-wrap video,
+  .uav-feed-wrap video,
+  .rd-preview-frame img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+
+  .fh-threat-list,
+  .case-list {
+    max-height: none;
+  }
+
+  .traffic-nexus-sc .tn-dash {
+    padding: 0 0.5rem 1rem;
+  }
+
+  .traffic-nexus-sc .tn-side-stack {
+    grid-template-columns: 1fr !important;
+  }
+
+  .mm-home-features,
+  .mm-home-modules,
+  .mm-home-stats,
+  .mm-home-why,
+  .mm-team-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .mm-home-hero__viz {
+    min-height: 280px;
+    height: auto;
+  }
+
+  .mm-home-hero {
+    min-height: auto;
+    padding-bottom: 2.5rem;
+  }
+
+  .holo-stat-card {
+    flex: 1 1 100%;
+  }
+
+  .ar-bottom-controls,
+  .ar-hud-controls {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.5rem;
+  }
+
+  .ar-bottom-controls button,
+  .ar-hud-controls button {
+    flex: 1 1 calc(50% - 0.5rem);
+    min-width: 120px;
+  }
+
+  .mm-ai-orb-arm {
+    max-width: calc(100vw - 24px);
+    padding: 12px 16px;
+    font-size: 0.82rem;
+  }
+
+  .mm-ai-orb-panel {
+    width: min(94vw, 380px) !important;
+    max-height: min(72vh, 520px);
+  }
+
+  .messages-top {
+    margin: 0 0 0.5rem;
+    padding: 0;
+  }
+
+  .msg {
+    font-size: 0.85rem;
+  }
+
+  .panel-left,
+  .panel-right,
+  .glass,
+  .fh-panel,
+  .ai-card,
+  [class*="-card"]:not(.mm-status-card):not(.mm-nav-item) {
+    min-width: 0;
+  }
+
+  table {
+    display: block;
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .mm-table-scroll table,
+  .table-scroll table,
+  .table-wrap table {
+    display: table;
+    min-width: 520px;
+  }
+
+  .identity-footer,
+  .fh-did-footer,
+  .identity-footer-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .complete-profile-btn,
+  .fh-did-admin-link {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .reco-compact-grid,
+  .live-verification-card__form {
+    grid-template-columns: 1fr !important;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .case-review-panel__cta-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .case-review-panel__cta-row .case-review-panel__cta {
+    justify-content: center;
+    width: 100%;
+  }
+}
+
+/* ── 480px — small phones ───────────────────────────────────────────────── */
+@media (max-width: 480px) {
+  body.ai-dashboard-sc.mm-dash-body .app-shell {
+    padding: 0.4rem 0.5rem 0.6rem;
+  }
+
+  .mm-topbar {
+    padding: 0.65rem 0.75rem;
+    border-radius: 14px;
+  }
+
+  .mm-topbar__title {
+    font-size: 1.05rem;
+  }
+
+  .mm-topbar__eyebrow {
+    font-size: 0.62rem;
+  }
+
+  .mm-topbar__right {
+    gap: 0.4rem;
+  }
+
+  .mm-topbar-btn span:not(.mm-topbar-btn__icon),
+  .mm-topbar-badge--clock {
+    display: none;
+  }
+
+  .mm-topbar-btn {
+    padding: 0.5rem 0.65rem;
+  }
+
+  html:not(.mm-sidebar-collapsed) .mm-sidebar,
+  body:not(.mm-sidebar-collapsed) .mm-sidebar {
+    width: min(100vw, 300px) !important;
+    min-width: min(100vw, 300px) !important;
+    max-width: min(100vw, 300px) !important;
+  }
+
+  .mm-home-nav {
+    padding: 0.75rem 1rem;
+  }
+
+  .mm-home-hero__title {
+    font-size: clamp(1.75rem, 8vw, 2.5rem);
+  }
+
+  .mm-home-hero__actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .mm-home-hero__actions .mm-home-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .mm-team-grid {
+    max-width: 100%;
+  }
+
+  .traffic-nexus-sc .tn-kpi-row,
+  .traffic-nexus-sc .tn-agent-grid-3 {
+    grid-template-columns: 1fr !important;
+  }
+
+  .traffic-nexus-sc .tn-vision-fs__cam {
+    width: 120px;
+  }
+
+  .traffic-nexus-sc .tn-vision-fs__cam .tn-gesture-preview-wrap,
+  .traffic-nexus-sc .tn-vision-fs__cam .tn-gesture-preview {
+    width: 120px;
+  }
+
+  .traffic-nexus-sc .tn-vision-fs__cam .tn-gesture-preview {
+    height: 90px;
+  }
+
+  .mm-modal-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .mm-modal-btn {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .ar-hud-root {
+    padding: 12px;
+  }
+
+  .ar-camera-stage {
+    min-height: 220px;
+  }
+
+  .mm-ai-orb-arm__text {
+    display: none;
+  }
+
+  .mm-ai-orb-panel {
+    width: min(96vw, 360px) !important;
+  }
+
+  .mm-ai-orb-chips {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .ai-chatbot-dock {
+    width: calc(100vw - 20px);
+    right: max(10px, env(safe-area-inset-right, 0px));
+  }
+
+  .fh-panel-title,
+  .panel-title {
+    font-size: 0.72rem;
+  }
+
+  .stat-strip {
+    gap: 0.4rem;
+  }
+
+  .weapon-test-body {
+    gap: 0.65rem;
+  }
+
+  .ws-kpi-row,
+  .violations-kpi-row {
+    grid-template-columns: 1fr !important;
+  }
+
+  .fc-stream-actions .fc-btn {
+    flex: 1 1 100%;
+  }
+
+  .mm-home-section {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+}
+
+/* ── Page-specific overflow guards ──────────────────────────────────────── */
+@media (max-width: 992px) {
+  .smart-city-hologram,
+  .mm-home-hologram-wrap {
+    max-width: 100%;
+    overflow: hidden;
+  }
+
+  #uavMap,
+  .uav-map-panel,
+  .leaflet-container {
+    min-height: 220px;
+    height: min(42vh, 360px) !important;
+  }
+
+  .hologram-cinematic,
+  .holo-command {
+    min-width: 0;
+    overflow-x: hidden;
+  }
+}
